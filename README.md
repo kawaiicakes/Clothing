@@ -1,0 +1,1 @@
+Placeholder README. Epic cosmetics with custom 3D models, customization, and massive compatibility with other mods!
