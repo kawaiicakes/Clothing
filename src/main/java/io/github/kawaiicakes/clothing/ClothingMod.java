@@ -4,10 +4,10 @@ import com.mojang.logging.LogUtils;
 import net.minecraftforge.fml.common.Mod;
 import org.slf4j.Logger;
 
-@Mod(ClothingMod.MODID)
+@Mod(ClothingMod.MOD_ID)
 public class ClothingMod
 {
-    public static final String MODID = "clothing";
+    public static final String MOD_ID = "clothing";
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public ClothingMod()
