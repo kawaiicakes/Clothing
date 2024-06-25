@@ -37,6 +37,15 @@ public class ClothingMod
                 public void initializeClient(@NotNull Consumer<IClientItemExtensions> consumer) {
                     consumer.accept(
                             new IClientItemExtensions() {
+                                /*
+                                yeah, this (initially) seems to work like how I want it to. my problem now is
+                                determining how to leverage this... perhaps this override could make a call to a
+                                static method that takes the same arguments as this method, then adjusts the
+                                returned HumanoidModel<?> as necessary...
+
+                                figure out how this even works in conjunction with vanilla armour when I add a
+                                custom 3D model for testing.
+                                 */
                                 @Override
                                 public @NotNull HumanoidModel<?> getHumanoidArmorModel(LivingEntity livingEntity, ItemStack itemStack, EquipmentSlot equipmentSlot, HumanoidModel<?> original) {
                                     LOGGER.info("TESTING TO SEE IF THIS OVERRIDE WORKS");
