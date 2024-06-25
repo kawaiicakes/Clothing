@@ -3,7 +3,6 @@ package io.github.kawaiicakes.clothing.item;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import com.mojang.blaze3d.vertex.PoseStack;
-import io.github.kawaiicakes.clothing.client.HumanoidGenericClothingLayer;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.BlockSource;
@@ -23,10 +22,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.DispenserBlock;
+import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * Pretty much a 1:1 copy of {@link ArmorItem} so that clothing does not attempt to be rendered in
@@ -47,14 +48,11 @@ public class ClothingItem extends Item implements Wearable {
     protected final ArmorMaterial material;
     private final Multimap<Attribute, AttributeModifier> defaultModifiers;
     protected final float alpha;
-    protected final boolean hasOverlay;
-    protected final HumanoidGenericClothingLayer.ClothingLayer defaultClothingLayer;
     
     public ClothingItem(
             ArmorMaterial pMaterial, EquipmentSlot pSlot,
             Properties pProperties,
-            float pAlpha,
-            HumanoidGenericClothingLayer.ClothingLayer pDefaultClothingLayer
+            float pAlpha
     ) {
         super(pProperties.defaultDurability(pMaterial.getDurabilityForSlot(pSlot)));
 
@@ -64,8 +62,6 @@ public class ClothingItem extends Item implements Wearable {
         this.toughness = pMaterial.getToughness();
         this.knockbackResistance = pMaterial.getKnockbackResistance();
         this.alpha = pAlpha;
-        this.hasOverlay = pDefaultClothingLayer.equals(HumanoidGenericClothingLayer.ClothingLayer.CUSTOM);
-        this.defaultClothingLayer = pDefaultClothingLayer;
 
         DispenserBlock.registerBehavior(this, DISPENSE_ITEM_BEHAVIOR);
 
@@ -159,15 +155,23 @@ public class ClothingItem extends Item implements Wearable {
     }
 
     public boolean hasOverlay() {
-        return this.hasOverlay;
-    }
-
-    public HumanoidGenericClothingLayer.ClothingLayer getDefaultClothingLayer() {
-        return this.defaultClothingLayer;
+        return false;
     }
 
     @Nullable
     public SoundEvent getEquipSound() {
         return this.getMaterial().getEquipSound();
+    }
+
+    @Override
+    public void initializeClient(@NotNull Consumer<IClientItemExtensions> consumer) {
+        consumer.accept(
+                new IClientItemExtensions() {
+                    @Override
+                    public @NotNull HumanoidModel<?> getHumanoidArmorModel(LivingEntity livingEntity, ItemStack itemStack, EquipmentSlot equipmentSlot, HumanoidModel<?> original) {
+                        return IClientItemExtensions.super.getHumanoidArmorModel(livingEntity, itemStack, equipmentSlot, original);
+                    }
+                }
+        );
     }
 }

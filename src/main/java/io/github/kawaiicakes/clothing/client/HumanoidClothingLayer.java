@@ -27,12 +27,10 @@ import javax.annotation.ParametersAreNonnullByDefault;
 /**
  * This extends {@link HumanoidArmorLayer} in case a third-party mod references instances of that class to render
  * stuff.
- * <br><br>
- * This layer renders "flat" pieces of clothing, like the vanilla armour.
  * @author kawaiicakes
  */
 @OnlyIn(Dist.CLIENT)
-public class HumanoidGenericClothingLayer<
+public class HumanoidClothingLayer<
         T extends LivingEntity, M extends HumanoidModel<T>, A extends HumanoidModel<T>>
         extends HumanoidArmorLayer<T,M,A>
 {
@@ -47,7 +45,7 @@ public class HumanoidGenericClothingLayer<
      * @param pOverClothingModel This model goes slightly over top of armour. A plate carrier or some other goofy shit
      *                           would probably belong here.
      */
-    public HumanoidGenericClothingLayer(
+    public HumanoidClothingLayer(
             RenderLayerParent<T, M> pRenderer,
             A pBaseClothingModel, A pThickClothingModel, A pOverClothingModel
     ) {
