@@ -50,13 +50,15 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
      * @return The value of alpha as a float. Permitted values are 0.0 to 1.0 inclusive.
      */
     @ParametersAreNullableByDefault
-    public abstract float getAlpha(
+    public float getAlpha(
             LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot,
             int packedLight,
             float pLimbSwing, float pLimbSwingAmount,
             float pPartialTicks, float pAgeInTicks,
             float pNetHeadYaw, float pHeadPitch
-    );
+    ) {
+        return 1.0F;
+    }
 
     /**
      * If this returns non-null, an attempt will be made to render the overlay onto this piece of clothing.
