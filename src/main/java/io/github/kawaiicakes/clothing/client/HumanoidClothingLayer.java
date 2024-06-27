@@ -38,6 +38,8 @@ public class HumanoidClothingLayer<
 {
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    // TODO: initialize model fields automatically based on what EntityType is passed to the constructor.
+    // TODO: ^ above segues into idea of static model "repository" filled with baked models.
     /**
      * Added during {@link net.minecraftforge.client.event.EntityRenderersEvent.AddLayers} to appropriate renderer.
      * @param pBaseClothingModel This model is intended to be used for clothing resting just above the skin; like
@@ -69,11 +71,11 @@ public class HumanoidClothingLayer<
             if (!(stack.getItem() instanceof ClothingItem clothing)) continue;
             if (!clothing.getSlot().equals(slot)) continue;
 
-            A defaultClothingModel;
+            A clothingModel;
 
             try {
                 //noinspection unchecked
-                defaultClothingModel = (A) clothing.getClothingModel(pLivingEntity, stack, slot, null);
+                clothingModel = (A) clothing.getClothingModel(pLivingEntity, stack, slot);
             } catch (RuntimeException e) {
                 LOGGER.error("Unable to cast model to appropriate type!", e);
                 continue;
@@ -81,10 +83,9 @@ public class HumanoidClothingLayer<
 
             boolean hasGlint = stack.hasFoil();
 
-            this.getParentModel().copyPropertiesTo(defaultClothingModel);
-            this.setPartVisibility(defaultClothingModel, slot);
+            this.getParentModel().copyPropertiesTo(clothingModel);
+            this.setPartVisibility(clothingModel, slot);
 
-            Model clothingModel = getArmorModelHook(pLivingEntity, stack, slot, defaultClothingModel);
             int i = clothing.getColor(stack);
             float r = (float)(i >> 16 & 255) / 255.0F;
             float g = (float)(i >> 8 & 255) / 255.0F;
@@ -95,21 +96,41 @@ public class HumanoidClothingLayer<
                     pBuffer, pPackedLight,
                     hasGlint,
                     clothingModel,
-                    r, g, b, 1.0F, //clothing.getAlpha()
+                    r, g, b, clothing.getAlpha(
+                            pLivingEntity,
+                            stack, slot,
+                            pPackedLight,
+                            pLimbSwing, pLimbSwingAmount,
+                            pPartialTicks, pAgeInTicks,
+                            pNetHeadYaw, pHeadPitch
+                    ),
                     this.getArmorResource(pLivingEntity, stack, slot, null)
             );
 
-            /*
-            if (!clothing.hasOverlay()) continue;
+            ResourceLocation overlayLocation = clothing.overlayResource(
+                    pLivingEntity,
+                    stack, slot,
+                    pPackedLight,
+                    pLimbSwing, pLimbSwingAmount,
+                    pPartialTicks, pAgeInTicks,
+                    pNetHeadYaw, pHeadPitch
+            );
+            if (overlayLocation == null) continue;
             this.renderModel(
                     pMatrixStack,
                     pBuffer, pPackedLight,
                     hasGlint,
                     clothingModel,
-                    1.0F, 1.0F, 1.0F, clothing.getAlpha(),
+                    1.0F, 1.0F, 1.0F, clothing.getAlpha(
+                            pLivingEntity,
+                            stack, slot,
+                            pPackedLight,
+                            pLimbSwing, pLimbSwingAmount,
+                            pPartialTicks, pAgeInTicks,
+                            pNetHeadYaw, pHeadPitch
+                    ),
                     this.getArmorResource(pLivingEntity, stack, slot, "overlay")
             );
-             */
         }
     }
 
@@ -144,6 +165,7 @@ public class HumanoidClothingLayer<
     @NotNull
     @ParametersAreNonnullByDefault
     public ResourceLocation getArmorResource(Entity entity, ItemStack stack, EquipmentSlot slot, @Nullable String type) {
+        // TODO
         return super.getArmorResource(entity, stack, slot, type);
     }
 }
