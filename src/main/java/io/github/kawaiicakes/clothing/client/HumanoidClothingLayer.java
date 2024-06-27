@@ -2,6 +2,7 @@ package io.github.kawaiicakes.clothing.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.Model;
@@ -15,18 +16,19 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.DyeableLeatherItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
  * This extends {@link HumanoidArmorLayer} in case a third-party mod references instances of that class to render
- * stuff.
+ * stuff. Furthermore, it also exists so that vanilla armour may render still when mods like Trinkets are
+ * installed, hopefully.
  * @author kawaiicakes
  */
 @OnlyIn(Dist.CLIENT)
@@ -34,7 +36,7 @@ public class HumanoidClothingLayer<
         T extends LivingEntity, M extends HumanoidModel<T>, A extends HumanoidModel<T>>
         extends HumanoidArmorLayer<T,M,A>
 {
-    protected final A overClothingModel;
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     /**
      * Added during {@link net.minecraftforge.client.event.EntityRenderersEvent.AddLayers} to appropriate renderer.
@@ -42,15 +44,9 @@ public class HumanoidClothingLayer<
      *                           T-shirts or ski masks.
      * @param pThickClothingModel This model is worn over top of the base, but rests underneath armour. Think of a
      *                            three-piece suit, or even just a tie.
-     * @param pOverClothingModel This model goes slightly over top of armour. A plate carrier or some other goofy shit
-     *                           would probably belong here.
      */
-    public HumanoidClothingLayer(
-            RenderLayerParent<T, M> pRenderer,
-            A pBaseClothingModel, A pThickClothingModel, A pOverClothingModel
-    ) {
+    public HumanoidClothingLayer(RenderLayerParent<T, M> pRenderer, A pBaseClothingModel, A pThickClothingModel) {
         super(pRenderer, pBaseClothingModel, pThickClothingModel);
-        this.overClothingModel = pOverClothingModel;
     }
 
     @Override
@@ -73,8 +69,15 @@ public class HumanoidClothingLayer<
             if (!(stack.getItem() instanceof ClothingItem clothing)) continue;
             if (!clothing.getSlot().equals(slot)) continue;
 
-            // FIXME
-            A defaultClothingModel = null;
+            A defaultClothingModel;
+
+            try {
+                //noinspection unchecked
+                defaultClothingModel = (A) clothing.getClothingModel(pLivingEntity, stack, slot, null);
+            } catch (RuntimeException e) {
+                LOGGER.error("Unable to cast model to appropriate type!", e);
+                continue;
+            }
 
             boolean hasGlint = stack.hasFoil();
 
@@ -82,41 +85,31 @@ public class HumanoidClothingLayer<
             this.setPartVisibility(defaultClothingModel, slot);
 
             Model clothingModel = getArmorModelHook(pLivingEntity, stack, slot, defaultClothingModel);
+            int i = clothing.getColor(stack);
+            float r = (float)(i >> 16 & 255) / 255.0F;
+            float g = (float)(i >> 8 & 255) / 255.0F;
+            float b = (float)(i & 255) / 255.0F;
 
-            if (clothing instanceof DyeableLeatherItem dyedClothing) {
-                int i = dyedClothing.getColor(stack);
-                float r = (float)(i >> 16 & 255) / 255.0F;
-                float g = (float)(i >> 8 & 255) / 255.0F;
-                float b = (float)(i & 255) / 255.0F;
+            this.renderModel(
+                    pMatrixStack,
+                    pBuffer, pPackedLight,
+                    hasGlint,
+                    clothingModel,
+                    r, g, b, 1.0F, //clothing.getAlpha()
+                    this.getArmorResource(pLivingEntity, stack, slot, null)
+            );
 
-                this.renderModel(
-                        pMatrixStack,
-                        pBuffer, pPackedLight,
-                        hasGlint,
-                        clothingModel,
-                        r, g, b, clothing.getAlpha(),
-                        this.getArmorResource(pLivingEntity, stack, slot, null)
-                );
-
-                if (!clothing.hasOverlay()) continue;
-                this.renderModel(
-                        pMatrixStack,
-                        pBuffer, pPackedLight,
-                        hasGlint,
-                        clothingModel,
-                        1.0F, 1.0F, 1.0F, clothing.getAlpha(),
-                        this.getArmorResource(pLivingEntity, stack, slot, "overlay")
-                );
-            } else {
-                this.renderModel(
-                        pMatrixStack,
-                        pBuffer, pPackedLight,
-                        hasGlint,
-                        clothingModel,
-                        1.0F, 1.0F, 1.0F, clothing.getAlpha(),
-                        this.getArmorResource(pLivingEntity, stack, slot, null)
-                );
-            }
+            /*
+            if (!clothing.hasOverlay()) continue;
+            this.renderModel(
+                    pMatrixStack,
+                    pBuffer, pPackedLight,
+                    hasGlint,
+                    clothingModel,
+                    1.0F, 1.0F, 1.0F, clothing.getAlpha(),
+                    this.getArmorResource(pLivingEntity, stack, slot, "overlay")
+            );
+             */
         }
     }
 
@@ -145,13 +138,6 @@ public class HumanoidClothingLayer<
                 pBlue,
                 pAlpha
         );
-    }
-
-    @Override
-    @NotNull
-    @ParametersAreNonnullByDefault
-    protected Model getArmorModelHook(T entity, ItemStack itemStack, EquipmentSlot slot, A model) {
-        return super.getArmorModelHook(entity, itemStack, slot, model);
     }
 
     @Override
