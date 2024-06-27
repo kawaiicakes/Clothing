@@ -27,6 +27,8 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
     /**
      * Implementations should return the desired model for this piece of clothing. Bear in mind that the models are
      * rendered as layers in {@link io.github.kawaiicakes.clothing.client.HumanoidClothingLayer}.
+     * <br><br>
+     * If you only plan to use the default armour model, just immediately return <code>genericModel</code>.
      * @param livingEntity the {@link LivingEntity} this model is made for.
      * @param stack the {@link ItemStack} representing this piece of clothing.
      * @param slot the {@link EquipmentSlot this piece of clothing goes in.}
@@ -35,8 +37,9 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
      */
     @NotNull
     @ParametersAreNullableByDefault
-    public abstract HumanoidModel<?> getClothingModel(
-            LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot
+    public abstract HumanoidModel<? extends LivingEntity> getClothingModel(
+            LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot,
+            HumanoidModel<? extends LivingEntity> genericModel
     );
 
     /**
@@ -74,6 +77,23 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
             float pNetHeadYaw, float pHeadPitch
     );
 
+    /**
+     * If the implementation of this class is returning the <code>genericModel</code> passed to it in
+     * {@link #getClothingModel(LivingEntity, ItemStack, EquipmentSlot, HumanoidModel)}, then implementations of this
+     * method determine whether the base model or over model should be used.
+     * @return <code>true</code> if the over model should be used. <code>false</code> for the base.
+     */
+    @ParametersAreNullableByDefault
+    public boolean usesGenericOverModel(
+            LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot,
+            int packedLight,
+            float pLimbSwing, float pLimbSwingAmount,
+            float pPartialTicks, float pAgeInTicks,
+            float pNetHeadYaw, float pHeadPitch
+    ) {
+        return false;
+    }
+
     @Override
     public int getColor(@NotNull ItemStack pStack) {
         // contrived implementation is done in case a third-party mod changes the super
@@ -95,7 +115,7 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
                             ItemStack itemStack, EquipmentSlot equipmentSlot,
                             HumanoidModel<?> original
                     ) {
-                        return ClothingItem.this.getClothingModel(livingEntity, itemStack, equipmentSlot);
+                        return ClothingItem.this.getClothingModel(livingEntity, itemStack, equipmentSlot, original);
                     }
                 }
         );

@@ -14,6 +14,7 @@ import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
@@ -47,8 +48,12 @@ public class HumanoidClothingLayer<
      * @param pThickClothingModel This model is worn over top of the base, but rests underneath armour. Think of a
      *                            three-piece suit, or even just a tie.
      */
-    public HumanoidClothingLayer(RenderLayerParent<T, M> pRenderer, A pBaseClothingModel, A pThickClothingModel) {
-        super(pRenderer, pBaseClothingModel, pThickClothingModel);
+    public HumanoidClothingLayer(RenderLayerParent<T, M> pRenderer, EntityType<T> pEntityType) {
+        super(
+                pRenderer,
+                null,
+                null // FIXME
+        );
     }
 
     @Override
@@ -75,7 +80,17 @@ public class HumanoidClothingLayer<
 
             try {
                 //noinspection unchecked
-                clothingModel = (A) clothing.getClothingModel(pLivingEntity, stack, slot);
+                clothingModel = (A) clothing.getClothingModel(
+                        pLivingEntity, stack, slot,
+                        clothing.usesGenericOverModel(
+                                pLivingEntity,
+                                stack, slot,
+                                pPackedLight,
+                                pLimbSwing, pLimbSwingAmount,
+                                pPartialTicks, pAgeInTicks,
+                                pNetHeadYaw, pHeadPitch
+                        ) ? this.outerModel : this.innerModel
+                );
             } catch (RuntimeException e) {
                 LOGGER.error("Unable to cast model to appropriate type!", e);
                 continue;
