@@ -30,6 +30,10 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * This extends {@link HumanoidArmorLayer} in case a third-party mod references instances of that class to render
  * stuff. Furthermore, it also exists so that vanilla armour may render still when mods like Trinkets are
  * installed, hopefully.
+ * <br><br>
+ * The <code>innerModel</code> and <code>outerModel</code> in super are instantiated by "generic models" of types
+ * <code>base</code> and <code>over</code>, respectively. Base renders underneath vanilla armour but slightly over the
+ * player's skin (including the skin overlay). Over renders slightly above vanilla armour.
  * @author kawaiicakes
  */
 @OnlyIn(Dist.CLIENT)
