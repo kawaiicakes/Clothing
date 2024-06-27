@@ -69,13 +69,15 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
      */
     @Nullable
     @ParametersAreNullableByDefault
-    public abstract ResourceLocation overlayResource(
+    public ResourceLocation overlayResource(
             LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot,
             int packedLight,
             float pLimbSwing, float pLimbSwingAmount,
             float pPartialTicks, float pAgeInTicks,
             float pNetHeadYaw, float pHeadPitch
-    );
+    ) {
+        return null;
+    }
 
     /**
      * If the implementation of this class is returning the <code>genericModel</code> passed to it in
