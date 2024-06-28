@@ -43,6 +43,12 @@ public class HumanoidClothingLayer<
 {
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /*
+        Consider creating two implementations of ClothingItem; one that returns these generic layers, and one that
+        returns custom models (not necessarily humanoid ones) for render in a new RenderLayer implementation. Rendering
+        in this class should then check for items of the former ClothingItem implementation, and the latter for
+        rendering done in the custom model layer.
+     */
     // TODO: initialize model fields automatically based on what EntityType is passed to the constructor.
     // TODO: ^ above segues into idea of static model "repository" filled with baked models.
     /**
