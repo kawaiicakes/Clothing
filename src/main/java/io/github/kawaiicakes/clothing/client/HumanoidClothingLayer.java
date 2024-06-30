@@ -14,7 +14,6 @@ import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
@@ -44,21 +43,18 @@ public class HumanoidClothingLayer<
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /*
-        Consider creating two implementations of ClothingItem; one that returns these generic layers, and one that
-        returns custom models (not necessarily humanoid ones) for render in a new RenderLayer implementation. Rendering
-        in this class should then check for items of the former ClothingItem implementation, and the latter for
-        rendering done in the custom model layer.
+     I've opted to keep everything in one new layer despite the previous comments here. This is because having to
+     define an entire humanoid model for one piece of clothing could actually allow for more complex models.
+     Accordingly, overrides for #setPartVisibility and support for ClothingModels will be added.
      */
-    // TODO: initialize model fields automatically based on what EntityType is passed to the constructor.
-    // TODO: ^ above segues into idea of static model "repository" filled with baked models.
     /**
      * Added during {@link net.minecraftforge.client.event.EntityRenderersEvent.AddLayers} to appropriate renderer.
      */
-    public HumanoidClothingLayer(RenderLayerParent<T, M> pRenderer, EntityType<T> pEntityType) {
+    public HumanoidClothingLayer(RenderLayerParent<T, M> pRenderer, A baseModel, A overModel) {
         super(
                 pRenderer,
-                null,
-                null // FIXME
+                baseModel,
+                overModel
         );
     }
 
@@ -185,8 +181,14 @@ public class HumanoidClothingLayer<
     @Override
     @NotNull
     @ParametersAreNonnullByDefault
-    public ResourceLocation getArmorResource(Entity entity, ItemStack stack, EquipmentSlot slot, @Nullable String type) {
+    public ResourceLocation getArmorResource(Entity entity, ItemStack stack, EquipmentSlot slot, @Nullable String type
+    ) {
         // TODO
         return super.getArmorResource(entity, stack, slot, type);
+    }
+
+    @Override
+    protected void setPartVisibility(@NotNull A pModel, @NotNull EquipmentSlot pSlot) {
+        super.setPartVisibility(pModel, pSlot);
     }
 }
