@@ -114,6 +114,7 @@ dependencies {
     minecraft "net.minecraftforge:forge:${forge_version}"
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
     compileOnly(fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api"))
+    runtimeOnly(fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}"))
 }
 
 jar {
