@@ -42,7 +42,7 @@ public class GenericClothingLayers {
         return new ModelLayerLocation(new ResourceLocation(entity), "clothing_" + layerName);
     }
 
-    public static MeshDefinition createGenericMesh(CubeDeformation pCubeDeformation, float pYOffset) {
+    public static MeshDefinition createHumanoidGenericMesh(CubeDeformation pCubeDeformation, float pYOffset) {
         MeshDefinition meshDefinition = new MeshDefinition();
         PartDefinition partDefinition = meshDefinition.getRoot();
 
@@ -137,6 +137,122 @@ public class GenericClothingLayers {
                         ),
                 PartPose.offset(1.9F, 12.0F + pYOffset, 0.0F)
         );
+
+        return meshDefinition;
+    }
+
+    public static MeshDefinition createArmorStandGenericMesh(CubeDeformation pCubeDeformation) {
+        MeshDefinition meshDefinition = createHumanoidGenericMesh(pCubeDeformation, 0.0F);
+
+        meshDefinition.getRoot()
+                .addOrReplaceChild(
+                        "head",
+                        CubeListBuilder.create()
+                                .texOffs(0, 0)
+                                .addBox(
+                                        -4.0F, -8.0F, -4.0F,
+                                        8.0F, 8.0F, 8.0F,
+                                        pCubeDeformation,
+                                        0.125F, 0.125F
+                                ),
+                        PartPose.offset(0.0F, 1.0F, 0.0F)
+                )
+                .addOrReplaceChild(
+                        "hat",
+                        CubeListBuilder.create()
+                                .texOffs(32, 0)
+                                .addBox(
+                                        -4.0F, -8.0F, -4.0F,
+                                        8.0F, 8.0F, 8.0F,
+                                        pCubeDeformation.extend(0.5F),
+                                        0.125F, 0.125F
+                                ),
+                        PartPose.offset(0.0F, 1.0F, 0.0F)
+                )
+                .addOrReplaceChild(
+                        "right_leg",
+                        CubeListBuilder.create()
+                                .texOffs(0, 16)
+                                .addBox(
+                                        -2.0F, 0.0F, -2.0F,
+                                        4.0F, 12.0F, 4.0F,
+                                        pCubeDeformation,
+                                        0.125F, 0.125F
+                                ),
+                        PartPose.offset(-1.9F, 11.0F, 0.0F)
+                )
+                .addOrReplaceChild(
+                        "left_leg",
+                        CubeListBuilder.create()
+                                .texOffs(0, 16)
+                                .mirror()
+                                .addBox(
+                                        -2.0F, 0.0F, -2.0F,
+                                        4.0F, 12.0F, 4.0F,
+                                        pCubeDeformation,
+                                        0.125F, 0.125F
+                                ),
+                        PartPose.offset(1.9F, 11.0F, 0.0F)
+                );
+
+        return meshDefinition;
+    }
+
+    public static MeshDefinition createZombieVillagerGenericModel(CubeDeformation pCubeDeformation) {
+        MeshDefinition meshDefinition = createHumanoidGenericMesh(pCubeDeformation, 0.0F);
+        PartDefinition partDefinition = meshDefinition.getRoot();
+
+        partDefinition.addOrReplaceChild(
+                "head",
+                CubeListBuilder.create()
+                        .texOffs(0, 0)
+                        .addBox(
+                                -4.0F, -10.0F, -4.0F,
+                                8.0F, 8.0F, 8.0F,
+                                pCubeDeformation,
+                                0.125F, 0.125F
+                        ),
+                PartPose.ZERO
+        );
+        partDefinition.addOrReplaceChild(
+                "body",
+                CubeListBuilder.create()
+                        .texOffs(16, 16)
+                        .addBox(
+                                -4.0F, 0.0F, -2.0F,
+                                8.0F, 12.0F, 4.0F,
+                                pCubeDeformation.extend(0.1F),
+                                0.125F, 0.125F
+                        ),
+                PartPose.ZERO
+        );
+        partDefinition.addOrReplaceChild(
+                "right_leg",
+                CubeListBuilder.create()
+                        .texOffs(0, 16)
+                        .addBox(
+                                -2.0F, 0.0F, -2.0F,
+                                4.0F, 12.0F, 4.0F,
+                                pCubeDeformation.extend(0.1F),
+                                0.125F, 0.125F
+                        ),
+                PartPose.offset(-2.0F, 12.0F, 0.0F)
+        );
+        partDefinition.addOrReplaceChild(
+                "left_leg",
+                CubeListBuilder.create()
+                        .texOffs(0, 16)
+                        .mirror()
+                        .addBox(
+                                -2.0F, 0.0F, -2.0F,
+                                4.0F, 12.0F, 4.0F,
+                                pCubeDeformation.extend(0.1F),
+                                0.125F, 0.125F
+                        ),
+                PartPose.offset(2.0F, 12.0F, 0.0F)
+        );
+        partDefinition.getChild("hat")
+                .addOrReplaceChild("hat_rim", CubeListBuilder.create(), PartPose.ZERO);
 
         return meshDefinition;
     }

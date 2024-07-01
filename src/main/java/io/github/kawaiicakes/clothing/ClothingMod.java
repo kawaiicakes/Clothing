@@ -90,18 +90,57 @@ public class ClothingMod
         public static void registerGenericLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
             final LayerDefinition genericBase 
                     = LayerDefinition.create(
-                            GenericClothingLayers.createGenericMesh(BASE, 0.0F), 512, 256
+                            GenericClothingLayers.createHumanoidGenericMesh(BASE, 0.0F),
+                    512, 256
             );
-            
             final LayerDefinition genericOver
                     = LayerDefinition.create(
-                            GenericClothingLayers.createGenericMesh(OVER, 0.0F), 512, 256
+                            GenericClothingLayers.createHumanoidGenericMesh(OVER, 0.0F),
+                    512, 256
+            );
+
+            final LayerDefinition armorStandBase
+                    = LayerDefinition.create(
+                            GenericClothingLayers.createArmorStandGenericMesh(BASE),
+                    512, 256
+            );
+            final LayerDefinition armorStandOver
+                    = LayerDefinition.create(
+                    GenericClothingLayers.createArmorStandGenericMesh(OVER),
+                    512, 256
+            );
+
+            final LayerDefinition drownedOver
+                    = LayerDefinition.create(
+                            GenericClothingLayers.createHumanoidGenericMesh(
+                                    OVER.extend(0.25F), 0.0F
+                            ),
+                    512, 256
+            );
+
+            final LayerDefinition piglinOver
+                    = LayerDefinition.create(
+                    GenericClothingLayers.createHumanoidGenericMesh(
+                            OVER.extend(0.02F), 0.0F
+                    ),
+                    512, 256
+            );
+
+            final LayerDefinition zombieVillagerBase
+                    = LayerDefinition.create(
+                            GenericClothingLayers.createZombieVillagerGenericModel(BASE),
+                    512, 256
+            );
+            final LayerDefinition zombieVillagerOver
+                    = LayerDefinition.create(
+                    GenericClothingLayers.createZombieVillagerGenericModel(OVER),
+                    512, 256
             );
             
-            event.registerLayerDefinition(ARMOR_STAND_BASE, () -> genericBase);
-            event.registerLayerDefinition(ARMOR_STAND_OVER, () -> genericOver);
+            event.registerLayerDefinition(ARMOR_STAND_BASE, () -> armorStandBase);
+            event.registerLayerDefinition(ARMOR_STAND_OVER, () -> armorStandOver);
             event.registerLayerDefinition(DROWNED_BASE, () -> genericBase);
-            event.registerLayerDefinition(DROWNED_OVER, () -> genericOver);
+            event.registerLayerDefinition(DROWNED_OVER, () -> drownedOver);
             event.registerLayerDefinition(GIANT_BASE, () -> genericBase);
             event.registerLayerDefinition(GIANT_OVER, () -> genericOver);
             event.registerLayerDefinition(HUSK_BASE, () -> genericBase);
@@ -111,9 +150,9 @@ public class ClothingMod
             event.registerLayerDefinition(PLAYER_SLIM_BASE, () -> genericBase);
             event.registerLayerDefinition(PLAYER_SLIM_OVER, () -> genericOver);
             event.registerLayerDefinition(PIGLIN_BASE, () -> genericBase);
-            event.registerLayerDefinition(PIGLIN_OVER, () -> genericOver);
+            event.registerLayerDefinition(PIGLIN_OVER, () -> piglinOver);
             event.registerLayerDefinition(PIGLIN_BRUTE_BASE, () -> genericBase);
-            event.registerLayerDefinition(PIGLIN_BRUTE_OVER, () -> genericOver);
+            event.registerLayerDefinition(PIGLIN_BRUTE_OVER, () -> piglinOver);
             event.registerLayerDefinition(SKELETON_BASE, () -> genericBase);
             event.registerLayerDefinition(SKELETON_OVER, () -> genericOver);
             event.registerLayerDefinition(STRAY_BASE, () -> genericBase);
@@ -123,9 +162,9 @@ public class ClothingMod
             event.registerLayerDefinition(ZOMBIE_BASE, () -> genericBase);
             event.registerLayerDefinition(ZOMBIE_OVER, () -> genericOver);
             event.registerLayerDefinition(ZOMBIFIED_PIGLIN_BASE, () -> genericBase);
-            event.registerLayerDefinition(ZOMBIFIED_PIGLIN_OVER, () -> genericOver);
-            event.registerLayerDefinition(ZOMBIE_VILLAGER_BASE, () -> genericBase);
-            event.registerLayerDefinition(ZOMBIE_VILLAGER_OVER, () -> genericOver);
+            event.registerLayerDefinition(ZOMBIFIED_PIGLIN_OVER, () -> piglinOver);
+            event.registerLayerDefinition(ZOMBIE_VILLAGER_BASE, () -> zombieVillagerBase);
+            event.registerLayerDefinition(ZOMBIE_VILLAGER_OVER, () -> zombieVillagerOver);
         }
 
         @SubscribeEvent
@@ -188,8 +227,8 @@ public class ClothingMod
                     piglinRenderer.addLayer(
                             new HumanoidClothingLayer<>(
                                     piglinRenderer,
-                                    new PiglinModel<>(entityModelSet.bakeLayer(PIGLIN_BASE)),
-                                    new PiglinModel<>(entityModelSet.bakeLayer(PIGLIN_OVER))
+                                    new HumanoidModel<>(entityModelSet.bakeLayer(PIGLIN_BASE)),
+                                    new HumanoidModel<>(entityModelSet.bakeLayer(PIGLIN_OVER))
                             )
                     );
                 }
@@ -200,8 +239,8 @@ public class ClothingMod
                     piglinBruteRenderer.addLayer(
                             new HumanoidClothingLayer<>(
                                     piglinBruteRenderer,
-                                    new PiglinModel<>(entityModelSet.bakeLayer(PIGLIN_BRUTE_BASE)),
-                                    new PiglinModel<>(entityModelSet.bakeLayer(PIGLIN_BRUTE_OVER))
+                                    new HumanoidModel<>(entityModelSet.bakeLayer(PIGLIN_BRUTE_BASE)),
+                                    new HumanoidModel<>(entityModelSet.bakeLayer(PIGLIN_BRUTE_OVER))
                             )
                     );
                 }
@@ -272,8 +311,8 @@ public class ClothingMod
                     zombifiedPiglinRenderer.addLayer(
                             new HumanoidClothingLayer<>(
                                     zombifiedPiglinRenderer,
-                                    new PiglinModel<>(entityModelSet.bakeLayer(ZOMBIFIED_PIGLIN_BASE)),
-                                    new PiglinModel<>(entityModelSet.bakeLayer(ZOMBIFIED_PIGLIN_OVER))
+                                    new HumanoidModel<>(entityModelSet.bakeLayer(ZOMBIFIED_PIGLIN_BASE)),
+                                    new HumanoidModel<>(entityModelSet.bakeLayer(ZOMBIFIED_PIGLIN_OVER))
                             )
                     );
                 }
