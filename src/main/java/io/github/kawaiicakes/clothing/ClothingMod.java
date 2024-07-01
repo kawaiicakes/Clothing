@@ -4,6 +4,8 @@ import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import net.minecraft.client.model.*;
 import net.minecraft.client.model.geom.EntityModelSet;
+import net.minecraft.client.model.geom.builders.CubeDeformation;
+import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.world.entity.EntityType;
@@ -40,39 +42,55 @@ public class ClothingMod
     @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientEvents {
         @SubscribeEvent
-        public static void onRegisterGenericLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
-            event.registerLayerDefinition(ARMOR_STAND_BASE, );
-            event.registerLayerDefinition(ARMOR_STAND_OVER, );
-            event.registerLayerDefinition(DROWNED_BASE, );
-            event.registerLayerDefinition(DROWNED_OVER, );
-            event.registerLayerDefinition(GIANT_BASE, );
-            event.registerLayerDefinition(GIANT_OVER, );
-            event.registerLayerDefinition(HUSK_BASE, );
-            event.registerLayerDefinition(HUSK_OVER, );
-            event.registerLayerDefinition(PLAYER_BASE, );
-            event.registerLayerDefinition(PLAYER_OVER, );
-            event.registerLayerDefinition(PLAYER_SLIM_BASE, );
-            event.registerLayerDefinition(PLAYER_SLIM_OVER, );
-            event.registerLayerDefinition(PIGLIN_BASE, );
-            event.registerLayerDefinition(PIGLIN_OVER, );
-            event.registerLayerDefinition(PIGLIN_BRUTE_BASE, );
-            event.registerLayerDefinition(PIGLIN_BRUTE_OVER, );
-            event.registerLayerDefinition(SKELETON_BASE, );
-            event.registerLayerDefinition(SKELETON_OVER, );
-            event.registerLayerDefinition(STRAY_BASE, );
-            event.registerLayerDefinition(STRAY_OVER, );
-            event.registerLayerDefinition(WITHER_SKELETON_BASE, );
-            event.registerLayerDefinition(WITHER_SKELETON_OVER, );
-            event.registerLayerDefinition(ZOMBIE_BASE, );
-            event.registerLayerDefinition(ZOMBIE_OVER, );
-            event.registerLayerDefinition(ZOMBIFIED_PIGLIN_BASE, );
-            event.registerLayerDefinition(ZOMBIFIED_PIGLIN_OVER, );
-            event.registerLayerDefinition(ZOMBIE_VILLAGER_BASE, );
-            event.registerLayerDefinition(ZOMBIE_VILLAGER_OVER, );
+        public static void registerGenericLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
+            event.registerLayerDefinition(ARMOR_STAND_BASE, ClientEvents::createGenericBase);
+            event.registerLayerDefinition(ARMOR_STAND_OVER, ClientEvents::createGenericOver);
+            event.registerLayerDefinition(DROWNED_BASE, ClientEvents::createGenericBase);
+            event.registerLayerDefinition(DROWNED_OVER, ClientEvents::createGenericOver);
+            event.registerLayerDefinition(GIANT_BASE, ClientEvents::createGenericBase);
+            event.registerLayerDefinition(GIANT_OVER, ClientEvents::createGenericOver);
+            event.registerLayerDefinition(HUSK_BASE, ClientEvents::createGenericBase);
+            event.registerLayerDefinition(HUSK_OVER, ClientEvents::createGenericOver);
+            event.registerLayerDefinition(PLAYER_BASE, ClientEvents::createGenericBase);
+            event.registerLayerDefinition(PLAYER_OVER, ClientEvents::createGenericOver);
+            event.registerLayerDefinition(PLAYER_SLIM_BASE, ClientEvents::createGenericBase);
+            event.registerLayerDefinition(PLAYER_SLIM_OVER, ClientEvents::createGenericOver);
+            event.registerLayerDefinition(PIGLIN_BASE, ClientEvents::createGenericBase);
+            event.registerLayerDefinition(PIGLIN_OVER, ClientEvents::createGenericOver);
+            event.registerLayerDefinition(PIGLIN_BRUTE_BASE, ClientEvents::createGenericBase);
+            event.registerLayerDefinition(PIGLIN_BRUTE_OVER, ClientEvents::createGenericOver);
+            event.registerLayerDefinition(SKELETON_BASE, ClientEvents::createGenericBase);
+            event.registerLayerDefinition(SKELETON_OVER, ClientEvents::createGenericOver);
+            event.registerLayerDefinition(STRAY_BASE, ClientEvents::createGenericBase);
+            event.registerLayerDefinition(STRAY_OVER, ClientEvents::createGenericOver);
+            event.registerLayerDefinition(WITHER_SKELETON_BASE, ClientEvents::createGenericBase);
+            event.registerLayerDefinition(WITHER_SKELETON_OVER, ClientEvents::createGenericOver);
+            event.registerLayerDefinition(ZOMBIE_BASE, ClientEvents::createGenericBase);
+            event.registerLayerDefinition(ZOMBIE_OVER, ClientEvents::createGenericOver);
+            event.registerLayerDefinition(ZOMBIFIED_PIGLIN_BASE, ClientEvents::createGenericBase);
+            event.registerLayerDefinition(ZOMBIFIED_PIGLIN_OVER, ClientEvents::createGenericOver);
+            event.registerLayerDefinition(ZOMBIE_VILLAGER_BASE, ClientEvents::createGenericBase);
+            event.registerLayerDefinition(ZOMBIE_VILLAGER_OVER, ClientEvents::createGenericOver);
+        }
+
+        public static LayerDefinition createGenericBase() {
+            return LayerDefinition.create(
+                    HumanoidModel.createMesh(new CubeDeformation(0.4F), 0.0F),
+                    64,
+                    32
+            );
+        }
+
+        public static LayerDefinition createGenericOver() {
+            return LayerDefinition.create(
+                    HumanoidModel.createMesh(new CubeDeformation(1.1F), 0.0F),
+                    64,
+                    32
+            );
         }
 
         @SubscribeEvent
-        public static void onAddGenericLayers(EntityRenderersEvent.AddLayers event) {
+        public static void addGenericLayers(EntityRenderersEvent.AddLayers event) {
             EntityModelSet entityModelSet = event.getEntityModels();
             // this is so damn scuffed lol, I tried automating this with reflection and iterating over the renderer
             // types but that didn't work
