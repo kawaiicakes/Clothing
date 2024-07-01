@@ -45,6 +45,81 @@ public class ClothingMod
 
     public static final RegistryObject<ClothingItem> TEST = ARMOR_REGISTRY.register(
             "test",
+            () -> new ClothingItem(ArmorMaterials.NETHERITE, EquipmentSlot.CHEST, new Item.Properties(), 16777215) {
+                @Override
+                public @NotNull HumanoidModel<? extends LivingEntity> getClothingModel(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, HumanoidModel<? extends LivingEntity> genericModel) {
+                    return genericModel;
+                }
+
+                @Override
+                public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
+                    return "clothing:textures/models/armor/generic_template.png";
+                }
+            }
+    );
+
+    public static final RegistryObject<ClothingItem> TEST_HELMET = ARMOR_REGISTRY.register(
+            "test_helmet",
+            () -> new ClothingItem(ArmorMaterials.NETHERITE, EquipmentSlot.HEAD, new Item.Properties(), 16777215) {
+                @Override
+                public @NotNull HumanoidModel<? extends LivingEntity> getClothingModel(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, HumanoidModel<? extends LivingEntity> genericModel) {
+                    return genericModel;
+                }
+
+                @Override
+                public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
+                    return "clothing:textures/models/armor/generic_template.png";
+                }
+            }
+    );
+
+    public static final RegistryObject<ClothingItem> TEST_PANTS = ARMOR_REGISTRY.register(
+            "test_pants",
+            () -> new ClothingItem(ArmorMaterials.NETHERITE, EquipmentSlot.LEGS, new Item.Properties(), 16777215) {
+                @Override
+                public @NotNull HumanoidModel<? extends LivingEntity> getClothingModel(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, HumanoidModel<? extends LivingEntity> genericModel) {
+                    return genericModel;
+                }
+
+                @Override
+                public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
+                    return "clothing:textures/models/armor/generic_template.png";
+                }
+            }
+    );
+
+    public static final RegistryObject<ClothingItem> TEST_BOOTS = ARMOR_REGISTRY.register(
+            "test_boots",
+            () -> new ClothingItem(ArmorMaterials.NETHERITE, EquipmentSlot.FEET, new Item.Properties(), 16777215) {
+                @Override
+                public @NotNull HumanoidModel<? extends LivingEntity> getClothingModel(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, HumanoidModel<? extends LivingEntity> genericModel) {
+                    return genericModel;
+                }
+
+                @Override
+                public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
+                    return "clothing:textures/models/armor/generic_template.png";
+                }
+            }
+    );
+
+    public static final RegistryObject<ClothingItem> TEST_2 = ARMOR_REGISTRY.register(
+            "glowie_helm",
+            () -> new ClothingItem(ArmorMaterials.NETHERITE, EquipmentSlot.HEAD, new Item.Properties(), 12345679) {
+                @Override
+                public @NotNull HumanoidModel<? extends LivingEntity> getClothingModel(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, HumanoidModel<? extends LivingEntity> genericModel) {
+                    return genericModel;
+                }
+
+                @Override
+                public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
+                    return "clothing:textures/models/armor/glowie_helm.png";
+                }
+            }
+    );
+
+    public static final RegistryObject<ClothingItem> TEST_3 = ARMOR_REGISTRY.register(
+            "ouch",
             () -> new ClothingItem(ArmorMaterials.NETHERITE, EquipmentSlot.CHEST, new Item.Properties(), 16712019) {
                 @Override
                 public @NotNull HumanoidModel<? extends LivingEntity> getClothingModel(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, HumanoidModel<? extends LivingEntity> genericModel) {
@@ -70,21 +145,6 @@ public class ClothingMod
                 @Override
                 public @NotNull ResourceLocation overlayResource(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, int packedLight, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
                     return new ResourceLocation(MOD_ID, "ouch_overlay");
-                }
-            }
-    );
-
-    public static final RegistryObject<ClothingItem> TEST_2 = ARMOR_REGISTRY.register(
-            "glowie_helm",
-            () -> new ClothingItem(ArmorMaterials.NETHERITE, EquipmentSlot.HEAD, new Item.Properties(), 12345679) {
-                @Override
-                public @NotNull HumanoidModel<? extends LivingEntity> getClothingModel(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, HumanoidModel<? extends LivingEntity> genericModel) {
-                    return genericModel;
-                }
-
-                @Override
-                public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-                    return "clothing:textures/models/armor/glowie_helm.png";
                 }
             }
     );
