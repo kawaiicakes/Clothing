@@ -9,6 +9,7 @@ import net.minecraft.client.model.geom.EntityModelSet;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -53,12 +54,22 @@ public class ClothingMod
                 // FIXME: clothing does not become translucent
                 @Override
                 public float getAlpha(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, int packedLight, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
-                    return 0.5F;
+                    // FIXME: values not equal to 1.0F cause colour of overlay to "infect" base layer
+                    return 1.0F;
                 }
 
                 @Override
                 public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-                    return "clothing:textures/models/armor/ouch.png";
+                    if (type == null) {
+                        // TODO: implement getArmorResource in HumanoidClothingLayer
+                        return "clothing:textures/models/armor/ouch.png";
+                    }
+                    return "clothing:textures/models/armor/ouch_overlay.png";
+                }
+
+                @Override
+                public @NotNull ResourceLocation overlayResource(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, int packedLight, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
+                    return new ResourceLocation(MOD_ID, "ouch_overlay");
                 }
             }
     );
