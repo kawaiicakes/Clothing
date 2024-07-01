@@ -2,13 +2,14 @@ package io.github.kawaiicakes.clothing;
 
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
+import io.github.kawaiicakes.clothing.client.model.GenericClothingLayers;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
 import net.minecraft.client.model.*;
 import net.minecraft.client.model.geom.EntityModelSet;
-import net.minecraft.client.model.geom.builders.CubeDeformation;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -23,6 +24,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
@@ -53,63 +55,77 @@ public class ClothingMod
                 public float getAlpha(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, int packedLight, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
                     return 0.5F;
                 }
+
+                @Override
+                public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
+                    return "clothing:textures/models/armor/ouch.png";
+                }
+            }
+    );
+
+    public static final RegistryObject<ClothingItem> TEST_2 = ARMOR_REGISTRY.register(
+            "glowie_helm",
+            () -> new ClothingItem(ArmorMaterials.NETHERITE, EquipmentSlot.HEAD, new Item.Properties(), 12345679) {
+                @Override
+                public @NotNull HumanoidModel<? extends LivingEntity> getClothingModel(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, HumanoidModel<? extends LivingEntity> genericModel) {
+                    return genericModel;
+                }
+
+                @Override
+                public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
+                    return "clothing:textures/models/armor/glowie_helm.png";
+                }
             }
     );
 
     public ClothingMod()
     {
-        // uncomment as needed
-        // ARMOR_REGISTRY.register(FMLJavaModLoadingContext.get().getModEventBus());
+        // un/comment as needed
+        ARMOR_REGISTRY.register(FMLJavaModLoadingContext.get().getModEventBus());
     }
 
     @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientEvents {
         @SubscribeEvent
         public static void registerGenericLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
-            event.registerLayerDefinition(ARMOR_STAND_BASE, ClientEvents::createGenericBase);
-            event.registerLayerDefinition(ARMOR_STAND_OVER, ClientEvents::createGenericOver);
-            event.registerLayerDefinition(DROWNED_BASE, ClientEvents::createGenericBase);
-            event.registerLayerDefinition(DROWNED_OVER, ClientEvents::createGenericOver);
-            event.registerLayerDefinition(GIANT_BASE, ClientEvents::createGenericBase);
-            event.registerLayerDefinition(GIANT_OVER, ClientEvents::createGenericOver);
-            event.registerLayerDefinition(HUSK_BASE, ClientEvents::createGenericBase);
-            event.registerLayerDefinition(HUSK_OVER, ClientEvents::createGenericOver);
-            event.registerLayerDefinition(PLAYER_BASE, ClientEvents::createGenericBase);
-            event.registerLayerDefinition(PLAYER_OVER, ClientEvents::createGenericOver);
-            event.registerLayerDefinition(PLAYER_SLIM_BASE, ClientEvents::createGenericBase);
-            event.registerLayerDefinition(PLAYER_SLIM_OVER, ClientEvents::createGenericOver);
-            event.registerLayerDefinition(PIGLIN_BASE, ClientEvents::createGenericBase);
-            event.registerLayerDefinition(PIGLIN_OVER, ClientEvents::createGenericOver);
-            event.registerLayerDefinition(PIGLIN_BRUTE_BASE, ClientEvents::createGenericBase);
-            event.registerLayerDefinition(PIGLIN_BRUTE_OVER, ClientEvents::createGenericOver);
-            event.registerLayerDefinition(SKELETON_BASE, ClientEvents::createGenericBase);
-            event.registerLayerDefinition(SKELETON_OVER, ClientEvents::createGenericOver);
-            event.registerLayerDefinition(STRAY_BASE, ClientEvents::createGenericBase);
-            event.registerLayerDefinition(STRAY_OVER, ClientEvents::createGenericOver);
-            event.registerLayerDefinition(WITHER_SKELETON_BASE, ClientEvents::createGenericBase);
-            event.registerLayerDefinition(WITHER_SKELETON_OVER, ClientEvents::createGenericOver);
-            event.registerLayerDefinition(ZOMBIE_BASE, ClientEvents::createGenericBase);
-            event.registerLayerDefinition(ZOMBIE_OVER, ClientEvents::createGenericOver);
-            event.registerLayerDefinition(ZOMBIFIED_PIGLIN_BASE, ClientEvents::createGenericBase);
-            event.registerLayerDefinition(ZOMBIFIED_PIGLIN_OVER, ClientEvents::createGenericOver);
-            event.registerLayerDefinition(ZOMBIE_VILLAGER_BASE, ClientEvents::createGenericBase);
-            event.registerLayerDefinition(ZOMBIE_VILLAGER_OVER, ClientEvents::createGenericOver);
-        }
-
-        public static LayerDefinition createGenericBase() {
-            return LayerDefinition.create(
-                    HumanoidModel.createMesh(new CubeDeformation(0.4F), 0.0F),
-                    64,
-                    32
+            final LayerDefinition genericBase 
+                    = LayerDefinition.create(
+                            GenericClothingLayers.createGenericMesh(BASE, 0.0F), 256, 128
             );
-        }
-
-        public static LayerDefinition createGenericOver() {
-            return LayerDefinition.create(
-                    HumanoidModel.createMesh(new CubeDeformation(1.1F), 0.0F),
-                    64,
-                    32
+            
+            final LayerDefinition genericOver
+                    = LayerDefinition.create(
+                            GenericClothingLayers.createGenericMesh(OVER, 0.0F), 256, 128
             );
+            
+            event.registerLayerDefinition(ARMOR_STAND_BASE, () -> genericBase);
+            event.registerLayerDefinition(ARMOR_STAND_OVER, () -> genericOver);
+            event.registerLayerDefinition(DROWNED_BASE, () -> genericBase);
+            event.registerLayerDefinition(DROWNED_OVER, () -> genericOver);
+            event.registerLayerDefinition(GIANT_BASE, () -> genericBase);
+            event.registerLayerDefinition(GIANT_OVER, () -> genericOver);
+            event.registerLayerDefinition(HUSK_BASE, () -> genericBase);
+            event.registerLayerDefinition(HUSK_OVER, () -> genericOver);
+            event.registerLayerDefinition(PLAYER_BASE, () -> genericBase);
+            event.registerLayerDefinition(PLAYER_OVER, () -> genericOver);
+            event.registerLayerDefinition(PLAYER_SLIM_BASE, () -> genericBase);
+            event.registerLayerDefinition(PLAYER_SLIM_OVER, () -> genericOver);
+            event.registerLayerDefinition(PIGLIN_BASE, () -> genericBase);
+            event.registerLayerDefinition(PIGLIN_OVER, () -> genericOver);
+            event.registerLayerDefinition(PIGLIN_BRUTE_BASE, () -> genericBase);
+            event.registerLayerDefinition(PIGLIN_BRUTE_OVER, () -> genericOver);
+            event.registerLayerDefinition(SKELETON_BASE, () -> genericBase);
+            event.registerLayerDefinition(SKELETON_OVER, () -> genericOver);
+            event.registerLayerDefinition(STRAY_BASE, () -> genericBase);
+            event.registerLayerDefinition(STRAY_OVER, () -> genericOver);
+            event.registerLayerDefinition(WITHER_SKELETON_BASE, () -> genericBase);
+            event.registerLayerDefinition(WITHER_SKELETON_OVER, () -> genericOver);
+            event.registerLayerDefinition(ZOMBIE_BASE, () -> genericBase);
+            event.registerLayerDefinition(ZOMBIE_OVER, () -> genericOver);
+            event.registerLayerDefinition(ZOMBIFIED_PIGLIN_BASE, () -> genericBase);
+            event.registerLayerDefinition(ZOMBIFIED_PIGLIN_OVER, () -> genericOver);
+            event.registerLayerDefinition(ZOMBIE_VILLAGER_BASE, () -> genericBase);
+            event.registerLayerDefinition(ZOMBIE_VILLAGER_OVER, () -> genericOver);
         }
 
         @SubscribeEvent
