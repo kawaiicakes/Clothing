@@ -45,7 +45,7 @@ public class ClothingMod
 
     public static final RegistryObject<ClothingItem> TEST = ARMOR_REGISTRY.register(
             "test",
-            () -> new ClothingItem(ArmorMaterials.NETHERITE, EquipmentSlot.CHEST, new Item.Properties(), 12345679) {
+            () -> new ClothingItem(ArmorMaterials.NETHERITE, EquipmentSlot.CHEST, new Item.Properties(), 16712019) {
                 @Override
                 public @NotNull HumanoidModel<? extends LivingEntity> getClothingModel(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, HumanoidModel<? extends LivingEntity> genericModel) {
                     return genericModel;
