@@ -35,8 +35,8 @@ public class GenericClothingLayers {
     public static final ModelLayerLocation ZOMBIE_VILLAGER_BASE = register("zombie_villager", "base");
     public static final ModelLayerLocation ZOMBIE_VILLAGER_OVER = register("zombie_villager", "over");
 
-    public static final CubeDeformation BASE = new CubeDeformation(0.25F);
-    public static final CubeDeformation OVER = new CubeDeformation(1.25F);
+    public static final CubeDeformation BASE = new CubeDeformation(0.3F);
+    public static final CubeDeformation OVER = new CubeDeformation(1.125F);
 
     public static ModelLayerLocation register(String entity, String layerName) {
         return new ModelLayerLocation(new ResourceLocation(entity), "clothing_" + layerName);
