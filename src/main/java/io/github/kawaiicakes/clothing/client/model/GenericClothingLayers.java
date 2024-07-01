@@ -54,7 +54,7 @@ public class GenericClothingLayers {
                                 -4.0F, -8.0F, -4.0F,
                                 8.0F, 8.0F, 8.0F,
                                 pCubeDeformation,
-                                0.25F, 0.25F
+                                0.125F, 0.125F
                         ),
                 PartPose.offset(0.0F, 0.0F + pYOffset, 0.0F)
         );
@@ -67,7 +67,7 @@ public class GenericClothingLayers {
                                 -4.0F, -8.0F, -4.0F,
                                 8.0F, 8.0F, 8.0F,
                                 pCubeDeformation.extend(0.5F),
-                                0.25F, 0.25F
+                                0.125F, 0.125F
                         ),
                 PartPose.offset(0.0F, 0.0F + pYOffset, 0.0F));
 
@@ -79,7 +79,7 @@ public class GenericClothingLayers {
                                 -4.0F, 0.0F, -2.0F,
                                 8.0F, 12.0F, 4.0F,
                                 pCubeDeformation,
-                                0.25F, 0.25F
+                                0.125F, 0.125F
                         ),
                 PartPose.offset(0.0F, 0.0F + pYOffset, 0.0F)
         );
@@ -92,7 +92,7 @@ public class GenericClothingLayers {
                                 -3.0F, -2.0F, -2.0F,
                                 4.0F, 12.0F, 4.0F,
                                 pCubeDeformation,
-                                0.25F, 0.25F
+                                0.125F, 0.125F
                         ),
                 PartPose.offset(-5.0F, 2.0F + pYOffset, 0.0F)
         );
@@ -106,7 +106,7 @@ public class GenericClothingLayers {
                                 -1.0F, -2.0F, -2.0F,
                                 4.0F, 12.0F, 4.0F,
                                 pCubeDeformation,
-                                0.25F, 0.25F
+                                0.125F, 0.125F
                         ),
                 PartPose.offset(5.0F, 2.0F + pYOffset, 0.0F)
         );
@@ -119,7 +119,7 @@ public class GenericClothingLayers {
                                 -2.0F, 0.0F, -2.0F,
                                 4.0F, 12.0F, 4.0F,
                                 pCubeDeformation,
-                                0.25F, 0.25F
+                                0.125F, 0.125F
                         ),
                 PartPose.offset(-1.9F, 12.0F + pYOffset, 0.0F)
         );
@@ -133,7 +133,7 @@ public class GenericClothingLayers {
                                 -2.0F, 0.0F, -2.0F,
                                 4.0F, 12.0F, 4.0F,
                                 pCubeDeformation,
-                                0.25F, 0.25F
+                                0.125F, 0.125F
                         ),
                 PartPose.offset(1.9F, 12.0F + pYOffset, 0.0F)
         );

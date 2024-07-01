@@ -90,12 +90,12 @@ public class ClothingMod
         public static void registerGenericLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
             final LayerDefinition genericBase 
                     = LayerDefinition.create(
-                            GenericClothingLayers.createGenericMesh(BASE, 0.0F), 256, 128
+                            GenericClothingLayers.createGenericMesh(BASE, 0.0F), 512, 256
             );
             
             final LayerDefinition genericOver
                     = LayerDefinition.create(
-                            GenericClothingLayers.createGenericMesh(OVER, 0.0F), 256, 128
+                            GenericClothingLayers.createGenericMesh(OVER, 0.0F), 512, 256
             );
             
             event.registerLayerDefinition(ARMOR_STAND_BASE, () -> genericBase);
