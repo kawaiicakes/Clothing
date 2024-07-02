@@ -24,13 +24,17 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.InterModComms;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
+import top.theillusivec4.curios.api.SlotTypePreset;
 
 import static io.github.kawaiicakes.clothing.client.model.GenericClothingLayers.*;
 
@@ -149,10 +153,35 @@ public class ClothingMod
             }
     );
 
+    private static boolean CURIOS_LOADED = false;
+
+    public static boolean isCuriosLoaded() {
+        return CURIOS_LOADED;
+    }
+
     public ClothingMod()
     {
         // un/comment as needed
         ARMOR_REGISTRY.register(FMLJavaModLoadingContext.get().getModEventBus());
+
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onInterModEnqueue);
+    }
+
+    @SubscribeEvent
+    public void onInterModEnqueue(InterModEnqueueEvent event) {
+        CURIOS_LOADED = ModList.get().isLoaded("curios");
+
+        // this check is necessary as I'm unsure if this will cause issues on clients who do not have Curios installed.
+        // Namely, the reference(s) to classes which only exist in the Curios API
+        if (CURIOS_LOADED) {
+            InterModComms.sendTo(
+                    "curios",
+                    "register_type",
+                    SlotTypePreset.BODY.getMessageBuilder()::build
+            );
+
+            LOGGER.info("Curios detected, successfully registered Clothing slots");
+        }
     }
 
     @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
