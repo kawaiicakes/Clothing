@@ -189,6 +189,21 @@ public class HumanoidClothingLayer<
 
     @Override
     protected void setPartVisibility(@NotNull A pModel, @NotNull EquipmentSlot pSlot) {
-        super.setPartVisibility(pModel, pSlot);
+        pModel.setAllVisible(false);
+        switch (pSlot) {
+            case HEAD:
+                pModel.head.visible = true;
+                pModel.hat.visible = true;
+                break;
+            case CHEST:
+                pModel.body.visible = true;
+                pModel.rightArm.visible = true;
+                pModel.leftArm.visible = true;
+                break;
+            case LEGS, FEET:
+                pModel.rightLeg.visible = true;
+                pModel.leftLeg.visible = true;
+                break;
+        }
     }
 }
