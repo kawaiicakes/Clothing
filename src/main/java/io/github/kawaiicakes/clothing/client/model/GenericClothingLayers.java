@@ -4,7 +4,10 @@ import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
+@OnlyIn(Dist.CLIENT)
 public class GenericClothingLayers {
     public static final ModelLayerLocation ARMOR_STAND_BASE = register("armor_stand", "base");
     public static final ModelLayerLocation ARMOR_STAND_OVER = register("armor_stand", "over");
