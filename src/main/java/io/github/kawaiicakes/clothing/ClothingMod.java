@@ -1,6 +1,7 @@
 package io.github.kawaiicakes.clothing;
 
 import com.mojang.logging.LogUtils;
+import io.github.kawaiicakes.clothing.client.ClothingModelRepository;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.client.model.GenericClothingLayers;
 import net.minecraft.client.model.*;
@@ -37,16 +38,13 @@ public class ClothingMod
 
     private static boolean CURIOS_LOADED = false;
 
-    public static boolean isCuriosLoaded() {
-        return CURIOS_LOADED;
-    }
-
     public ClothingMod()
     {
         // un/comment as needed
         CLOTHING_REGISTRY.register(FMLJavaModLoadingContext.get().getModEventBus());
 
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onInterModEnqueue);
+        FMLJavaModLoadingContext.get().getModEventBus().register(ClothingModelRepository.class);
     }
 
     @SubscribeEvent

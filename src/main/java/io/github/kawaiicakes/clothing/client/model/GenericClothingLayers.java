@@ -9,6 +9,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class GenericClothingLayers {
+    // TODO: let the new ClothingModel handle this. This class is marked for deletion
     public static final ModelLayerLocation ARMOR_STAND_BASE = register("armor_stand", "base");
     public static final ModelLayerLocation ARMOR_STAND_OVER = register("armor_stand", "over");
     public static final ModelLayerLocation DROWNED_BASE = register("drowned", "base");
