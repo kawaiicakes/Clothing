@@ -3,40 +3,30 @@ package io.github.kawaiicakes.clothing;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.client.model.GenericClothingLayers;
-import io.github.kawaiicakes.clothing.item.ClothingItem;
 import net.minecraft.client.model.*;
 import net.minecraft.client.model.geom.EntityModelSet;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.*;
 import net.minecraft.world.entity.monster.piglin.Piglin;
 import net.minecraft.world.entity.monster.piglin.PiglinBrute;
-import net.minecraft.world.item.ArmorMaterials;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.InterModComms;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import top.theillusivec4.curios.api.SlotTypePreset;
 
 import static io.github.kawaiicakes.clothing.client.model.GenericClothingLayers.*;
+import static io.github.kawaiicakes.clothing.item.ClothingRegistry.CLOTHING_REGISTRY;
 
 @Mod(ClothingMod.MOD_ID)
 public class ClothingMod
@@ -44,114 +34,6 @@ public class ClothingMod
     public static final String MOD_ID = "clothing";
 
     private static final Logger LOGGER = LogUtils.getLogger();
-
-    public static final DeferredRegister<Item> ARMOR_REGISTRY = DeferredRegister.create(ForgeRegistries.ITEMS, MOD_ID);
-
-    public static final RegistryObject<ClothingItem> TEST = ARMOR_REGISTRY.register(
-            "test",
-            () -> new ClothingItem(ArmorMaterials.NETHERITE, EquipmentSlot.CHEST, new Item.Properties(), 16777215) {
-                @Override
-                public @NotNull HumanoidModel<? extends LivingEntity> getClothingModel(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, HumanoidModel<? extends LivingEntity> genericModel) {
-                    return genericModel;
-                }
-
-                @Override
-                public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-                    return "clothing:textures/models/armor/generic_template.png";
-                }
-            }
-    );
-
-    public static final RegistryObject<ClothingItem> TEST_HELMET = ARMOR_REGISTRY.register(
-            "test_helmet",
-            () -> new ClothingItem(ArmorMaterials.NETHERITE, EquipmentSlot.HEAD, new Item.Properties(), 16777215) {
-                @Override
-                public @NotNull HumanoidModel<? extends LivingEntity> getClothingModel(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, HumanoidModel<? extends LivingEntity> genericModel) {
-                    return genericModel;
-                }
-
-                @Override
-                public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-                    return "clothing:textures/models/armor/generic_template.png";
-                }
-            }
-    );
-
-    public static final RegistryObject<ClothingItem> TEST_PANTS = ARMOR_REGISTRY.register(
-            "test_pants",
-            () -> new ClothingItem(ArmorMaterials.NETHERITE, EquipmentSlot.LEGS, new Item.Properties(), 16777215) {
-                @Override
-                public @NotNull HumanoidModel<? extends LivingEntity> getClothingModel(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, HumanoidModel<? extends LivingEntity> genericModel) {
-                    return genericModel;
-                }
-
-                @Override
-                public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-                    return "clothing:textures/models/armor/generic_template.png";
-                }
-            }
-    );
-
-    public static final RegistryObject<ClothingItem> TEST_BOOTS = ARMOR_REGISTRY.register(
-            "test_boots",
-            () -> new ClothingItem(ArmorMaterials.NETHERITE, EquipmentSlot.FEET, new Item.Properties(), 16777215) {
-                @Override
-                public @NotNull HumanoidModel<? extends LivingEntity> getClothingModel(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, HumanoidModel<? extends LivingEntity> genericModel) {
-                    return genericModel;
-                }
-
-                @Override
-                public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-                    return "clothing:textures/models/armor/generic_template.png";
-                }
-            }
-    );
-
-    public static final RegistryObject<ClothingItem> TEST_2 = ARMOR_REGISTRY.register(
-            "glowie_helm",
-            () -> new ClothingItem(ArmorMaterials.NETHERITE, EquipmentSlot.HEAD, new Item.Properties(), 12345679) {
-                @Override
-                public @NotNull HumanoidModel<? extends LivingEntity> getClothingModel(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, HumanoidModel<? extends LivingEntity> genericModel) {
-                    return genericModel;
-                }
-
-                @Override
-                public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-                    return "clothing:textures/models/armor/glowie_helm.png";
-                }
-            }
-    );
-
-    public static final RegistryObject<ClothingItem> TEST_3 = ARMOR_REGISTRY.register(
-            "ouch",
-            () -> new ClothingItem(ArmorMaterials.NETHERITE, EquipmentSlot.CHEST, new Item.Properties(), 16712019) {
-                @Override
-                public @NotNull HumanoidModel<? extends LivingEntity> getClothingModel(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, HumanoidModel<? extends LivingEntity> genericModel) {
-                    return genericModel;
-                }
-
-                // FIXME: clothing does not become translucent
-                @Override
-                public float getAlpha(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, int packedLight, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
-                    // FIXME: values not equal to 1.0F cause colour of overlay to "infect" base layer
-                    return 1.0F;
-                }
-
-                @Override
-                public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-                    if (type == null) {
-                        // TODO: implement getArmorResource in HumanoidClothingLayer
-                        return "clothing:textures/models/armor/ouch.png";
-                    }
-                    return "clothing:textures/models/armor/ouch_overlay.png";
-                }
-
-                @Override
-                public @NotNull ResourceLocation overlayResource(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, int packedLight, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
-                    return new ResourceLocation(MOD_ID, "ouch_overlay");
-                }
-            }
-    );
 
     private static boolean CURIOS_LOADED = false;
 
@@ -162,30 +44,40 @@ public class ClothingMod
     public ClothingMod()
     {
         // un/comment as needed
-        ARMOR_REGISTRY.register(FMLJavaModLoadingContext.get().getModEventBus());
+        CLOTHING_REGISTRY.register(FMLJavaModLoadingContext.get().getModEventBus());
 
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onInterModEnqueue);
     }
 
     @SubscribeEvent
     public void onInterModEnqueue(InterModEnqueueEvent event) {
-        CURIOS_LOADED = ModList.get().isLoaded("curios");
-
         // this check is necessary as I'm unsure if this will cause issues on clients who do not have Curios installed.
         // Namely, the reference(s) to classes which only exist in the Curios API
         if (CURIOS_LOADED) {
-            InterModComms.sendTo(
+            boolean messageSent = InterModComms.sendTo(
                     "curios",
                     "register_type",
                     SlotTypePreset.BODY.getMessageBuilder()::build
             );
 
-            LOGGER.info("Curios detected, successfully registered Clothing slots");
+            String msg = messageSent ? "[Clothing] Successfully registered Curios Clothing slots"
+                    : "[Clothing] Curios is present, but was slots were unable to be registered!";
+
+            LOGGER.info(msg);
         }
     }
 
     @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientEvents {
+        @SubscribeEvent
+        public static void onClientSetup(FMLClientSetupEvent event) {
+            CURIOS_LOADED = ModList.get().isLoaded("curios");
+            LOGGER.info(
+                    CURIOS_LOADED ? "[Clothing] Curios successfully detected during client setup."
+                            : "[Clothing] Curios was not detected during client setup."
+            );
+        }
+
         @SubscribeEvent
         public static void registerGenericLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
             final LayerDefinition genericBase 
