@@ -52,7 +52,10 @@ public class ClothingModelRepository {
 
     @SubscribeEvent
     @ApiStatus.Internal
-    private static void bakeLayers(EntityRenderersEvent.AddLayers event) {
-        // TODO
+    private static void bakeParts(EntityRenderersEvent.AddLayers event) {
+        for (Map.Entry<ResourceLocation, ClothingModel> modelEntry : MODELS.entrySet()) {
+            ClothingModel clothingModel = modelEntry.getValue();
+            clothingModel.bakeParts(event);
+        }
     }
 }

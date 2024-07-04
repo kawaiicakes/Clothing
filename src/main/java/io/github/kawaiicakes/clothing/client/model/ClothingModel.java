@@ -1,7 +1,10 @@
 package io.github.kawaiicakes.clothing.client.model;
 
+import com.google.common.collect.ImmutableList;
 import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.geom.EntityModelSet;
 import net.minecraft.client.model.geom.ModelLayerLocation;
+import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.resources.ResourceLocation;
@@ -12,7 +15,9 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import org.jetbrains.annotations.ApiStatus;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -26,16 +31,51 @@ public abstract class ClothingModel {
     public final ResourceLocation modelId;
     protected int textureWidth;
     protected int textureHeight;
+    protected final Map<String, ModelPart> bakedModels = new HashMap<>();
 
-    // TODO: javadocs
+    /**
+     * @param modelId the {@link ResourceLocation} used for internal identification of this model. It's recommended you
+     *                choose something concise, descriptive, and unique.
+     * @param textureWidth an <code>int</code> representing the width in pixels of the intended textures for use
+     * @param textureHeight an <code>int</code> representing the height in pixels of the intended textures for use
+     */
     public ClothingModel(ResourceLocation modelId, int textureWidth, int textureHeight) {
         this.modelId = modelId;
         this.textureWidth = textureWidth;
         this.textureHeight = textureHeight;
     }
 
-    // TODO: Not sure if I'm gonna keep this class abstract. I'll probably come up with some default impl for this
-    public abstract <T extends LivingEntity> HumanoidModel<T> getModelForEntityType(EntityType<T> entityType);
+    // TODO: more mesh methods with default implementations? javadoc?
+    /**
+     * Implementing classes use this method to get the bulk of model information to create the most basic
+     * <code>LayerDefinition</code>; the one for the player/HumanoidModel. [Tweaks to the mesh are made in
+     * the base implementation of {@link #generateLayerDefinition(EntityType)}, but you'll need to override
+     * it if you wish to tweak models further for different entities.] (this part up for rectification)
+     * @return the {@link MeshDefinition} used for baking layers in the default {@link HumanoidModel}.
+     */
+    public abstract MeshDefinition baseMesh();
+
+    /**
+     * Method used to get the specific {@link HumanoidModel} instance associated with an entity type that is used for
+     * rendering in {@link io.github.kawaiicakes.clothing.client.HumanoidClothingLayer}. You can see what models are
+     * used for entities in the constructors of their respective renderers; look for the calls to <code>#addLayer</code>.
+     * @see net.minecraft.client.renderer.entity.ZombieVillagerRenderer
+     * @param entityType the {@link EntityType} for render
+     * @return an instance of <code>U</code>.
+     * @param <T> the specific entity of the <code>entityType</code>
+     * @param <U> instance of {@link HumanoidModel} used for rendering of the
+     * {@link net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer}.
+     */
+    public <T extends LivingEntity, U extends HumanoidModel<T>> U getModelForEntityType(EntityType<T> entityType) {
+        if (!getEntityTypes().contains(entityType)) throw new IllegalArgumentException("Invalid entity!");
+        // TODO
+        ModelPart modelPart = this.bakedModels.getOrDefault(
+                EntityType.getKey(entityType).toString(), new ModelPart(ImmutableList.of(), new HashMap<>())
+        );
+
+        //noinspection unchecked
+        return (U) new HumanoidModel<>(modelPart);
+    }
 
     /**
      * Creates a {@link LayerDefinition} from a {@link net.minecraft.client.model.geom.builders.MeshDefinition} that is
@@ -49,8 +89,13 @@ public abstract class ClothingModel {
      */
     public <T extends LivingEntity> LayerDefinition generateLayerDefinition(EntityType<T> entityType) {
         if (!getEntityTypes().contains(entityType)) throw new IllegalArgumentException("Invalid entity!");
-        // TODO: actual MeshDefinitions
-        return LayerDefinition.create(new MeshDefinition(), this.textureWidth, this.textureHeight);
+
+        MeshDefinition meshDefinition;
+
+        // TODO
+        meshDefinition = this.baseMesh();
+
+        return LayerDefinition.create(meshDefinition, this.textureWidth, this.textureHeight);
     }
 
     /**
@@ -94,9 +139,27 @@ public abstract class ClothingModel {
     }
 
     /**
+     * Bakes all the {@link ModelPart}s associated with this model.
+     * @param event the {@link net.minecraftforge.client.event.EntityRenderersEvent.AddLayers} event when layers are
+     *              added to entity renderers. Baking takes place during this time.
+     */
+    @ApiStatus.Internal
+    public void bakeParts(EntityRenderersEvent.AddLayers event) {
+        EntityModelSet modelSet = event.getEntityModels();
+
+        for (EntityType<? extends LivingEntity> entityType : getEntityTypes()) {
+            this.bakedModels.put(
+                    EntityType.getKey(entityType).toString(),
+                    modelSet.bakeLayer(this.generateModelLayerLocation(entityType))
+            );
+        }
+    }
+
+    /**
      * Mainly intended for internal use. This is a good override target for anyone using mixins to add support for
-     * more kinds of entities. Be sure to reflect these changes in the other necessary classes!
+     * more kinds of entities. Be sure to reflect these changes in the other necessary places!
      * @see ClassesThatDefineWhatEntitiesSupportClothing
+     * @see #getModelForEntityType(EntityType)
      * @return Returns a <code>Set</code> of all {@link EntityType}s that this model is intended to render on.
      */
     @ApiStatus.Internal
