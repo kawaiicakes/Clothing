@@ -1,12 +1,13 @@
 package io.github.kawaiicakes.clothing.client.model;
 
-import com.google.common.collect.ImmutableList;
-import net.minecraft.client.model.HumanoidModel;
+import com.mojang.logging.LogUtils;
+import net.minecraft.client.model.*;
 import net.minecraft.client.model.geom.EntityModelSet;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
+import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -14,7 +15,12 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -27,7 +33,9 @@ import java.util.Set;
  * making models, so this class should hopefully prove itself convenient.
  */
 @OnlyIn(Dist.CLIENT)
-public abstract class ClothingModel {
+public abstract class ClothingModel implements MeshTransformer {
+    protected static final Logger LOGGER = LogUtils.getLogger();
+
     public final ResourceLocation modelId;
     protected int textureWidth;
     protected int textureHeight;
@@ -45,20 +53,28 @@ public abstract class ClothingModel {
         this.textureHeight = textureHeight;
     }
 
-    // TODO: more mesh methods with default implementations? javadoc?
     /**
      * Implementing classes use this method to get the bulk of model information to create the most basic
-     * <code>LayerDefinition</code>; the one for the player/HumanoidModel. [Tweaks to the mesh are made in
-     * the base implementation of {@link #generateLayerDefinition(EntityType)}, but you'll need to override
-     * it if you wish to tweak models further for different entities.] (this part up for rectification)
+     * {@link net.minecraft.client.model.geom.builders.LayerDefinition}; the one for the base {@link HumanoidModel}.
+     * For most circumstances, you will probably not need to transform this mesh on a per-entity basis, but if you are
+     * finding that cosmetics don't fit properly, override the appropriate mesh transformation method.
+     * <br><br>
+     * Mesh standards can be found on the wiki. In short, models should start by choosing a "body group", and then
+     * creating children on that body group. If the body group is specific to a certain entity type, then override the
+     * respective transformation method and create children on the body group there.
      * @return the {@link MeshDefinition} used for baking layers in the default {@link HumanoidModel}.
+     * @see MeshTransformer
      */
-    public abstract MeshDefinition baseMesh();
+    @Override
+    public abstract @NotNull MeshDefinition baseMesh();
 
     /**
      * Method used to get the specific {@link HumanoidModel} instance associated with an entity type that is used for
      * rendering in {@link io.github.kawaiicakes.clothing.client.HumanoidClothingLayer}. You can see what models are
      * used for entities in the constructors of their respective renderers; look for the calls to <code>#addLayer</code>.
+     * <br><br>
+     * It is suggested that you cache the returned model somewhere. I would have cached the models in this class as a
+     * field, but I do fear that this may cause weird rendering issues.
      * @see net.minecraft.client.renderer.entity.ZombieVillagerRenderer
      * @param entityType the {@link EntityType} for render
      * @return an instance of <code>U</code>.
@@ -66,15 +82,75 @@ public abstract class ClothingModel {
      * @param <U> instance of {@link HumanoidModel} used for rendering of the
      * {@link net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer}.
      */
+    @Nullable
     public <T extends LivingEntity, U extends HumanoidModel<T>> U getModelForEntityType(EntityType<T> entityType) {
         if (!getEntityTypes().contains(entityType)) throw new IllegalArgumentException("Invalid entity!");
-        // TODO
-        ModelPart modelPart = this.bakedModels.getOrDefault(
-                EntityType.getKey(entityType).toString(), new ModelPart(ImmutableList.of(), new HashMap<>())
-        );
 
-        //noinspection unchecked
-        return (U) new HumanoidModel<>(modelPart);
+        ModelPart modelPart = this.bakedModels.getOrDefault(
+                EntityType.getKey(entityType).toString(), null
+        );
+        if (modelPart == null) throw new IllegalArgumentException("This entity type does not have a model!");
+
+        final Constructor<U> modelConstructor = getModelConstructorForEntityType(entityType);
+
+        U toReturn = null;
+        try {
+            assert modelConstructor != null;
+            toReturn = modelConstructor.newInstance(modelPart);
+        } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            LOGGER.error("Unable to instantiate model for render on entity type {}!", entityType, e);
+        } catch (NullPointerException e) {
+            LOGGER.error(
+                    "Model constructor with ModelPart parameter does not exist for entity type {}!", entityType, e
+            );
+        }
+        return toReturn;
+    }
+
+    /**
+     * Used to dynamically obtain the constructor for the {@link HumanoidModel} implementation used for the passed
+     * {@link EntityType}'s {@link net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer}. Alternative to
+     * manually defining these values, and allows overriding by those using this API. Implementations should ensure
+     * that the returned constructor will work with {@link #getModelForEntityType(EntityType)}. Override it if
+     * necessary.
+     * <br><br>
+     * Implementations should be aware that a check for entity type validity would be redundant here since this is a
+     * job better suited to {@link #getModelForEntityType(EntityType)}.
+     * @see #getEntityTypes()
+     * @param entityType the {@link EntityType} for which this model will be rendered.
+     * @return the <code>Constructor</code> of type <code>U</code> who takes a {@link ModelPart} as an argument.
+     *          If no such constructor exists, override {@link #getModelForEntityType(EntityType)}
+     * @param <T> the {@link LivingEntity} associated with the passed entity type.
+     * @param <U> the {@link HumanoidModel} instance.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable
+    public <T extends LivingEntity, U extends HumanoidModel<T>> Constructor<U> getModelConstructorForEntityType(
+            EntityType<T> entityType) {
+        try {
+            if (EntityType.ARMOR_STAND.equals(entityType)) {
+                return (Constructor<U>) ArmorStandArmorModel.class.getConstructor(ModelPart.class);
+            } else if (EntityType.DROWNED.equals(entityType)) {
+                return (Constructor<U>) DrownedModel.class.getConstructor(ModelPart.class);
+            } else if (EntityType.GIANT.equals(entityType)) {
+                return (Constructor<U>) GiantZombieModel.class.getConstructor(ModelPart.class);
+            } else if (EntityType.HUSK.equals(entityType) || EntityType.ZOMBIE.equals(entityType)) {
+                return (Constructor<U>) ZombieModel.class.getConstructor(ModelPart.class);
+            } else if (EntityType.SKELETON.equals(entityType)
+                    || EntityType.STRAY.equals(entityType) || EntityType.WITHER_SKELETON.equals(entityType)) {
+                return (Constructor<U>) SkeletonModel.class.getConstructor(ModelPart.class);
+            } else if (EntityType.ZOMBIE_VILLAGER.equals(entityType)) {
+                return (Constructor<U>) ZombieVillagerModel.class.getConstructor(ModelPart.class);
+            } else {
+                return (Constructor<U>) HumanoidModel.class.getConstructor(ModelPart.class);
+            }
+        } catch (NoSuchMethodException e) {
+            LOGGER.error("No such constructor for model of entity type {}!", entityType, e);
+            return null;
+        } catch (ClassCastException e) {
+            LOGGER.error("Unable to cast constructor to appropriate type for entity type {}!", entityType, e);
+            return null;
+        }
     }
 
     /**
@@ -90,10 +166,36 @@ public abstract class ClothingModel {
     public <T extends LivingEntity> LayerDefinition generateLayerDefinition(EntityType<T> entityType) {
         if (!getEntityTypes().contains(entityType)) throw new IllegalArgumentException("Invalid entity!");
 
-        MeshDefinition meshDefinition;
+        final MeshDefinition meshDefinition = MeshTransformer.nullHumanoidMesh();
+        PartDefinition definitionPart = meshDefinition.getRoot();
 
-        // TODO
-        meshDefinition = this.baseMesh();
+        MeshDefinition baseMesh = this.baseMesh();
+        PartDefinition basePart = baseMesh.getRoot();
+
+        for (Map.Entry<String, PartDefinition> child : basePart.children.entrySet()) {
+            String childName = child.getKey();
+            if (!definitionPart.children.containsKey(childName)) {
+                LOGGER.error("Unknown body group \"{}\" while trying to generate LayerDefinition!", childName);
+                continue;
+            }
+            PartDefinition basePartChild = child.getValue();
+            definitionPart.children.put(childName, basePartChild);
+        }
+
+        if (EntityType.ARMOR_STAND.equals(entityType)) {
+            MeshTransformer.transformMesh(meshDefinition, this.armorStandMeshTransformation());
+        } else if (EntityType.DROWNED.equals(entityType)) {
+            MeshTransformer.transformMesh(meshDefinition, this.drownedMeshTransformation());
+        } else if (EntityType.GIANT.equals(entityType)) {
+            MeshTransformer.transformMesh(meshDefinition, this.giantMeshTransformation());
+        } else if (EntityType.HUSK.equals(entityType) || EntityType.ZOMBIE.equals(entityType)) {
+            MeshTransformer.transformMesh(meshDefinition, this.zombieMeshTransformation());
+        } else if (EntityType.SKELETON.equals(entityType)
+                || EntityType.STRAY.equals(entityType) || EntityType.WITHER_SKELETON.equals(entityType)) {
+            MeshTransformer.transformMesh(meshDefinition, this.skeletonMeshTransformation());
+        } else if (EntityType.ZOMBIE_VILLAGER.equals(entityType)) {
+            MeshTransformer.transformMesh(meshDefinition, this.zombieVillagerMeshTransformation());
+        }
 
         return LayerDefinition.create(meshDefinition, this.textureWidth, this.textureHeight);
     }
@@ -158,8 +260,9 @@ public abstract class ClothingModel {
     /**
      * Mainly intended for internal use. This is a good override target for anyone using mixins to add support for
      * more kinds of entities. Be sure to reflect these changes in the other necessary places!
-     * @see ClassesThatDefineWhatEntitiesSupportClothing
-     * @see #getModelForEntityType(EntityType)
+     * @see #getModelConstructorForEntityType(EntityType)
+     * @see #generateLayerDefinition(EntityType)
+     * @see MeshTransformer
      * @return Returns a <code>Set</code> of all {@link EntityType}s that this model is intended to render on.
      */
     @ApiStatus.Internal
