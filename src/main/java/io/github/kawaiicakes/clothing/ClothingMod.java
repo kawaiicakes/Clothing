@@ -6,13 +6,13 @@ import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.client.model.impl.GenericLayerModel;
 import net.minecraft.client.model.*;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
-import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.*;
 import net.minecraft.world.entity.monster.piglin.Piglin;
 import net.minecraft.world.entity.monster.piglin.PiglinBrute;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -230,27 +230,29 @@ public class ClothingMod
                 LOGGER.error("Error adding layer to entity!", e);
             }
 
-            for (String skinName : event.getSkins()) {
-                if (!(event.getSkin(skinName) instanceof PlayerRenderer playerRenderer)) {
-                    LOGGER.info("unable to get player renderer!");
-                    return;
-                }
+            try {
+                for (String skinName : event.getSkins()) {
+                    LivingEntityRenderer<Player, HumanoidModel<Player>> playerRenderer
+                            = event.getSkin(skinName);
+                    if (playerRenderer == null) continue;
 
-                playerRenderer.addLayer(
-                        new HumanoidClothingLayer<>(
-                                playerRenderer,
-                                new HumanoidModel<>(
-                                        skinName.equals("default")
-                                                ? baseModel.getModelPart("minecraft:player")
-                                                : baseModel.getModelPart("minecraft:player_slim")
-                                ),
-                                new HumanoidModel<>(
-                                        skinName.equals("default")
-                                                ? overModel.getModelPart("minecraft:player")
-                                                : overModel.getModelPart("minecraft:player_slim")
-                                )
-                        )
-                );
+                    //noinspection unchecked
+                    playerRenderer.addLayer(
+                            new HumanoidClothingLayer<>(
+                                    playerRenderer,
+                                    skinName.equals("default")
+                                            ? baseModel.getModelForEntityType(EntityType.PLAYER)
+                                            : (HumanoidModel<Player>) baseModel
+                                                    .getModelForEntityType("minecraft:player_slim"),
+                                    skinName.equals("default")
+                                            ? overModel.getModelForEntityType(EntityType.PLAYER)
+                                            : (HumanoidModel<Player>) overModel
+                                                    .getModelForEntityType("minecraft:player_slim")
+                            )
+                    );
+                }
+            } catch (RuntimeException e) {
+                LOGGER.error("Error adding layer to player!", e);
             }
         }
 
