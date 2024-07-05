@@ -166,7 +166,7 @@ public abstract class ClothingModel implements MeshTransformer {
     public <T extends LivingEntity> LayerDefinition generateLayerDefinition(EntityType<T> entityType) {
         if (!getEntityTypes().contains(entityType)) throw new IllegalArgumentException("Invalid entity!");
 
-        final MeshDefinition meshDefinition = MeshTransformer.nullHumanoidMesh();
+        final MeshDefinition meshDefinition = MeshTransformer.emptyHumanoidMesh();
         PartDefinition definitionPart = meshDefinition.getRoot();
 
         MeshDefinition baseMesh = this.baseMesh();
@@ -183,18 +183,18 @@ public abstract class ClothingModel implements MeshTransformer {
         }
 
         if (EntityType.ARMOR_STAND.equals(entityType)) {
-            MeshTransformer.transformMesh(meshDefinition, this.armorStandMeshTransformation());
+            this.armorStandMeshTransformation(meshDefinition);
         } else if (EntityType.DROWNED.equals(entityType)) {
-            MeshTransformer.transformMesh(meshDefinition, this.drownedMeshTransformation());
+            this.drownedMeshTransformation(meshDefinition);
         } else if (EntityType.GIANT.equals(entityType)) {
-            MeshTransformer.transformMesh(meshDefinition, this.giantMeshTransformation());
+            this.giantMeshTransformation(meshDefinition);
         } else if (EntityType.HUSK.equals(entityType) || EntityType.ZOMBIE.equals(entityType)) {
-            MeshTransformer.transformMesh(meshDefinition, this.zombieMeshTransformation());
+            this.zombieMeshTransformation(meshDefinition);
         } else if (EntityType.SKELETON.equals(entityType)
                 || EntityType.STRAY.equals(entityType) || EntityType.WITHER_SKELETON.equals(entityType)) {
-            MeshTransformer.transformMesh(meshDefinition, this.skeletonMeshTransformation());
+            this.skeletonMeshTransformation(meshDefinition);
         } else if (EntityType.ZOMBIE_VILLAGER.equals(entityType)) {
-            MeshTransformer.transformMesh(meshDefinition, this.zombieVillagerMeshTransformation());
+            this.zombieVillagerMeshTransformation(meshDefinition);
         }
 
         return LayerDefinition.create(meshDefinition, this.textureWidth, this.textureHeight);
