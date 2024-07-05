@@ -95,8 +95,7 @@ public abstract class ClothingModel implements MeshTransformer {
         try {
             assert objConstructor != null;
             Class<?> constructorClazz = objConstructor.getDeclaringClass();
-            // FIXME: this is causing crashes
-            if (!constructorClazz.isInstance(HumanoidModel.class)) throw new ClassCastException();
+            if (!(HumanoidModel.class.isAssignableFrom(constructorClazz))) throw new ClassCastException();
             //noinspection unchecked
             Constructor<? extends HumanoidModel<T>> modelConstructor = (Constructor<? extends HumanoidModel<T>>) objConstructor;
             toReturn = modelConstructor.newInstance(modelPart);
@@ -115,6 +114,7 @@ public abstract class ClothingModel implements MeshTransformer {
     }
 
     // TODO: non-ad hoc implementation of slim player models
+    // I think I should change a lot of these methods to take Strings, and have an overload that takes EntityTypes
     public ModelPart getModelPart(String entity) {
         return this.bakedModels.get(entity);
     }
