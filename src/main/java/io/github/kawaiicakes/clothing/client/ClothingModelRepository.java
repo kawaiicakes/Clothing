@@ -23,6 +23,11 @@ import java.util.function.Supplier;
 public class ClothingModelRepository {
     private static final Map<ResourceLocation, ClothingModel> MODELS = new HashMap<>();
 
+    public static ClothingModel getModel(ResourceLocation modelId) {
+        return MODELS.get(modelId);
+    }
+
+    // TODO: identify a good place to call this for documentation
     /**
      * Use this method to register your {@link ClothingModel}s with this mod. Everything else will be taken care of;
      * you only need to worry about making the actual models for the most part. That may depend on your implementation,

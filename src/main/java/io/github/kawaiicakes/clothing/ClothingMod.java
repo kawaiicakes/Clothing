@@ -3,12 +3,12 @@ package io.github.kawaiicakes.clothing;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.ClothingModelRepository;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
-import io.github.kawaiicakes.clothing.client.model.GenericClothingLayers;
+import io.github.kawaiicakes.clothing.client.model.impl.GenericLayerModel;
 import net.minecraft.client.model.*;
 import net.minecraft.client.model.geom.EntityModelSet;
-import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.*;
@@ -26,7 +26,6 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 import top.theillusivec4.curios.api.SlotTypePreset;
 
-import static io.github.kawaiicakes.clothing.client.model.GenericClothingLayers.*;
 import static io.github.kawaiicakes.clothing.item.ClothingRegistry.CLOTHING_REGISTRY;
 
 @Mod(ClothingMod.MOD_ID)
@@ -77,89 +76,11 @@ public class ClothingMod
         }
 
         @SubscribeEvent
-        public static void registerGenericLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
-            final LayerDefinition genericBase 
-                    = LayerDefinition.create(
-                            GenericClothingLayers.createHumanoidGenericMesh(BASE, 0.0F),
-                    512, 256
-            );
-            final LayerDefinition genericOver
-                    = LayerDefinition.create(
-                            GenericClothingLayers.createHumanoidGenericMesh(OVER, 0.0F),
-                    512, 256
-            );
-
-            final LayerDefinition armorStandBase
-                    = LayerDefinition.create(
-                            GenericClothingLayers.createArmorStandGenericMesh(BASE),
-                    512, 256
-            );
-            final LayerDefinition armorStandOver
-                    = LayerDefinition.create(
-                    GenericClothingLayers.createArmorStandGenericMesh(OVER),
-                    512, 256
-            );
-
-            final LayerDefinition drownedOver
-                    = LayerDefinition.create(
-                            GenericClothingLayers.createHumanoidGenericMesh(
-                                    OVER.extend(0.25F), 0.0F
-                            ),
-                    512, 256
-            );
-
-            final LayerDefinition piglinOver
-                    = LayerDefinition.create(
-                    GenericClothingLayers.createHumanoidGenericMesh(
-                            OVER.extend(0.02F), 0.0F
-                    ),
-                    512, 256
-            );
-
-            final LayerDefinition zombieVillagerBase
-                    = LayerDefinition.create(
-                            GenericClothingLayers.createZombieVillagerGenericModel(BASE),
-                    512, 256
-            );
-            final LayerDefinition zombieVillagerOver
-                    = LayerDefinition.create(
-                    GenericClothingLayers.createZombieVillagerGenericModel(OVER),
-                    512, 256
-            );
-            
-            event.registerLayerDefinition(ARMOR_STAND_BASE, () -> armorStandBase);
-            event.registerLayerDefinition(ARMOR_STAND_OVER, () -> armorStandOver);
-            event.registerLayerDefinition(DROWNED_BASE, () -> genericBase);
-            event.registerLayerDefinition(DROWNED_OVER, () -> drownedOver);
-            event.registerLayerDefinition(GIANT_BASE, () -> genericBase);
-            event.registerLayerDefinition(GIANT_OVER, () -> genericOver);
-            event.registerLayerDefinition(HUSK_BASE, () -> genericBase);
-            event.registerLayerDefinition(HUSK_OVER, () -> genericOver);
-            event.registerLayerDefinition(PLAYER_BASE, () -> genericBase);
-            event.registerLayerDefinition(PLAYER_OVER, () -> genericOver);
-            event.registerLayerDefinition(PLAYER_SLIM_BASE, () -> genericBase);
-            event.registerLayerDefinition(PLAYER_SLIM_OVER, () -> genericOver);
-            event.registerLayerDefinition(PIGLIN_BASE, () -> genericBase);
-            event.registerLayerDefinition(PIGLIN_OVER, () -> piglinOver);
-            event.registerLayerDefinition(PIGLIN_BRUTE_BASE, () -> genericBase);
-            event.registerLayerDefinition(PIGLIN_BRUTE_OVER, () -> piglinOver);
-            event.registerLayerDefinition(SKELETON_BASE, () -> genericBase);
-            event.registerLayerDefinition(SKELETON_OVER, () -> genericOver);
-            event.registerLayerDefinition(STRAY_BASE, () -> genericBase);
-            event.registerLayerDefinition(STRAY_OVER, () -> genericOver);
-            event.registerLayerDefinition(WITHER_SKELETON_BASE, () -> genericBase);
-            event.registerLayerDefinition(WITHER_SKELETON_OVER, () -> genericOver);
-            event.registerLayerDefinition(ZOMBIE_BASE, () -> genericBase);
-            event.registerLayerDefinition(ZOMBIE_OVER, () -> genericOver);
-            event.registerLayerDefinition(ZOMBIFIED_PIGLIN_BASE, () -> genericBase);
-            event.registerLayerDefinition(ZOMBIFIED_PIGLIN_OVER, () -> piglinOver);
-            event.registerLayerDefinition(ZOMBIE_VILLAGER_BASE, () -> zombieVillagerBase);
-            event.registerLayerDefinition(ZOMBIE_VILLAGER_OVER, () -> zombieVillagerOver);
-        }
-
-        @SubscribeEvent
         public static void addGenericLayers(EntityRenderersEvent.AddLayers event) {
-            EntityModelSet entityModelSet = event.getEntityModels();
+            GenericLayerModel baseModel =
+                    (GenericLayerModel) ClothingModelRepository.getModel(new ResourceLocation(MOD_ID, "base"));
+            GenericLayerModel overModel =
+                    (GenericLayerModel) ClothingModelRepository.getModel(new ResourceLocation(MOD_ID, "over"));
             // this is so damn scuffed lol, I tried automating this with reflection and iterating over the renderer
             // types but that didn't work
             try {
@@ -169,8 +90,8 @@ public class ClothingMod
                     armorRenderer.addLayer(
                             new HumanoidClothingLayer<>(
                                     armorRenderer,
-                                    new ArmorStandArmorModel(entityModelSet.bakeLayer(ARMOR_STAND_BASE)),
-                                    new ArmorStandArmorModel(entityModelSet.bakeLayer(ARMOR_STAND_OVER))
+                                    baseModel.getModelForEntityType(EntityType.ARMOR_STAND),
+                                    overModel.getModelForEntityType(EntityType.ARMOR_STAND)
                             )
                     );
                 }
@@ -181,8 +102,8 @@ public class ClothingMod
                     drownedRenderer.addLayer(
                             new HumanoidClothingLayer<>(
                                     drownedRenderer,
-                                    new DrownedModel<>(entityModelSet.bakeLayer(DROWNED_BASE)),
-                                    new DrownedModel<>(entityModelSet.bakeLayer(DROWNED_OVER))
+                                    baseModel.getModelForEntityType(EntityType.DROWNED),
+                                    overModel.getModelForEntityType(EntityType.DROWNED)
                             )
                     );
                 }
@@ -193,8 +114,8 @@ public class ClothingMod
                     giantRenderer.addLayer(
                             new HumanoidClothingLayer<>(
                                     giantRenderer,
-                                    new GiantZombieModel(entityModelSet.bakeLayer(GIANT_BASE)),
-                                    new GiantZombieModel(entityModelSet.bakeLayer(GIANT_OVER))
+                                    baseModel.getModelForEntityType(EntityType.GIANT),
+                                    overModel.getModelForEntityType(EntityType.GIANT)
                             )
                     );
                 }
@@ -205,8 +126,8 @@ public class ClothingMod
                     huskRenderer.addLayer(
                             new HumanoidClothingLayer<>(
                                     huskRenderer,
-                                    new ZombieModel<>(entityModelSet.bakeLayer(HUSK_BASE)),
-                                    new ZombieModel<>(entityModelSet.bakeLayer(HUSK_OVER))
+                                    baseModel.getModelForEntityType(EntityType.HUSK),
+                                    overModel.getModelForEntityType(EntityType.HUSK)
                             )
                     );
                 }
@@ -217,8 +138,8 @@ public class ClothingMod
                     piglinRenderer.addLayer(
                             new HumanoidClothingLayer<>(
                                     piglinRenderer,
-                                    new HumanoidModel<>(entityModelSet.bakeLayer(PIGLIN_BASE)),
-                                    new HumanoidModel<>(entityModelSet.bakeLayer(PIGLIN_OVER))
+                                    baseModel.getModelForEntityType(EntityType.PIGLIN),
+                                    overModel.getModelForEntityType(EntityType.PIGLIN)
                             )
                     );
                 }
@@ -229,8 +150,8 @@ public class ClothingMod
                     piglinBruteRenderer.addLayer(
                             new HumanoidClothingLayer<>(
                                     piglinBruteRenderer,
-                                    new HumanoidModel<>(entityModelSet.bakeLayer(PIGLIN_BRUTE_BASE)),
-                                    new HumanoidModel<>(entityModelSet.bakeLayer(PIGLIN_BRUTE_OVER))
+                                    baseModel.getModelForEntityType(EntityType.PIGLIN_BRUTE),
+                                    overModel.getModelForEntityType(EntityType.PIGLIN_BRUTE)
                             )
                     );
                 }
@@ -241,8 +162,8 @@ public class ClothingMod
                     skeletonRenderer.addLayer(
                             new HumanoidClothingLayer<>(
                                     skeletonRenderer,
-                                    new SkeletonModel<>(entityModelSet.bakeLayer(SKELETON_BASE)),
-                                    new SkeletonModel<>(entityModelSet.bakeLayer(SKELETON_OVER))
+                                    baseModel.getModelForEntityType(EntityType.SKELETON),
+                                    overModel.getModelForEntityType(EntityType.SKELETON)
                             )
                     );
                 }
@@ -253,8 +174,8 @@ public class ClothingMod
                     strayRenderer.addLayer(
                             new HumanoidClothingLayer<>(
                                     strayRenderer,
-                                    new SkeletonModel<>(entityModelSet.bakeLayer(STRAY_BASE)),
-                                    new SkeletonModel<>(entityModelSet.bakeLayer(STRAY_OVER))
+                                    baseModel.getModelForEntityType(EntityType.STRAY),
+                                    overModel.getModelForEntityType(EntityType.STRAY)
                             )
                     );
                 }
@@ -265,8 +186,8 @@ public class ClothingMod
                     witherSkeletonRenderer.addLayer(
                             new HumanoidClothingLayer<>(
                                     witherSkeletonRenderer,
-                                    new SkeletonModel<>(entityModelSet.bakeLayer(WITHER_SKELETON_BASE)),
-                                    new SkeletonModel<>(entityModelSet.bakeLayer(WITHER_SKELETON_OVER))
+                                    baseModel.getModelForEntityType(EntityType.WITHER_SKELETON),
+                                    overModel.getModelForEntityType(EntityType.WITHER_SKELETON)
                             )
                     );
                 }
@@ -277,8 +198,8 @@ public class ClothingMod
                     zombieRenderer.addLayer(
                             new HumanoidClothingLayer<>(
                                     zombieRenderer,
-                                    new ZombieModel<>(entityModelSet.bakeLayer(ZOMBIE_BASE)),
-                                    new ZombieModel<>(entityModelSet.bakeLayer(ZOMBIE_OVER))
+                                    baseModel.getModelForEntityType(EntityType.ZOMBIE),
+                                    overModel.getModelForEntityType(EntityType.ZOMBIE)
                             )
                     );
                 }
@@ -289,8 +210,8 @@ public class ClothingMod
                     zombieVillagerRenderer.addLayer(
                             new HumanoidClothingLayer<>(
                                     zombieVillagerRenderer,
-                                    new ZombieVillagerModel<>(entityModelSet.bakeLayer(ZOMBIE_VILLAGER_BASE)),
-                                    new ZombieVillagerModel<>(entityModelSet.bakeLayer(ZOMBIE_VILLAGER_OVER))
+                                    baseModel.getModelForEntityType(EntityType.ZOMBIE_VILLAGER),
+                                    overModel.getModelForEntityType(EntityType.ZOMBIE_VILLAGER)
                             )
                     );
                 }
@@ -301,8 +222,8 @@ public class ClothingMod
                     zombifiedPiglinRenderer.addLayer(
                             new HumanoidClothingLayer<>(
                                     zombifiedPiglinRenderer,
-                                    new HumanoidModel<>(entityModelSet.bakeLayer(ZOMBIFIED_PIGLIN_BASE)),
-                                    new HumanoidModel<>(entityModelSet.bakeLayer(ZOMBIFIED_PIGLIN_OVER))
+                                    baseModel.getModelForEntityType(EntityType.ZOMBIFIED_PIGLIN),
+                                    overModel.getModelForEntityType(EntityType.ZOMBIFIED_PIGLIN)
                             )
                     );
                 }
@@ -320,18 +241,23 @@ public class ClothingMod
                         new HumanoidClothingLayer<>(
                                 playerRenderer,
                                 new HumanoidModel<>(
-                                        entityModelSet.bakeLayer(
-                                                skinName.equals("default") ? PLAYER_BASE : PLAYER_SLIM_BASE
-                                        )
+                                        skinName.equals("default")
+                                                ? baseModel.getModelPart("minecraft:player")
+                                                : baseModel.getModelPart("minecraft:player_slim")
                                 ),
                                 new HumanoidModel<>(
-                                        entityModelSet.bakeLayer(
-                                                skinName.equals("default") ? PLAYER_OVER : PLAYER_SLIM_OVER
-                                        )
+                                        skinName.equals("default")
+                                                ? overModel.getModelPart("minecraft:player")
+                                                : overModel.getModelPart("minecraft:player_slim")
                                 )
                         )
                 );
             }
+        }
+
+        static {
+            ClothingModelRepository.registerModel(GenericLayerModel::baseModel);
+            ClothingModelRepository.registerModel(GenericLayerModel::overModel);
         }
     }
 }

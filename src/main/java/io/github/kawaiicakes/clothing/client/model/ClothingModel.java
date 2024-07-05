@@ -95,6 +95,7 @@ public abstract class ClothingModel implements MeshTransformer {
         try {
             assert objConstructor != null;
             Class<?> constructorClazz = objConstructor.getDeclaringClass();
+            // FIXME: this is causing crashes
             if (!constructorClazz.isInstance(HumanoidModel.class)) throw new ClassCastException();
             //noinspection unchecked
             Constructor<? extends HumanoidModel<T>> modelConstructor = (Constructor<? extends HumanoidModel<T>>) objConstructor;
@@ -111,6 +112,11 @@ public abstract class ClothingModel implements MeshTransformer {
             );
         }
         return toReturn;
+    }
+
+    // TODO: non-ad hoc implementation of slim player models
+    public ModelPart getModelPart(String entity) {
+        return this.bakedModels.get(entity);
     }
 
     /**
@@ -220,6 +226,10 @@ public abstract class ClothingModel implements MeshTransformer {
         return new ModelLayerLocation(EntityType.getKey(entityType), this.modelId.toString());
     }
 
+    public ModelLayerLocation generateSlimModelLayerLocation() {
+        return new ModelLayerLocation(new ResourceLocation("player_slim"), this.modelId.toString());
+    }
+
     /**
      * Used when the model has its generated {@link LayerDefinition}s registered in
      * {@link io.github.kawaiicakes.clothing.client.ClothingModelRepository}.
@@ -261,6 +271,11 @@ public abstract class ClothingModel implements MeshTransformer {
                     modelSet.bakeLayer(this.generateModelLayerLocation(entityType))
             );
         }
+
+        this.bakedModels.put(
+                String.valueOf(new ResourceLocation("player_slim")),
+                modelSet.bakeLayer(this.generateSlimModelLayerLocation())
+        );
     }
 
     /**
