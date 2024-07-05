@@ -79,11 +79,9 @@ public abstract class ClothingModel implements MeshTransformer {
      * @param entityType the {@link EntityType} for render
      * @return an instance of <code>U</code>.
      * @param <T> the specific entity of the <code>entityType</code>
-     * @param <U> instance of {@link HumanoidModel} used for rendering of the
-     * {@link net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer}.
      */
     @Nullable
-    public <T extends LivingEntity, U extends HumanoidModel<T>> U getModelForEntityType(EntityType<T> entityType) {
+    public <T extends LivingEntity> HumanoidModel<T> getModelForEntityType(EntityType<T> entityType) {
         if (!getEntityTypes().contains(entityType)) throw new IllegalArgumentException("Invalid entity!");
 
         ModelPart modelPart = this.bakedModels.getOrDefault(
@@ -91,17 +89,25 @@ public abstract class ClothingModel implements MeshTransformer {
         );
         if (modelPart == null) throw new IllegalArgumentException("This entity type does not have a model!");
 
-        final Constructor<U> modelConstructor = getModelConstructorForEntityType(entityType);
+        Constructor<?> objConstructor = getModelConstructorForEntityType(entityType);
 
-        U toReturn = null;
+        HumanoidModel<T> toReturn = null;
         try {
-            assert modelConstructor != null;
+            assert objConstructor != null;
+            Class<?> constructorClazz = objConstructor.getDeclaringClass();
+            if (!constructorClazz.isInstance(HumanoidModel.class)) throw new ClassCastException();
+            //noinspection unchecked
+            Constructor<? extends HumanoidModel<T>> modelConstructor = (Constructor<? extends HumanoidModel<T>>) objConstructor;
             toReturn = modelConstructor.newInstance(modelPart);
         } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
             LOGGER.error("Unable to instantiate model for render on entity type {}!", entityType, e);
         } catch (NullPointerException e) {
             LOGGER.error(
                     "Model constructor with ModelPart parameter does not exist for entity type {}!", entityType, e
+            );
+        } catch (ClassCastException e) {
+            LOGGER.error(
+                    "Unable to cast constructor for model for entity type {}!", entityType, e
             );
         }
         return toReturn;
@@ -120,29 +126,26 @@ public abstract class ClothingModel implements MeshTransformer {
      * @param entityType the {@link EntityType} for which this model will be rendered.
      * @return the <code>Constructor</code> of type <code>U</code> who takes a {@link ModelPart} as an argument.
      *          If no such constructor exists, override {@link #getModelForEntityType(EntityType)}
-     * @param <T> the {@link LivingEntity} associated with the passed entity type.
-     * @param <U> the {@link HumanoidModel} instance.
      */
-    @SuppressWarnings("unchecked")
     @Nullable
-    public <T extends LivingEntity, U extends HumanoidModel<T>> Constructor<U> getModelConstructorForEntityType(
-            EntityType<T> entityType) {
+    public Constructor<?> getModelConstructorForEntityType(
+            EntityType<? extends LivingEntity> entityType) {
         try {
             if (EntityType.ARMOR_STAND.equals(entityType)) {
-                return (Constructor<U>) ArmorStandArmorModel.class.getConstructor(ModelPart.class);
+                return ArmorStandArmorModel.class.getConstructor(ModelPart.class);
             } else if (EntityType.DROWNED.equals(entityType)) {
-                return (Constructor<U>) DrownedModel.class.getConstructor(ModelPart.class);
+                return DrownedModel.class.getConstructor(ModelPart.class);
             } else if (EntityType.GIANT.equals(entityType)) {
-                return (Constructor<U>) GiantZombieModel.class.getConstructor(ModelPart.class);
+                return GiantZombieModel.class.getConstructor(ModelPart.class);
             } else if (EntityType.HUSK.equals(entityType) || EntityType.ZOMBIE.equals(entityType)) {
-                return (Constructor<U>) ZombieModel.class.getConstructor(ModelPart.class);
+                return ZombieModel.class.getConstructor(ModelPart.class);
             } else if (EntityType.SKELETON.equals(entityType)
                     || EntityType.STRAY.equals(entityType) || EntityType.WITHER_SKELETON.equals(entityType)) {
-                return (Constructor<U>) SkeletonModel.class.getConstructor(ModelPart.class);
+                return SkeletonModel.class.getConstructor(ModelPart.class);
             } else if (EntityType.ZOMBIE_VILLAGER.equals(entityType)) {
-                return (Constructor<U>) ZombieVillagerModel.class.getConstructor(ModelPart.class);
+                return ZombieVillagerModel.class.getConstructor(ModelPart.class);
             } else {
-                return (Constructor<U>) HumanoidModel.class.getConstructor(ModelPart.class);
+                return HumanoidModel.class.getConstructor(ModelPart.class);
             }
         } catch (NoSuchMethodException e) {
             LOGGER.error("No such constructor for model of entity type {}!", entityType, e);

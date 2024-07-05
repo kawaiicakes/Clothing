@@ -43,7 +43,7 @@ public class ClothingModelRepository {
 
     @SubscribeEvent
     @ApiStatus.Internal
-    private static void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
+    public static void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
         for (Map.Entry<ResourceLocation, ClothingModel> modelEntry : MODELS.entrySet()) {
             ClothingModel clothingModel = modelEntry.getValue();
             clothingModel.registerLayers(event);
@@ -52,7 +52,7 @@ public class ClothingModelRepository {
 
     @SubscribeEvent
     @ApiStatus.Internal
-    private static void bakeParts(EntityRenderersEvent.AddLayers event) {
+    public static void bakeParts(EntityRenderersEvent.AddLayers event) {
         for (Map.Entry<ResourceLocation, ClothingModel> modelEntry : MODELS.entrySet()) {
             ClothingModel clothingModel = modelEntry.getValue();
             clothingModel.bakeParts(event);
