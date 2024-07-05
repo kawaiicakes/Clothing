@@ -16,9 +16,9 @@ import java.util.List;
 /**
  * The <code>MeshTransformer</code> is an interface which provides methods that transform model data (as returned by
  * {@link #baseMesh()}) based on what entities are likely to have misaligned models. This information was
- * gathered inferred by examining which {@link HumanoidModel} instances were used in instantiations of
- * {@link net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer}, which is in turn found being passed to
- * {@link net.minecraft.client.renderer.entity.LivingEntityRenderer#addLayer}.
+ * inferred by examining which {@link net.minecraft.client.model.geom.LayerDefinitions} for <code>INNER_ARMOR</code>
+ * and <code>OUTER_ARMOR</code> layers for entities use a non-generic
+ * {@link net.minecraft.client.model.geom.builders.LayerDefinition}.
  * <br><br>
  * Furthermore, this interface exists as a sensible entrypoint for anyone trying to add third-party support for a
  * custom entity type (via mixins). With respect to that task, you must also pay attention to
@@ -130,7 +130,8 @@ public interface MeshTransformer {
     }
 
     /**
-     * The Drowned's "left_arm" and "left_leg" have slightly different texoffs arguments.
+     * The Drowned's <code>OUTER_ARMOR</code> layer has an inflated
+     * {@link net.minecraft.client.model.geom.builders.CubeDeformation} by 0.25F.
      * @param parentMesh the {@link MeshDefinition} to edit.
      */
     default void drownedMeshTransformation(MeshDefinition parentMesh) {
@@ -144,138 +145,18 @@ public interface MeshTransformer {
     }
 
     /**
-     * Skeletons have arms and legs 2.0F units smaller on the x and z-axes and have differing origins as a result.
+     * The Piglin <code>OUTER_ARMOR</code> layer has a {@link net.minecraft.client.model.geom.builders.CubeDeformation}
+     * inflated by 0.02F.
+     * @param parentMesh the {@link MeshDefinition} to edit.
+     */
+    default void piglinMeshTransformation(MeshDefinition parentMesh) {
+    }
+
+    /**
+     * Appears to have an identical mesh to the HumanoidModel.
      * @param parentMesh the {@link MeshDefinition} to edit.
      */
     default void skeletonMeshTransformation(MeshDefinition parentMesh) {
-        PartDefinition parentPart = parentMesh.getRoot();
-
-        PartDefinition rightArmPart = parentPart.getChild("right_arm");
-        PartDefinition leftArmPart = parentPart.getChild("left_arm");
-        PartDefinition rightLegPart = parentPart.getChild("right_leg");
-        PartDefinition leftLegPart = parentPart.getChild("left_leg");
-
-        List<CubeDefinition> rightArmCubes = new ArrayList<>();
-        for (CubeDefinition cubeDefinition : rightArmPart.cubes) {
-            CubeDefinition newCube = new CubeDefinition(
-                    cubeDefinition.comment,
-                    cubeDefinition.texCoord.u(),
-                    cubeDefinition.texCoord.v(),
-                    cubeDefinition.origin.x() + 2.0F,
-                    cubeDefinition.origin.y(),
-                    cubeDefinition.origin.z() + 1.0F,
-                    cubeDefinition.dimensions.x() - 2.0F,
-                    cubeDefinition.dimensions.y(),
-                    cubeDefinition.dimensions.z() - 2.0F,
-                    cubeDefinition.grow,
-                    cubeDefinition.mirror,
-                    cubeDefinition.texScale.u(),
-                    cubeDefinition.texScale.v()
-            );
-
-            rightArmCubes.add(newCube);
-        }
-        PartDefinition newRightArm = new PartDefinition(
-                rightArmCubes,
-                rightArmPart.partPose
-        );
-        newRightArm.children.putAll(rightArmPart.children);
-        parentPart.children.put("right_arm", newRightArm);
-
-        List<CubeDefinition> leftArmCubes = new ArrayList<>();
-        for (CubeDefinition cubeDefinition : leftArmPart.cubes) {
-            CubeDefinition newCube = new CubeDefinition(
-                    cubeDefinition.comment,
-                    cubeDefinition.texCoord.u(),
-                    cubeDefinition.texCoord.v(),
-                    cubeDefinition.origin.x(),
-                    cubeDefinition.origin.y(),
-                    cubeDefinition.origin.z() + 1.0F,
-                    cubeDefinition.dimensions.x() - 2.0F,
-                    cubeDefinition.dimensions.y(),
-                    cubeDefinition.dimensions.z() - 2.0F,
-                    cubeDefinition.grow,
-                    cubeDefinition.mirror,
-                    cubeDefinition.texScale.u(),
-                    cubeDefinition.texScale.v()
-            );
-
-            leftArmCubes.add(newCube);
-        }
-        PartDefinition newLeftArm = new PartDefinition(
-                leftArmCubes,
-                leftArmPart.partPose
-        );
-        newLeftArm.children.putAll(leftArmPart.children);
-        parentPart.children.put("left_arm", newLeftArm);
-
-        List<CubeDefinition> rightLegCubes = new ArrayList<>();
-        for (CubeDefinition cubeDefinition : rightLegPart.cubes) {
-            CubeDefinition newCube = new CubeDefinition(
-                    cubeDefinition.comment,
-                    cubeDefinition.texCoord.u(),
-                    cubeDefinition.texCoord.v(),
-                    cubeDefinition.origin.x() + 1.0F,
-                    cubeDefinition.origin.y(),
-                    cubeDefinition.origin.z() + 1.0F,
-                    cubeDefinition.dimensions.x() - 2.0F,
-                    cubeDefinition.dimensions.y(),
-                    cubeDefinition.dimensions.z() - 2.0F,
-                    cubeDefinition.grow,
-                    cubeDefinition.mirror,
-                    cubeDefinition.texScale.u(),
-                    cubeDefinition.texScale.v()
-            );
-
-            rightLegCubes.add(newCube);
-        }
-        PartDefinition newRightLeg = new PartDefinition(
-                rightLegCubes,
-                PartPose.offsetAndRotation(
-                        rightLegPart.partPose.x - 0.1F,
-                        rightLegPart.partPose.y,
-                        rightLegPart.partPose.z,
-                        rightLegPart.partPose.xRot,
-                        rightLegPart.partPose.yRot,
-                        rightLegPart.partPose.zRot
-                )
-        );
-        newRightLeg.children.putAll(rightLegPart.children);
-        parentPart.children.put("right_leg", newRightLeg);
-
-        List<CubeDefinition> leftLegCubes = new ArrayList<>();
-        for (CubeDefinition cubeDefinition : leftLegPart.cubes) {
-            CubeDefinition newCube = new CubeDefinition(
-                    cubeDefinition.comment,
-                    cubeDefinition.texCoord.u(),
-                    cubeDefinition.texCoord.v(),
-                    cubeDefinition.origin.x() + 1.0F,
-                    cubeDefinition.origin.y(),
-                    cubeDefinition.origin.z() + 1.0F,
-                    cubeDefinition.dimensions.x() - 2.0F,
-                    cubeDefinition.dimensions.y(),
-                    cubeDefinition.dimensions.z() - 2.0F,
-                    cubeDefinition.grow,
-                    cubeDefinition.mirror,
-                    cubeDefinition.texScale.u(),
-                    cubeDefinition.texScale.v()
-            );
-
-            leftLegCubes.add(newCube);
-        }
-        PartDefinition newLeftLeg = new PartDefinition(
-                leftLegCubes,
-                PartPose.offsetAndRotation(
-                        leftLegPart.partPose.x - 0.1F,
-                        leftLegPart.partPose.y,
-                        leftLegPart.partPose.z,
-                        leftLegPart.partPose.xRot,
-                        leftLegPart.partPose.yRot,
-                        leftLegPart.partPose.zRot
-                )
-        );
-        newLeftLeg.children.putAll(leftLegPart.children);
-        parentPart.children.put("left_leg", newLeftLeg);
     }
 
     /**
@@ -424,5 +305,140 @@ public interface MeshTransformer {
         parentPart.children.put("left_leg", newLeftLeg);
 
         hatPart.addOrReplaceChild("hat_rim", CubeListBuilder.create(), PartPose.ZERO);
+    }
+
+    /**
+     * This turned out to be unnecessary as a default implementation, but it might come in handy later.
+     * @param parentMesh the {@link MeshDefinition} to edit.
+     */
+    static void skeletonBodyModelTransformation(MeshDefinition parentMesh) {
+        PartDefinition parentPart = parentMesh.getRoot();
+
+        PartDefinition rightArmPart = parentPart.getChild("right_arm");
+        PartDefinition leftArmPart = parentPart.getChild("left_arm");
+        PartDefinition rightLegPart = parentPart.getChild("right_leg");
+        PartDefinition leftLegPart = parentPart.getChild("left_leg");
+
+        List<CubeDefinition> rightArmCubes = new ArrayList<>();
+        for (CubeDefinition cubeDefinition : rightArmPart.cubes) {
+            CubeDefinition newCube = new CubeDefinition(
+                    cubeDefinition.comment,
+                    cubeDefinition.texCoord.u(),
+                    cubeDefinition.texCoord.v(),
+                    cubeDefinition.origin.x() + 2.0F,
+                    cubeDefinition.origin.y(),
+                    cubeDefinition.origin.z() + 1.0F,
+                    cubeDefinition.dimensions.x() - 2.0F,
+                    cubeDefinition.dimensions.y(),
+                    cubeDefinition.dimensions.z() - 2.0F,
+                    cubeDefinition.grow,
+                    cubeDefinition.mirror,
+                    cubeDefinition.texScale.u(),
+                    cubeDefinition.texScale.v()
+            );
+
+            rightArmCubes.add(newCube);
+        }
+        PartDefinition newRightArm = new PartDefinition(
+                rightArmCubes,
+                rightArmPart.partPose
+        );
+        newRightArm.children.putAll(rightArmPart.children);
+        parentPart.children.put("right_arm", newRightArm);
+
+        List<CubeDefinition> leftArmCubes = new ArrayList<>();
+        for (CubeDefinition cubeDefinition : leftArmPart.cubes) {
+            CubeDefinition newCube = new CubeDefinition(
+                    cubeDefinition.comment,
+                    cubeDefinition.texCoord.u(),
+                    cubeDefinition.texCoord.v(),
+                    cubeDefinition.origin.x(),
+                    cubeDefinition.origin.y(),
+                    cubeDefinition.origin.z() + 1.0F,
+                    cubeDefinition.dimensions.x() - 2.0F,
+                    cubeDefinition.dimensions.y(),
+                    cubeDefinition.dimensions.z() - 2.0F,
+                    cubeDefinition.grow,
+                    cubeDefinition.mirror,
+                    cubeDefinition.texScale.u(),
+                    cubeDefinition.texScale.v()
+            );
+
+            leftArmCubes.add(newCube);
+        }
+        PartDefinition newLeftArm = new PartDefinition(
+                leftArmCubes,
+                leftArmPart.partPose
+        );
+        newLeftArm.children.putAll(leftArmPart.children);
+        parentPart.children.put("left_arm", newLeftArm);
+
+        List<CubeDefinition> rightLegCubes = new ArrayList<>();
+        for (CubeDefinition cubeDefinition : rightLegPart.cubes) {
+            CubeDefinition newCube = new CubeDefinition(
+                    cubeDefinition.comment,
+                    cubeDefinition.texCoord.u(),
+                    cubeDefinition.texCoord.v(),
+                    cubeDefinition.origin.x() + 1.0F,
+                    cubeDefinition.origin.y(),
+                    cubeDefinition.origin.z() + 1.0F,
+                    cubeDefinition.dimensions.x() - 2.0F,
+                    cubeDefinition.dimensions.y(),
+                    cubeDefinition.dimensions.z() - 2.0F,
+                    cubeDefinition.grow,
+                    cubeDefinition.mirror,
+                    cubeDefinition.texScale.u(),
+                    cubeDefinition.texScale.v()
+            );
+
+            rightLegCubes.add(newCube);
+        }
+        PartDefinition newRightLeg = new PartDefinition(
+                rightLegCubes,
+                PartPose.offsetAndRotation(
+                        rightLegPart.partPose.x - 0.1F,
+                        rightLegPart.partPose.y,
+                        rightLegPart.partPose.z,
+                        rightLegPart.partPose.xRot,
+                        rightLegPart.partPose.yRot,
+                        rightLegPart.partPose.zRot
+                )
+        );
+        newRightLeg.children.putAll(rightLegPart.children);
+        parentPart.children.put("right_leg", newRightLeg);
+
+        List<CubeDefinition> leftLegCubes = new ArrayList<>();
+        for (CubeDefinition cubeDefinition : leftLegPart.cubes) {
+            CubeDefinition newCube = new CubeDefinition(
+                    cubeDefinition.comment,
+                    cubeDefinition.texCoord.u(),
+                    cubeDefinition.texCoord.v(),
+                    cubeDefinition.origin.x() + 1.0F,
+                    cubeDefinition.origin.y(),
+                    cubeDefinition.origin.z() + 1.0F,
+                    cubeDefinition.dimensions.x() - 2.0F,
+                    cubeDefinition.dimensions.y(),
+                    cubeDefinition.dimensions.z() - 2.0F,
+                    cubeDefinition.grow,
+                    cubeDefinition.mirror,
+                    cubeDefinition.texScale.u(),
+                    cubeDefinition.texScale.v()
+            );
+
+            leftLegCubes.add(newCube);
+        }
+        PartDefinition newLeftLeg = new PartDefinition(
+                leftLegCubes,
+                PartPose.offsetAndRotation(
+                        leftLegPart.partPose.x - 0.1F,
+                        leftLegPart.partPose.y,
+                        leftLegPart.partPose.z,
+                        leftLegPart.partPose.xRot,
+                        leftLegPart.partPose.yRot,
+                        leftLegPart.partPose.zRot
+                )
+        );
+        newLeftLeg.children.putAll(leftLegPart.children);
+        parentPart.children.put("left_leg", newLeftLeg);
     }
 }

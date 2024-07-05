@@ -193,6 +193,9 @@ public abstract class ClothingModel implements MeshTransformer {
             this.giantMeshTransformation(meshDefinition);
         } else if (EntityType.HUSK.equals(entityType) || EntityType.ZOMBIE.equals(entityType)) {
             this.zombieMeshTransformation(meshDefinition);
+        } else if (EntityType.PIGLIN.equals(entityType)
+                || EntityType.PIGLIN_BRUTE.equals(entityType) || EntityType.ZOMBIFIED_PIGLIN.equals(entityType)) {
+            this.piglinMeshTransformation(meshDefinition);
         } else if (EntityType.SKELETON.equals(entityType)
                 || EntityType.STRAY.equals(entityType) || EntityType.WITHER_SKELETON.equals(entityType)) {
             this.skeletonMeshTransformation(meshDefinition);
