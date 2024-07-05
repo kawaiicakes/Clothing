@@ -1,11 +1,8 @@
 package io.github.kawaiicakes.clothing.client.model.impl;
 
 import io.github.kawaiicakes.clothing.client.model.ClothingModel;
-import net.minecraft.client.model.HumanoidModel;
-import net.minecraft.client.model.geom.builders.CubeDefinition;
-import net.minecraft.client.model.geom.builders.CubeDeformation;
-import net.minecraft.client.model.geom.builders.MeshDefinition;
-import net.minecraft.client.model.geom.builders.PartDefinition;
+import net.minecraft.client.model.geom.PartPose;
+import net.minecraft.client.model.geom.builders.*;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,7 +25,102 @@ public class GenericLayerModel extends ClothingModel {
 
     @Override
     public @NotNull MeshDefinition baseMesh() {
-        return HumanoidModel.createMesh(this.cubeDeformation, 0.0F);
+        MeshDefinition meshDefinition = new MeshDefinition();
+        PartDefinition partDefinition = meshDefinition.getRoot();
+
+        partDefinition.addOrReplaceChild(
+                "head",
+                CubeListBuilder.create()
+                        .texOffs(0, 0)
+                        .addBox(
+                                -4.0F, -8.0F, -4.0F,
+                                8.0F, 8.0F, 8.0F,
+                                this.cubeDeformation,
+                                0.125F, 0.125F
+                        ),
+                PartPose.offset(0.0F, 0.0F, 0.0F)
+        );
+
+        partDefinition.addOrReplaceChild(
+                "hat",
+                CubeListBuilder.create()
+                        .texOffs(32, 0)
+                        .addBox(
+                                -4.0F, -8.0F, -4.0F,
+                                8.0F, 8.0F, 8.0F,
+                                this.cubeDeformation.extend(0.5F),
+                                0.125F, 0.125F
+                        ),
+                PartPose.offset(0.0F, 0.0F, 0.0F));
+
+        partDefinition.addOrReplaceChild(
+                "body",
+                CubeListBuilder.create()
+                        .texOffs(16, 16)
+                        .addBox(
+                                -4.0F, 0.0F, -2.0F,
+                                8.0F, 12.0F, 4.0F,
+                                this.cubeDeformation,
+                                0.125F, 0.125F
+                        ),
+                PartPose.offset(0.0F, 0.0F, 0.0F)
+        );
+
+        partDefinition.addOrReplaceChild(
+                "right_arm",
+                CubeListBuilder.create()
+                        .texOffs(40, 16)
+                        .addBox(
+                                -3.0F, -2.0F, -2.0F,
+                                4.0F, 12.0F, 4.0F,
+                                this.cubeDeformation,
+                                0.125F, 0.125F
+                        ),
+                PartPose.offset(-5.0F, 2.0F, 0.0F)
+        );
+
+        partDefinition.addOrReplaceChild(
+                "left_arm",
+                CubeListBuilder.create()
+                        .texOffs(40, 16)
+                        .mirror()
+                        .addBox(
+                                -1.0F, -2.0F, -2.0F,
+                                4.0F, 12.0F, 4.0F,
+                                this.cubeDeformation,
+                                0.125F, 0.125F
+                        ),
+                PartPose.offset(5.0F, 2.0F, 0.0F)
+        );
+
+        partDefinition.addOrReplaceChild(
+                "right_leg",
+                CubeListBuilder.create()
+                        .texOffs(0, 16)
+                        .addBox(
+                                -2.0F, 0.0F, -2.0F,
+                                4.0F, 12.0F, 4.0F,
+                                this.cubeDeformation,
+                                0.125F, 0.125F
+                        ),
+                PartPose.offset(-1.9F, 12.0F, 0.0F)
+        );
+
+        partDefinition.addOrReplaceChild(
+                "left_leg",
+                CubeListBuilder.create()
+                        .texOffs(0, 16)
+                        .mirror()
+                        .addBox(
+                                -2.0F, 0.0F, -2.0F,
+                                4.0F, 12.0F, 4.0F,
+                                this.cubeDeformation,
+                                0.125F, 0.125F
+                        ),
+                PartPose.offset(1.9F, 12.0F, 0.0F)
+        );
+
+        return meshDefinition;
     }
 
     public static GenericLayerModel baseModel() {

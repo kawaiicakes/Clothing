@@ -5,7 +5,6 @@ import io.github.kawaiicakes.clothing.client.ClothingModelRepository;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.client.model.impl.GenericLayerModel;
 import net.minecraft.client.model.*;
-import net.minecraft.client.model.geom.EntityModelSet;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.resources.ResourceLocation;
