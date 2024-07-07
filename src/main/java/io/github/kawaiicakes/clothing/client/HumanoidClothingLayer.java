@@ -51,11 +51,11 @@ public class HumanoidClothingLayer<
     /**
      * Added during {@link net.minecraftforge.client.event.EntityRenderersEvent.AddLayers} to appropriate renderer.
      */
-    public HumanoidClothingLayer(RenderLayerParent<T, M> pRenderer, A baseModel, A overModel) {
+    public HumanoidClothingLayer(RenderLayerParent<T, M> pRenderer, A innerModel, A outerModel) {
         super(
                 pRenderer,
-                baseModel,
-                overModel
+                innerModel,
+                outerModel
         );
     }
 
@@ -85,14 +85,7 @@ public class HumanoidClothingLayer<
                 //noinspection unchecked
                 clothingModel = (A) clothing.getClothingModel(
                         pLivingEntity, stack, slot,
-                        clothing.usesGenericOverModel(
-                                pLivingEntity,
-                                stack, slot,
-                                pPackedLight,
-                                pLimbSwing, pLimbSwingAmount,
-                                pPartialTicks, pAgeInTicks,
-                                pNetHeadYaw, pHeadPitch
-                        ) ? this.outerModel : this.innerModel
+                        this.getArmorModel(slot)
                 );
             } catch (RuntimeException e) {
                 LOGGER.error("Unable to cast model to appropriate type!", e);

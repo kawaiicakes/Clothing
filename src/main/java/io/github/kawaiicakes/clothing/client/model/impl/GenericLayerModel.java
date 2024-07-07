@@ -14,7 +14,7 @@ import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 
 public class GenericLayerModel extends ClothingModel {
     public static final CubeDeformation BASE = new CubeDeformation(0.3F);
-    public static final CubeDeformation OVER = new CubeDeformation(1.125F);
+    public static final CubeDeformation OVER = new CubeDeformation(0.4F);
 
     protected final CubeDeformation cubeDeformation;
 

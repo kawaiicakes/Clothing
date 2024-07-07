@@ -92,23 +92,6 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
         return null;
     }
 
-    /**
-     * If the implementation of this class is returning the <code>genericModel</code> passed to it in
-     * {@link #getClothingModel(LivingEntity, ItemStack, EquipmentSlot, HumanoidModel)}, then implementations of this
-     * method determine whether the base model or over model should be used.
-     * @return <code>true</code> if the over model should be used. <code>false</code> for the base.
-     */
-    @ParametersAreNullableByDefault
-    public boolean usesGenericOverModel(
-            LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot,
-            int packedLight,
-            float pLimbSwing, float pLimbSwingAmount,
-            float pPartialTicks, float pAgeInTicks,
-            float pNetHeadYaw, float pHeadPitch
-    ) {
-        return false;
-    }
-
     @Override
     public int getColor(@NotNull ItemStack pStack) {
         // contrived implementation is done in case a third-party mod changes the super
