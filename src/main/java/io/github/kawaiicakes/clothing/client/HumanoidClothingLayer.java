@@ -13,17 +13,14 @@ import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
-import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Set;
 
 /**
@@ -52,6 +49,8 @@ public class HumanoidClothingLayer<
      * Added during {@link net.minecraftforge.client.event.EntityRenderersEvent.AddLayers} to appropriate renderer.
      */
     public HumanoidClothingLayer(RenderLayerParent<T, M> pRenderer, A innerModel, A outerModel) {
+        // TODO: having four models all-in-all, one for each slot, could be a good idea
+
         super(
                 pRenderer,
                 innerModel,
@@ -118,15 +117,13 @@ public class HumanoidClothingLayer<
                     this.getArmorResource(pLivingEntity, stack, slot, null)
             );
 
-            ResourceLocation overlayLocation = clothing.overlayResource(
-                    pLivingEntity,
-                    stack, slot,
+            if (!clothing.hasOverlay(
+                    pLivingEntity, stack, slot,
                     pPackedLight,
                     pLimbSwing, pLimbSwingAmount,
                     pPartialTicks, pAgeInTicks,
                     pNetHeadYaw, pHeadPitch
-            );
-            if (overlayLocation == null) continue;
+            )) continue;
             this.renderModel(
                     pMatrixStack,
                     pBuffer, pPackedLight,
@@ -170,15 +167,6 @@ public class HumanoidClothingLayer<
                 pBlue,
                 pAlpha
         );
-    }
-
-    @Override
-    @NotNull
-    @ParametersAreNonnullByDefault
-    public ResourceLocation getArmorResource(Entity entity, ItemStack stack, EquipmentSlot slot, @Nullable String type
-    ) {
-        // TODO
-        return super.getArmorResource(entity, stack, slot, type);
     }
 
     protected void setPartVisibility(@NotNull A pModel, @NotNull EquipmentSlot pSlot, ItemStack pItemStack) {

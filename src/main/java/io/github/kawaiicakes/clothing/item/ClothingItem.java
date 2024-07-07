@@ -3,6 +3,7 @@ package io.github.kawaiicakes.clothing.item;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ArmorItem;
@@ -11,12 +12,13 @@ import net.minecraft.world.item.DyeableLeatherItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.ParametersAreNullableByDefault;
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.Consumer;
+
+import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 
 public abstract class ClothingItem extends ArmorItem implements DyeableLeatherItem {
     protected final int defaultColor;
@@ -72,24 +74,49 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
     }
 
     /**
-     * If this returns non-null, an attempt will be made to render the overlay onto this piece of clothing.
-     * The overlay is not affected by dyeing.
+     * Determines whether an attempt will be made to render an overlay onto this piece of clothing.
      * @param livingEntity the {@link LivingEntity} the clothing is on.
      * @param stack the {@link ItemStack} representing this piece of clothing.
-     * @param slot the {@link EquipmentSlot this piece of clothing goes in.}
-     * @return the {@link ResourceLocation} pointing to the texture of the overlay. Ideally, texture names should
-     * conform to the format //TODO
+     * @param slot the {@link EquipmentSlot} this piece of clothing goes in.
+     * @return Self-explanatory.
      */
-    @Nullable
     @ParametersAreNullableByDefault
-    public ResourceLocation overlayResource(
+    public boolean hasOverlay(
             LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot,
             int packedLight,
             float pLimbSwing, float pLimbSwingAmount,
             float pPartialTicks, float pAgeInTicks,
             float pNetHeadYaw, float pHeadPitch
     ) {
-        return null;
+        return false;
+    }
+
+    /**
+     * Overridden Forge method; see super for details. This method returns a <code>String</code> representing the
+     * path to the texture that should be used for this piece of clothing. Ideally this format
+     * @param stack  ItemStack for the equipped armor
+     * @param entity The entity wearing the clothing
+     * @param slot   The slot the clothing is in
+     * @param type   The subtype, can be null or "overlay".
+     * @return The <code>String</code> representing the path to the texture that should be used for this piece of
+     *         clothing.
+     */
+    @Override
+    @NotNull
+    public String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
+        // TODO: final implementation and javadoc
+        final boolean usesGenericInnerLayer = EquipmentSlot.LEGS.equals(slot);
+        @SuppressWarnings("deprecation")
+        final ResourceLocation itemKey = this.builtInRegistryHolder().key().location();
+        final String itemString = itemKey.getNamespace() + "/" + itemKey.getPath();
+        return String.format(
+                java.util.Locale.ROOT,
+                "%s:textures/models/armor/%s_%s%s.png",
+                MOD_ID,
+                itemString,
+                (usesGenericInnerLayer ? "legs" : "body"),
+                type == null ? "" : String.format(java.util.Locale.ROOT, "_%s", type)
+        );
     }
 
     @Override

@@ -1,7 +1,6 @@
 package io.github.kawaiicakes.clothing.item;
 
 import net.minecraft.client.model.HumanoidModel;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -111,15 +110,14 @@ public class ClothingRegistry {
                 @Override
                 public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
                     if (type == null) {
-                        // TODO: implement getArmorResource in HumanoidClothingLayer
                         return "clothing:textures/models/armor/ouch.png";
                     }
                     return "clothing:textures/models/armor/ouch_overlay.png";
                 }
 
                 @Override
-                public @NotNull ResourceLocation overlayResource(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, int packedLight, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
-                    return new ResourceLocation(MOD_ID, "ouch_overlay");
+                public boolean hasOverlay(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, int packedLight, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
+                    return true;
                 }
             }
     );
