@@ -14,6 +14,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.ParametersAreNullableByDefault;
+import java.util.Collections;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public abstract class ClothingItem extends ArmorItem implements DyeableLeatherItem {
@@ -41,6 +43,15 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
             LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot,
             HumanoidModel<? extends LivingEntity> genericModel
     );
+
+    /**
+     * This method is used to determine which body groups will render for this piece of clothing.
+     * @return a <code>Set</code> containing the {@link EquipmentSlot}s that correspond to the body groups for render.
+     */
+    @NotNull
+    public Set<EquipmentSlot> slotsForRender() {
+        return Collections.singleton(this.getSlot());
+    }
 
     /**
      * Implementations will return the alpha value for render.

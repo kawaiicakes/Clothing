@@ -24,6 +24,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.Set;
 
 /**
  * This extends {@link HumanoidArmorLayer} in case a third-party mod references instances of that class to render
@@ -101,7 +102,7 @@ public class HumanoidClothingLayer<
             boolean hasGlint = stack.hasFoil();
 
             this.getParentModel().copyPropertiesTo(clothingModel);
-            this.setPartVisibility(clothingModel, slot);
+            this.setPartVisibility(clothingModel, slot, stack);
 
             int i = clothing.getColor(stack);
             float r = (float)(i >> 16 & 255) / 255.0F;
@@ -187,23 +188,35 @@ public class HumanoidClothingLayer<
         return super.getArmorResource(entity, stack, slot, type);
     }
 
-    @Override
-    protected void setPartVisibility(@NotNull A pModel, @NotNull EquipmentSlot pSlot) {
+    protected void setPartVisibility(@NotNull A pModel, @NotNull EquipmentSlot pSlot, ItemStack pItemStack) {
+        if (!(pItemStack.getItem() instanceof ClothingItem clothingItem)) {
+            super.setPartVisibility(pModel, pSlot);
+            return;
+        }
+
+        Set<EquipmentSlot> slotsForRender = clothingItem.slotsForRender();
         pModel.setAllVisible(false);
-        switch (pSlot) {
-            case HEAD:
-                pModel.head.visible = true;
-                pModel.hat.visible = true;
-                break;
-            case CHEST:
-                pModel.body.visible = true;
-                pModel.rightArm.visible = true;
-                pModel.leftArm.visible = true;
-                break;
-            case LEGS, FEET:
-                pModel.rightLeg.visible = true;
-                pModel.leftLeg.visible = true;
-                break;
+
+        if (slotsForRender.contains(EquipmentSlot.HEAD)) {
+            pModel.head.visible = true;
+            pModel.hat.visible = true;
+        }
+
+        if (slotsForRender.contains(EquipmentSlot.CHEST)) {
+            pModel.body.visible = true;
+            pModel.rightArm.visible = true;
+            pModel.leftArm.visible = true;
+        }
+
+        if (slotsForRender.contains(EquipmentSlot.LEGS)) {
+            pModel.body.visible = true;
+            pModel.rightLeg.visible = true;
+            pModel.leftLeg.visible = true;
+        }
+
+        if (slotsForRender.contains(EquipmentSlot.FEET)) {
+            pModel.rightLeg.visible = true;
+            pModel.leftLeg.visible = true;
         }
     }
 }
