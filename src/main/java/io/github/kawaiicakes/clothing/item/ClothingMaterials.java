@@ -18,7 +18,7 @@ public enum ClothingMaterials implements ArmorMaterial {
     HIDE(
             "hide",
             0,
-            new int[]{0, 0, 0, 0},
+            new int[]{2, 1, 2, 1},
             0,
             SoundEvents.ARMOR_EQUIP_LEATHER,
             0.0F,
@@ -28,7 +28,7 @@ public enum ClothingMaterials implements ArmorMaterial {
     CLOTH(
             "cloth",
             0,
-            new int[]{0, 0, 0, 0},
+            new int[]{1, 1, 1, 2},
             0,
             SoundEvents.ARMOR_EQUIP_LEATHER,
             0.0F,
