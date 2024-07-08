@@ -6,7 +6,6 @@ import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.client.model.impl.GenericLayerModel;
 import net.minecraft.client.model.*;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.*;
@@ -77,9 +76,13 @@ public class ClothingMod
         @SubscribeEvent
         public static void addGenericLayers(EntityRenderersEvent.AddLayers event) {
             GenericLayerModel baseModel =
-                    (GenericLayerModel) ClothingModelRepository.getModel(new ResourceLocation(MOD_ID, "base"));
+                    (GenericLayerModel) ClothingModelRepository.getModel("clothing:generic_base");
+            GenericLayerModel innerModel =
+                    (GenericLayerModel) ClothingModelRepository.getModel("clothing:generic_inner");
+            GenericLayerModel outerModel =
+                    (GenericLayerModel) ClothingModelRepository.getModel("clothing:generic_outer");
             GenericLayerModel overModel =
-                    (GenericLayerModel) ClothingModelRepository.getModel(new ResourceLocation(MOD_ID, "over"));
+                    (GenericLayerModel) ClothingModelRepository.getModel("clothing:generic_over");
             // this is so damn scuffed lol, I tried automating this with reflection and iterating over the renderer
             // types but that didn't work
             try {
@@ -90,6 +93,8 @@ public class ClothingMod
                             new HumanoidClothingLayer<>(
                                     armorRenderer,
                                     baseModel.getModelForEntityType(EntityType.ARMOR_STAND),
+                                    innerModel.getModelForEntityType(EntityType.ARMOR_STAND),
+                                    outerModel.getModelForEntityType(EntityType.ARMOR_STAND),
                                     overModel.getModelForEntityType(EntityType.ARMOR_STAND)
                             )
                     );
@@ -102,6 +107,8 @@ public class ClothingMod
                             new HumanoidClothingLayer<>(
                                     drownedRenderer,
                                     baseModel.getModelForEntityType(EntityType.DROWNED),
+                                    innerModel.getModelForEntityType(EntityType.DROWNED),
+                                    outerModel.getModelForEntityType(EntityType.DROWNED),
                                     overModel.getModelForEntityType(EntityType.DROWNED)
                             )
                     );
@@ -114,6 +121,8 @@ public class ClothingMod
                             new HumanoidClothingLayer<>(
                                     giantRenderer,
                                     baseModel.getModelForEntityType(EntityType.GIANT),
+                                    innerModel.getModelForEntityType(EntityType.GIANT),
+                                    outerModel.getModelForEntityType(EntityType.GIANT),
                                     overModel.getModelForEntityType(EntityType.GIANT)
                             )
                     );
@@ -126,6 +135,8 @@ public class ClothingMod
                             new HumanoidClothingLayer<>(
                                     huskRenderer,
                                     baseModel.getModelForEntityType(EntityType.HUSK),
+                                    innerModel.getModelForEntityType(EntityType.HUSK),
+                                    outerModel.getModelForEntityType(EntityType.HUSK),
                                     overModel.getModelForEntityType(EntityType.HUSK)
                             )
                     );
@@ -138,6 +149,8 @@ public class ClothingMod
                             new HumanoidClothingLayer<>(
                                     piglinRenderer,
                                     baseModel.getModelForEntityType(EntityType.PIGLIN),
+                                    innerModel.getModelForEntityType(EntityType.PIGLIN),
+                                    outerModel.getModelForEntityType(EntityType.PIGLIN),
                                     overModel.getModelForEntityType(EntityType.PIGLIN)
                             )
                     );
@@ -150,6 +163,8 @@ public class ClothingMod
                             new HumanoidClothingLayer<>(
                                     piglinBruteRenderer,
                                     baseModel.getModelForEntityType(EntityType.PIGLIN_BRUTE),
+                                    innerModel.getModelForEntityType(EntityType.PIGLIN_BRUTE),
+                                    outerModel.getModelForEntityType(EntityType.PIGLIN_BRUTE),
                                     overModel.getModelForEntityType(EntityType.PIGLIN_BRUTE)
                             )
                     );
@@ -162,6 +177,8 @@ public class ClothingMod
                             new HumanoidClothingLayer<>(
                                     skeletonRenderer,
                                     baseModel.getModelForEntityType(EntityType.SKELETON),
+                                    innerModel.getModelForEntityType(EntityType.SKELETON),
+                                    outerModel.getModelForEntityType(EntityType.SKELETON),
                                     overModel.getModelForEntityType(EntityType.SKELETON)
                             )
                     );
@@ -174,6 +191,8 @@ public class ClothingMod
                             new HumanoidClothingLayer<>(
                                     strayRenderer,
                                     baseModel.getModelForEntityType(EntityType.STRAY),
+                                    innerModel.getModelForEntityType(EntityType.STRAY),
+                                    outerModel.getModelForEntityType(EntityType.STRAY),
                                     overModel.getModelForEntityType(EntityType.STRAY)
                             )
                     );
@@ -186,6 +205,8 @@ public class ClothingMod
                             new HumanoidClothingLayer<>(
                                     witherSkeletonRenderer,
                                     baseModel.getModelForEntityType(EntityType.WITHER_SKELETON),
+                                    innerModel.getModelForEntityType(EntityType.WITHER_SKELETON),
+                                    outerModel.getModelForEntityType(EntityType.WITHER_SKELETON),
                                     overModel.getModelForEntityType(EntityType.WITHER_SKELETON)
                             )
                     );
@@ -198,6 +219,8 @@ public class ClothingMod
                             new HumanoidClothingLayer<>(
                                     zombieRenderer,
                                     baseModel.getModelForEntityType(EntityType.ZOMBIE),
+                                    innerModel.getModelForEntityType(EntityType.ZOMBIE),
+                                    outerModel.getModelForEntityType(EntityType.ZOMBIE),
                                     overModel.getModelForEntityType(EntityType.ZOMBIE)
                             )
                     );
@@ -210,6 +233,8 @@ public class ClothingMod
                             new HumanoidClothingLayer<>(
                                     zombieVillagerRenderer,
                                     baseModel.getModelForEntityType(EntityType.ZOMBIE_VILLAGER),
+                                    innerModel.getModelForEntityType(EntityType.ZOMBIE_VILLAGER),
+                                    outerModel.getModelForEntityType(EntityType.ZOMBIE_VILLAGER),
                                     overModel.getModelForEntityType(EntityType.ZOMBIE_VILLAGER)
                             )
                     );
@@ -222,6 +247,8 @@ public class ClothingMod
                             new HumanoidClothingLayer<>(
                                     zombifiedPiglinRenderer,
                                     baseModel.getModelForEntityType(EntityType.ZOMBIFIED_PIGLIN),
+                                    innerModel.getModelForEntityType(EntityType.ZOMBIFIED_PIGLIN),
+                                    outerModel.getModelForEntityType(EntityType.ZOMBIFIED_PIGLIN),
                                     overModel.getModelForEntityType(EntityType.ZOMBIFIED_PIGLIN)
                             )
                     );
@@ -245,9 +272,17 @@ public class ClothingMod
                                             : (HumanoidModel<Player>) baseModel
                                                     .getModelForEntityType("minecraft:player_slim"),
                                     skinName.equals("default")
+                                            ? innerModel.getModelForEntityType(EntityType.PLAYER)
+                                            : (HumanoidModel<Player>) innerModel
+                                                    .getModelForEntityType("minecraft:player_slim"),
+                                    skinName.equals("default")
+                                            ? outerModel.getModelForEntityType(EntityType.PLAYER)
+                                            : (HumanoidModel<Player>) outerModel
+                                            .getModelForEntityType("minecraft:player_slim"),
+                                    skinName.equals("default")
                                             ? overModel.getModelForEntityType(EntityType.PLAYER)
                                             : (HumanoidModel<Player>) overModel
-                                                    .getModelForEntityType("minecraft:player_slim")
+                                            .getModelForEntityType("minecraft:player_slim")
                             )
                     );
                 }
@@ -258,6 +293,8 @@ public class ClothingMod
 
         static {
             ClothingModelRepository.registerModel(GenericLayerModel::baseModel);
+            ClothingModelRepository.registerModel(GenericLayerModel::innerModel);
+            ClothingModelRepository.registerModel(GenericLayerModel::outerModel);
             ClothingModelRepository.registerModel(GenericLayerModel::overModel);
         }
     }

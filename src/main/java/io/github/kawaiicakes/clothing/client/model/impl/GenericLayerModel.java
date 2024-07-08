@@ -4,6 +4,7 @@ import io.github.kawaiicakes.clothing.client.model.ClothingModel;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EquipmentSlot;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -13,8 +14,10 @@ import java.util.Map;
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 
 public class GenericLayerModel extends ClothingModel {
-    public static final CubeDeformation BASE = new CubeDeformation(0.3F);
-    public static final CubeDeformation OVER = new CubeDeformation(0.32F);
+    public static final CubeDeformation BASE = new CubeDeformation(0.30F);
+    public static final CubeDeformation INNER = new CubeDeformation(0.31F);
+    public static final CubeDeformation OUTER = new CubeDeformation(0.32F);
+    public static final CubeDeformation OVER = new CubeDeformation(0.33F);
 
     protected final CubeDeformation cubeDeformation;
 
@@ -123,78 +126,121 @@ public class GenericLayerModel extends ClothingModel {
         return meshDefinition;
     }
 
-    public static GenericLayerModel baseModel() {
-        return new GenericLayerModel("base", BASE);
+    protected float drownedNonLegsInflation() {
+        return 0.25F;
     }
 
-    public static GenericLayerModel overModel() {
-        return new GenericLayerModel("over", OVER) {
-            @Override
-            public void drownedMeshTransformation(MeshDefinition parentMesh) {
-                PartDefinition parentPart = parentMesh.getRoot();
-                // TODO: public API for changing existing mesh properties.
-                for (Map.Entry<String, PartDefinition> entry : parentPart.children.entrySet()) {
-                    PartDefinition originalPart = entry.getValue();
+    protected float piglinNonLegsInflation() {
+        return 0.02F;
+    }
 
-                    List<CubeDefinition> newPartCubes = new ArrayList<>();
-                    for (CubeDefinition cubeDefinition : originalPart.cubes) {
-                        CubeDefinition newCube = new CubeDefinition(
-                                cubeDefinition.comment,
-                                cubeDefinition.texCoord.u(),
-                                cubeDefinition.texCoord.v(),
-                                cubeDefinition.origin.x(),
-                                cubeDefinition.origin.y(),
-                                cubeDefinition.origin.z(),
-                                cubeDefinition.dimensions.x(),
-                                cubeDefinition.dimensions.y(),
-                                cubeDefinition.dimensions.z(),
-                                cubeDefinition.grow.extend(0.25F),
-                                cubeDefinition.mirror,
-                                cubeDefinition.texScale.u(),
-                                cubeDefinition.texScale.v()
-                        );
-                        newPartCubes.add(newCube);
-                    }
-                    PartDefinition newPart = new PartDefinition(
-                            newPartCubes,
-                            originalPart.partPose
-                    );
-                    parentPart.children.put(entry.getKey(), newPart);
-                }
+    @Override
+    public void drownedMeshTransformation(MeshDefinition parentMesh) {
+        PartDefinition parentPart = parentMesh.getRoot();
+        // TODO: public API for changing existing mesh properties. for that matter, override methods in
+        // other classes (TBD) and declare them as public
+        for (Map.Entry<String, PartDefinition> entry : parentPart.children.entrySet()) {
+            PartDefinition originalPart = entry.getValue();
+
+            List<CubeDefinition> newPartCubes = new ArrayList<>();
+            for (CubeDefinition cubeDefinition : originalPart.cubes) {
+                CubeDefinition newCube = new CubeDefinition(
+                        cubeDefinition.comment,
+                        cubeDefinition.texCoord.u(),
+                        cubeDefinition.texCoord.v(),
+                        cubeDefinition.origin.x(),
+                        cubeDefinition.origin.y(),
+                        cubeDefinition.origin.z(),
+                        cubeDefinition.dimensions.x(),
+                        cubeDefinition.dimensions.y(),
+                        cubeDefinition.dimensions.z(),
+                        cubeDefinition.grow.extend(drownedNonLegsInflation()),
+                        cubeDefinition.mirror,
+                        cubeDefinition.texScale.u(),
+                        cubeDefinition.texScale.v()
+                );
+                newPartCubes.add(newCube);
+            }
+            PartDefinition newPart = new PartDefinition(
+                    newPartCubes,
+                    originalPart.partPose
+            );
+            parentPart.children.put(entry.getKey(), newPart);
+        }
+    }
+
+    @Override
+    public void piglinMeshTransformation(MeshDefinition parentMesh) {
+        PartDefinition parentPart = parentMesh.getRoot();
+        for (Map.Entry<String, PartDefinition> entry : parentPart.children.entrySet()) {
+            PartDefinition originalPart = entry.getValue();
+
+            List<CubeDefinition> newPartCubes = new ArrayList<>();
+            for (CubeDefinition cubeDefinition : originalPart.cubes) {
+                CubeDefinition newCube = new CubeDefinition(
+                        cubeDefinition.comment,
+                        cubeDefinition.texCoord.u(),
+                        cubeDefinition.texCoord.v(),
+                        cubeDefinition.origin.x(),
+                        cubeDefinition.origin.y(),
+                        cubeDefinition.origin.z(),
+                        cubeDefinition.dimensions.x(),
+                        cubeDefinition.dimensions.y(),
+                        cubeDefinition.dimensions.z(),
+                        cubeDefinition.grow.extend(piglinNonLegsInflation()),
+                        cubeDefinition.mirror,
+                        cubeDefinition.texScale.u(),
+                        cubeDefinition.texScale.v()
+                );
+                newPartCubes.add(newCube);
+            }
+            PartDefinition newPart = new PartDefinition(
+                    newPartCubes,
+                    originalPart.partPose
+            );
+            parentPart.children.put(entry.getKey(), newPart);
+        }
+    }
+
+    /**
+     * @return the {@link GenericLayerModel} for the legs
+     * @see io.github.kawaiicakes.clothing.client.HumanoidClothingLayer#getArmorModel(EquipmentSlot)
+     */
+    public static GenericLayerModel baseModel() {
+        return new GenericLayerModel("generic_base", BASE) {
+            @Override
+            protected float drownedNonLegsInflation() {
+                return 0.0F;
             }
 
             @Override
-            public void piglinMeshTransformation(MeshDefinition parentMesh) {
-                PartDefinition parentPart = parentMesh.getRoot();
-                for (Map.Entry<String, PartDefinition> entry : parentPart.children.entrySet()) {
-                    PartDefinition originalPart = entry.getValue();
-
-                    List<CubeDefinition> newPartCubes = new ArrayList<>();
-                    for (CubeDefinition cubeDefinition : originalPart.cubes) {
-                        CubeDefinition newCube = new CubeDefinition(
-                                cubeDefinition.comment,
-                                cubeDefinition.texCoord.u(),
-                                cubeDefinition.texCoord.v(),
-                                cubeDefinition.origin.x(),
-                                cubeDefinition.origin.y(),
-                                cubeDefinition.origin.z(),
-                                cubeDefinition.dimensions.x(),
-                                cubeDefinition.dimensions.y(),
-                                cubeDefinition.dimensions.z(),
-                                cubeDefinition.grow.extend(0.02F),
-                                cubeDefinition.mirror,
-                                cubeDefinition.texScale.u(),
-                                cubeDefinition.texScale.v()
-                        );
-                        newPartCubes.add(newCube);
-                    }
-                    PartDefinition newPart = new PartDefinition(
-                            newPartCubes,
-                            originalPart.partPose
-                    );
-                    parentPart.children.put(entry.getKey(), newPart);
-                }
+            protected float piglinNonLegsInflation() {
+                return 0.0F;
             }
         };
+    }
+
+    /**
+     * @return the {@link GenericLayerModel} for the feet
+     * @see io.github.kawaiicakes.clothing.client.HumanoidClothingLayer#getArmorModel(EquipmentSlot)
+     */
+    public static GenericLayerModel innerModel() {
+        return new GenericLayerModel("generic_inner", INNER);
+    }
+
+    /**
+     * @return the {@link GenericLayerModel} for the chest
+     * @see io.github.kawaiicakes.clothing.client.HumanoidClothingLayer#getArmorModel(EquipmentSlot)
+     */
+    public static GenericLayerModel outerModel() {
+        return new GenericLayerModel("generic_outer", OUTER);
+    }
+
+    /**
+     * @return the {@link GenericLayerModel} for the head
+     * @see io.github.kawaiicakes.clothing.client.HumanoidClothingLayer#getArmorModel(EquipmentSlot)
+     */
+    public static GenericLayerModel overModel() {
+        return new GenericLayerModel("generic_over", OVER);
     }
 }

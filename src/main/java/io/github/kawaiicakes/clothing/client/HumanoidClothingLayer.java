@@ -18,6 +18,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.client.event.EntityRenderersEvent;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
@@ -33,6 +34,7 @@ import java.util.Set;
  * player's skin (including the skin overlay). Over renders slightly above vanilla armour.
  * @author kawaiicakes
  */
+// TODO: document this class fully
 @OnlyIn(Dist.CLIENT)
 public class HumanoidClothingLayer<
         T extends LivingEntity, M extends HumanoidModel<T>, A extends HumanoidModel<T>>
@@ -40,20 +42,28 @@ public class HumanoidClothingLayer<
 {
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    protected final A baseModel;
+    protected final A overModel;
+
     /*
      I've opted to keep everything in one new layer despite the previous comments here. This is because having to
      define an entire humanoid model for one piece of clothing could actually allow for more complex models.
      Accordingly, overrides for #setPartVisibility and support for ClothingModels will be added.
      */
     /**
-     * Added during {@link net.minecraftforge.client.event.EntityRenderersEvent.AddLayers} to appropriate renderer.
+     * Added during {@link EntityRenderersEvent.AddLayers} to appropriate renderer.
      */
-    public HumanoidClothingLayer(RenderLayerParent<T, M> pRenderer, A innerModel, A outerModel) {
+    public HumanoidClothingLayer(
+            RenderLayerParent<T, M> pRenderer, A baseModel, A innerModel, A outerModel, A overModel
+    ) {
         super(
                 pRenderer,
                 innerModel,
                 outerModel
         );
+
+        this.baseModel = baseModel;
+        this.overModel = overModel;
     }
 
     @Override
@@ -82,7 +92,7 @@ public class HumanoidClothingLayer<
                 //noinspection unchecked
                 clothingModel = (A) clothing.getClothingModel(
                         pLivingEntity, stack, slot,
-                        this.getArmorModel(slot)
+                        this.getArmorModel(clothing.slotForModel())
                 );
             } catch (RuntimeException e) {
                 LOGGER.error("Unable to cast model to appropriate type!", e);
@@ -140,10 +150,14 @@ public class HumanoidClothingLayer<
         }
     }
 
-    // TODO: having four models all-in-all, one for each slot, could be a good idea
     @Override
     public @NotNull A getArmorModel(@NotNull EquipmentSlot pSlot) {
-        return super.getArmorModel(pSlot);
+        return switch (pSlot) {
+            case LEGS -> this.baseModel;
+            case CHEST -> this.outerModel;
+            case HEAD -> this.overModel;
+            default -> this.innerModel;
+        };
     }
 
     protected void renderModel(

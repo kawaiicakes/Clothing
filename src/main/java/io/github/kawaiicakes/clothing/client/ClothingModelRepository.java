@@ -27,6 +27,10 @@ public class ClothingModelRepository {
         return MODELS.get(modelId);
     }
 
+    public static ClothingModel getModel(String modelId) {
+        return getModel(new ResourceLocation(modelId));
+    }
+
     // TODO: identify a good place to call this for documentation
     /**
      * Use this method to register your {@link ClothingModel}s with this mod. Everything else will be taken care of;

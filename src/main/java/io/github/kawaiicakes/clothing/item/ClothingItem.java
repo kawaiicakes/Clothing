@@ -55,6 +55,19 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
         return Collections.singleton(this.getSlot());
     }
 
+    /**
+     * This method tells the caller what generic model to use if this piece of clothing immediately returns the
+     * <code>genericModel</code> in {@link #getClothingModel(LivingEntity, ItemStack, EquipmentSlot, HumanoidModel)}.
+     * Since the feet, legs, body, and head models are all essentially the same but layered above/below one another,
+     * override this to change the ordering if you aren't happy with it. You could also consider returning a new
+     * custom model; also in {@link #getClothingModel(LivingEntity, ItemStack, EquipmentSlot, HumanoidModel)}.
+     * @return the {@link EquipmentSlot} this piece of clothing will use the model for.
+     */
+    @NotNull
+    public EquipmentSlot slotForModel() {
+        return this.getSlot();
+    }
+
     // FIXME: clothing does not become translucent
     // FIXME: values not equal to 1.0F cause colour of overlay to "infect" base layer
     /**
