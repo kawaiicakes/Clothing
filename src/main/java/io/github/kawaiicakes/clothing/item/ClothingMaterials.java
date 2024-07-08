@@ -2,11 +2,9 @@ package io.github.kawaiicakes.clothing.item;
 
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.tags.ItemTags;
 import net.minecraft.util.LazyLoadedValue;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ArmorMaterial;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 import org.jetbrains.annotations.NotNull;
 
@@ -17,25 +15,25 @@ import java.util.function.Supplier;
  */
 public enum ClothingMaterials implements ArmorMaterial {
     // TODO: final materials, sounds, stats
-    LEATHER(
-            "leather",
-            5,
-            new int[]{1, 2, 3, 1},
-            15,
+    HIDE(
+            "hide",
+            0,
+            new int[]{0, 0, 0, 0},
+            0,
             SoundEvents.ARMOR_EQUIP_LEATHER,
             0.0F,
             0.0F,
-            () -> Ingredient.of(Items.LEATHER)
+            () -> Ingredient.EMPTY
     ),
-    WOOL(
-            "woolen",
-            5,
-            new int[]{1, 2, 3, 1},
-            15,
+    CLOTH(
+            "cloth",
+            0,
+            new int[]{0, 0, 0, 0},
+            0,
             SoundEvents.ARMOR_EQUIP_LEATHER,
             0.0F,
             0.0F,
-            () -> Ingredient.of(ItemTags.WOOL)
+            () -> Ingredient.EMPTY
     );
 
     private static final int[] HEALTH_PER_SLOT = new int[]{13, 15, 16, 11};

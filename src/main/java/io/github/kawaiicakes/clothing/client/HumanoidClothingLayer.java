@@ -49,8 +49,6 @@ public class HumanoidClothingLayer<
      * Added during {@link net.minecraftforge.client.event.EntityRenderersEvent.AddLayers} to appropriate renderer.
      */
     public HumanoidClothingLayer(RenderLayerParent<T, M> pRenderer, A innerModel, A outerModel) {
-        // TODO: having four models all-in-all, one for each slot, could be a good idea
-
         super(
                 pRenderer,
                 innerModel,
@@ -140,6 +138,12 @@ public class HumanoidClothingLayer<
                     this.getArmorResource(pLivingEntity, stack, slot, "overlay")
             );
         }
+    }
+
+    // TODO: having four models all-in-all, one for each slot, could be a good idea
+    @Override
+    public @NotNull A getArmorModel(@NotNull EquipmentSlot pSlot) {
+        return super.getArmorModel(pSlot);
     }
 
     protected void renderModel(

@@ -55,6 +55,8 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
         return Collections.singleton(this.getSlot());
     }
 
+    // FIXME: clothing does not become translucent
+    // FIXME: values not equal to 1.0F cause colour of overlay to "infect" base layer
     /**
      * Implementations will return the alpha value for render.
      * @param livingEntity the {@link LivingEntity} the clothing is on.
