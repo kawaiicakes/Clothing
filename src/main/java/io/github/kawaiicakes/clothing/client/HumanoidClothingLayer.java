@@ -1,18 +1,11 @@
 package io.github.kawaiicakes.clothing.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
 import net.minecraft.client.model.HumanoidModel;
-import net.minecraft.client.model.Model;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
-import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
@@ -21,38 +14,31 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.model.renderable.BakedModelRenderable;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-
-import java.util.Set;
-
-import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 
 /**
  * This extends {@link HumanoidArmorLayer} in case a third-party mod references instances of that class to render
- * stuff. Furthermore, it also exists so that vanilla armour may render still when mods like Trinkets are
- * installed, hopefully.
+ * stuff.
  * <br><br>
- * The <code>innerModel</code> and <code>outerModel</code> in super are instantiated by "generic models" of types
- * <code>base</code> and <code>over</code>, respectively. Base renders underneath vanilla armour but slightly over the
- * player's skin (including the skin overlay). Over renders slightly above vanilla armour.
+ * You could view this as the brain of this mod, where everything comes together to give it its primary functionality.
+ * This class, like its parent, is responsible for handling the rendering of "stuff" onto an entity based on what
+ * {@link ItemStack}s exist in the {@link EquipmentSlot}s of the entity. This class caches two {@link HumanoidModel}
+ * instances just like its parent, as well as an additional two such that every "body group" has its own layer.
+ * <br><br>
+ * That said, this class works intimately with {@link ClothingItem}s to allow rendering {@link BakedModelRenderable}s;
+ * permitting usage of OBJ and JSON models.
+ * @version Forge 1.19.2
  * @author kawaiicakes
  */
 // TODO: document this class fully
+// TODO: expose more methods from super
 @OnlyIn(Dist.CLIENT)
 public class HumanoidClothingLayer<
         T extends LivingEntity, M extends HumanoidModel<T>, A extends HumanoidModel<T>>
         extends HumanoidArmorLayer<T,M,A>
 {
-    private static final Logger LOGGER = LogUtils.getLogger();
-
     protected final A baseModel;
     protected final A overModel;
 
-    /*
-     I've opted to keep everything in one new layer despite the previous comments here. This is because having to
-     define an entire humanoid model for one piece of clothing could actually allow for more complex models.
-     Accordingly, overrides for #setPartVisibility and support for ClothingModels will be added.
-     */
     /**
      * Added during {@link EntityRenderersEvent.AddLayers} to appropriate renderer.
      */
@@ -69,6 +55,19 @@ public class HumanoidClothingLayer<
         this.overModel = overModel;
     }
 
+    /**
+     * Renders stuff onto <code>pLivingEntity</code> according to what exists in its <code>EquipmentSlot</code>s.
+     * @param pMatrixStack
+     * @param pBuffer
+     * @param pPackedLight
+     * @param pLivingEntity
+     * @param pLimbSwing
+     * @param pLimbSwingAmount
+     * @param pPartialTicks
+     * @param pAgeInTicks
+     * @param pNetHeadYaw
+     * @param pHeadPitch
+     */
     @Override
     public void render(
             @NotNull PoseStack pMatrixStack,
@@ -77,15 +76,6 @@ public class HumanoidClothingLayer<
             float pPartialTicks, float pAgeInTicks,
             float pNetHeadYaw, float pHeadPitch
     ) {
-        ResourceLocation testModelKey = new ResourceLocation(MOD_ID, "cuboid");
-
-        // this was shoehorned in to test OBJ models as an alternative to using MeshDefinitions. The latter seems like
-        // a real PITA to work with. Maybe I'll support JSON models, as well.
-        // FIXME: surprisingly, the first test of rendering OBJ models worked. Keep playing around with it
-        BakedModelRenderable objModel = BakedModelRenderable.of(testModelKey);
-        objModel.render(pMatrixStack, pBuffer, RenderType::armorCutoutNoCull, pPackedLight, 0, pPartialTicks,
-                new BakedModelRenderable.Context(null));
-
         EquipmentSlot[] slots = {
                 EquipmentSlot.FEET,
                 EquipmentSlot.LEGS,
@@ -98,70 +88,25 @@ public class HumanoidClothingLayer<
             if (!(stack.getItem() instanceof ClothingItem clothing)) continue;
             if (!clothing.getSlot().equals(slot)) continue;
 
-            A clothingModel;
-
-            try {
-                //noinspection unchecked
-                clothingModel = (A) clothing.getClothingModel(
-                        pLivingEntity, stack, slot,
-                        this.getArmorModel(clothing.slotForModel())
-                );
-            } catch (RuntimeException e) {
-                LOGGER.error("Unable to cast model to appropriate type!", e);
-                continue;
-            }
-
-            boolean hasGlint = stack.hasFoil();
-
-            this.getParentModel().copyPropertiesTo(clothingModel);
-            this.setPartVisibility(clothingModel, slot, stack);
-
-            int i = clothing.getColor(stack);
-            float r = (float)(i >> 16 & 255) / 255.0F;
-            float g = (float)(i >> 8 & 255) / 255.0F;
-            float b = (float)(i & 255) / 255.0F;
-
-            this.renderModel(
+            clothing.render(
+                    this,
+                    stack,
                     pMatrixStack,
                     pBuffer, pPackedLight,
-                    hasGlint,
-                    clothingModel,
-                    r, g, b, clothing.getAlpha(
-                            pLivingEntity,
-                            stack, slot,
-                            pPackedLight,
-                            pLimbSwing, pLimbSwingAmount,
-                            pPartialTicks, pAgeInTicks,
-                            pNetHeadYaw, pHeadPitch
-                    ),
-                    this.getArmorResource(pLivingEntity, stack, slot, null)
-            );
-
-            if (!clothing.hasOverlay(
-                    pLivingEntity, stack, slot,
-                    pPackedLight,
+                    pLivingEntity,
                     pLimbSwing, pLimbSwingAmount,
                     pPartialTicks, pAgeInTicks,
                     pNetHeadYaw, pHeadPitch
-            )) continue;
-            this.renderModel(
-                    pMatrixStack,
-                    pBuffer, pPackedLight,
-                    hasGlint,
-                    clothingModel,
-                    1.0F, 1.0F, 1.0F, clothing.getAlpha(
-                            pLivingEntity,
-                            stack, slot,
-                            pPackedLight,
-                            pLimbSwing, pLimbSwingAmount,
-                            pPartialTicks, pAgeInTicks,
-                            pNetHeadYaw, pHeadPitch
-                    ),
-                    this.getArmorResource(pLivingEntity, stack, slot, "overlay")
             );
         }
     }
 
+    /**
+     * Returns the {@link HumanoidModel} instance associated with a slot; this method is used exclusively for rendering
+     * models defined using {@link net.minecraft.client.model.geom.builders.MeshDefinition}s.
+     * @param pSlot the {@link EquipmentSlot} a piece of clothing is primarily worn on.
+     * @return the {@link HumanoidModel} associated with <code>pSlot</code>.
+     */
     @Override
     public @NotNull A getArmorModel(@NotNull EquipmentSlot pSlot) {
         return switch (pSlot) {
@@ -172,62 +117,13 @@ public class HumanoidClothingLayer<
         };
     }
 
-    protected void renderModel(
-            PoseStack pPoseStack,
-            MultiBufferSource pBuffer, int pPackedLight, boolean pGlint,
-            Model pModel,
-            float pRed, float pGreen, float pBlue, float pAlpha,
-            ResourceLocation armorResource
-    ) {
-        VertexConsumer vertexconsumer =
-                ItemRenderer.getArmorFoilBuffer(
-                        pBuffer,
-                        RenderType.armorCutoutNoCull(armorResource),
-                        false,
-                        pGlint
-                );
-
-        pModel.renderToBuffer(
-                pPoseStack,
-                vertexconsumer,
-                pPackedLight,
-                OverlayTexture.NO_OVERLAY,
-                pRed,
-                pGreen,
-                pBlue,
-                pAlpha
-        );
-    }
-
-    protected void setPartVisibility(@NotNull A pModel, @NotNull EquipmentSlot pSlot, ItemStack pItemStack) {
-        if (!(pItemStack.getItem() instanceof ClothingItem clothingItem)) {
-            super.setPartVisibility(pModel, pSlot);
-            return;
-        }
-
-        Set<EquipmentSlot> slotsForRender = clothingItem.slotsForRender();
-        pModel.setAllVisible(false);
-
-        if (slotsForRender.contains(EquipmentSlot.HEAD)) {
-            pModel.head.visible = true;
-            pModel.hat.visible = true;
-        }
-
-        if (slotsForRender.contains(EquipmentSlot.CHEST)) {
-            pModel.body.visible = true;
-            pModel.rightArm.visible = true;
-            pModel.leftArm.visible = true;
-        }
-
-        if (slotsForRender.contains(EquipmentSlot.LEGS)) {
-            pModel.body.visible = true;
-            pModel.rightLeg.visible = true;
-            pModel.leftLeg.visible = true;
-        }
-
-        if (slotsForRender.contains(EquipmentSlot.FEET)) {
-            pModel.rightLeg.visible = true;
-            pModel.leftLeg.visible = true;
-        }
+    /**
+     * TODO
+     * @param pModel
+     * @param pSlot
+     */
+    @Override
+    public void setPartVisibility(@NotNull A pModel, @NotNull EquipmentSlot pSlot) {
+        super.setPartVisibility(pModel, pSlot);
     }
 }

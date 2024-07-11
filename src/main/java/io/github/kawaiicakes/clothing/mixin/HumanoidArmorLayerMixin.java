@@ -20,6 +20,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * elected to do ({@link io.github.kawaiicakes.clothing.client.HumanoidClothingLayer}), this mixin exists to prevent
  * clothing from being "double-dipped" for render.
  * <br><br>
+ * I'm aware I could make {@link ClothingItem} not subclass {@link net.minecraft.world.item.ArmorItem}, but doing so
+ * regardless would likely help maintain maximum compatibility with other mods.
+ * <br><br>
  * P.S. I'm not sure if it's necessary to annotate this with client dist only...
  * @author kawaiicakes
  */

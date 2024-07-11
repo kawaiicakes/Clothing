@@ -1,6 +1,9 @@
 package io.github.kawaiicakes.clothing.item;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
@@ -10,16 +13,16 @@ import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.DyeableLeatherItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.ParametersAreNullableByDefault;
-import java.util.Collections;
-import java.util.Set;
-import java.util.function.Consumer;
 
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 
+/**
+ * TODO
+ * Each implementation of this will likely represent an item that renders as one model type (e.g. JSON, OBJ)
+ */
 public abstract class ClothingItem extends ArmorItem implements DyeableLeatherItem {
     protected final int defaultColor;
 
@@ -29,39 +32,36 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
     }
 
     /**
-     * Implementations should return the desired model for this piece of clothing. Bear in mind that the models are
-     * rendered as layers in {@link io.github.kawaiicakes.clothing.client.HumanoidClothingLayer}.
-     * <br><br>
-     * If you only plan to use the default armour model, just immediately return <code>genericModel</code>.
-     * @param livingEntity the {@link LivingEntity} this model is made for.
-     * @param stack the {@link ItemStack} representing this piece of clothing.
-     * @param slot the {@link EquipmentSlot this piece of clothing goes in.}
-     * {@link net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer}.
-     * @return the desired {@link HumanoidModel} for this piece of clothing.
+     * TODO
+     * @param pClothingLayer
+     * @param pItemStack
+     * @param pMatrixStack
+     * @param pBuffer
+     * @param pPackedLight
+     * @param pLivingEntity
+     * @param pLimbSwing
+     * @param pLimbSwingAmount
+     * @param pPartialTicks
+     * @param pAgeInTicks
+     * @param pNetHeadYaw
+     * @param pHeadPitch
+     * @param <T>
+     * @param <A>
+     * @param <M>
      */
-    @NotNull
-    @ParametersAreNullableByDefault
-    public abstract HumanoidModel<? extends LivingEntity> getClothingModel(
-            LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot,
-            HumanoidModel<? extends LivingEntity> genericModel
+    public abstract <T extends LivingEntity, M extends HumanoidModel<T>, A extends HumanoidModel<T>> void render(
+            @NotNull HumanoidClothingLayer<T, M, A> pClothingLayer,
+            @NotNull ItemStack pItemStack,
+            @NotNull PoseStack pMatrixStack,
+            @NotNull MultiBufferSource pBuffer, int pPackedLight,
+            @NotNull T pLivingEntity,
+            float pLimbSwing, float pLimbSwingAmount,
+            float pPartialTicks, float pAgeInTicks,
+            float pNetHeadYaw, float pHeadPitch
     );
 
     /**
-     * This method is used to determine which body groups will render for this piece of clothing.
-     * @return a <code>Set</code> containing the {@link EquipmentSlot}s that correspond to the body groups for render.
-     */
-    @NotNull
-    public Set<EquipmentSlot> slotsForRender() {
-        return Collections.singleton(this.getSlot());
-    }
-
-    /**
-     * This method tells the caller what generic model to use if this piece of clothing immediately returns the
-     * <code>genericModel</code> in {@link #getClothingModel(LivingEntity, ItemStack, EquipmentSlot, HumanoidModel)}.
-     * Since the feet, legs, body, and head models are all essentially the same but layered above/below one another,
-     * override this to change the ordering if you aren't happy with it. You could also consider returning a new
-     * custom model; also in {@link #getClothingModel(LivingEntity, ItemStack, EquipmentSlot, HumanoidModel)}.
-     * @return the {@link EquipmentSlot} this piece of clothing will use the model for.
+     * TODO
      */
     @NotNull
     public EquipmentSlot slotForModel() {
@@ -69,7 +69,7 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
     }
 
     // FIXME: clothing does not become translucent
-    // FIXME: values not equal to 1.0F cause colour of overlay to "infect" base layer
+    // FIXME: values not equal to 1.0F cause colour of overlay to "infect" base layer for GenericClothingItems
     /**
      * Implementations will return the alpha value for render.
      * @param livingEntity the {@link LivingEntity} the clothing is on.
@@ -86,24 +86,6 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
             float pNetHeadYaw, float pHeadPitch
     ) {
         return 1.0F;
-    }
-
-    /**
-     * Determines whether an attempt will be made to render an overlay onto this piece of clothing.
-     * @param livingEntity the {@link LivingEntity} the clothing is on.
-     * @param stack the {@link ItemStack} representing this piece of clothing.
-     * @param slot the {@link EquipmentSlot} this piece of clothing goes in.
-     * @return Self-explanatory.
-     */
-    @ParametersAreNullableByDefault
-    public boolean hasOverlay(
-            LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot,
-            int packedLight,
-            float pLimbSwing, float pLimbSwingAmount,
-            float pPartialTicks, float pAgeInTicks,
-            float pNetHeadYaw, float pHeadPitch
-    ) {
-        return false;
     }
 
     /**
@@ -142,22 +124,5 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
         if ((nbt == null || !nbt.contains(TAG_COLOR, 99)) && toReturn == DEFAULT_LEATHER_COLOR)
             toReturn = this.defaultColor;
         return toReturn;
-    }
-
-    @Override
-    public void initializeClient(@NotNull Consumer<IClientItemExtensions> consumer) {
-        consumer.accept(
-                // Forge javadocs say not to use a concrete implementation of IClientItemExtensions here
-                new IClientItemExtensions() {
-                    @Override
-                    public @NotNull HumanoidModel<?> getHumanoidArmorModel(
-                            LivingEntity livingEntity,
-                            ItemStack itemStack, EquipmentSlot equipmentSlot,
-                            HumanoidModel<?> original
-                    ) {
-                        return ClothingItem.this.getClothingModel(livingEntity, itemStack, equipmentSlot, original);
-                    }
-                }
-        );
     }
 }

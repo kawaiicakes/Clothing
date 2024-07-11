@@ -23,47 +23,30 @@ public class ClothingRegistry {
         CLOTHING_REGISTRY.register(itemName, itemSupplier);
     }
 
-    // I don't think I'm going to need to reference specific items anytime soon, so this is fine to save memory
+    // I don't think I'm going to need to reference specific items anytime soon, so caching this isn't necessary
     static {
         register("test_helmet", () -> new GenericClothingItem(EquipmentSlot.HEAD));
         register("test", () -> new GenericClothingItem(EquipmentSlot.CHEST));
         register("test_pants", () -> new GenericClothingItem(EquipmentSlot.LEGS));
         register("test_boots", () -> new GenericClothingItem(EquipmentSlot.FEET));
 
-        register("ouch", () -> new ClothingItem(ClothingMaterials.CLOTH, EquipmentSlot.CHEST, new Item.Properties(), 16712019) {
-                @Override
-                public @NotNull HumanoidModel<? extends LivingEntity> getClothingModel(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, HumanoidModel<? extends LivingEntity> genericModel) {
-                    return genericModel;
-                }
+        register("ouch", () -> new GenericClothingItem(EquipmentSlot.CHEST, 16712019) {
+            @Override
+            public <T extends LivingEntity> boolean hasOverlay(T pLivingEntity, ItemStack pItemStack, EquipmentSlot equipmentSlot, int pPackedLight, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
+                return true;
+            }
 
-
-                @Override
-                public float getAlpha(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, int packedLight, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
-
-                    return 1.0F;
-                }
-
-                @Override
+            @Override
                 public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
                     if (type == null) {
                         return "clothing:textures/models/armor/clothing/ouch.png";
                     }
                     return "clothing:textures/models/armor/clothing/ouch_overlay.png";
                 }
-
-                @Override
-                public boolean hasOverlay(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, int packedLight, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
-                    return true;
-                }
             }
         );
 
-        register("glowie_helm", () -> new ClothingItem(ClothingMaterials.CLOTH, EquipmentSlot.HEAD, new Item.Properties(), 12345679) {
-                @Override
-                public @NotNull HumanoidModel<? extends LivingEntity> getClothingModel(LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot, HumanoidModel<? extends LivingEntity> genericModel) {
-                    return genericModel;
-                }
-
+        register("glowie_helm", () -> new GenericClothingItem(EquipmentSlot.HEAD, 12345679) {
                 @Override
                 public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
                     return "clothing:textures/models/armor/clothing/glowie_helm.png";
