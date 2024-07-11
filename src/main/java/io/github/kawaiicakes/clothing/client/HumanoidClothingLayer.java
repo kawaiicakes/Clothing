@@ -19,10 +19,13 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.EntityRenderersEvent;
+import net.minecraftforge.client.model.renderable.BakedModelRenderable;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
 import java.util.Set;
+
+import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 
 /**
  * This extends {@link HumanoidArmorLayer} in case a third-party mod references instances of that class to render
@@ -74,6 +77,15 @@ public class HumanoidClothingLayer<
             float pPartialTicks, float pAgeInTicks,
             float pNetHeadYaw, float pHeadPitch
     ) {
+        ResourceLocation testModelKey = new ResourceLocation(MOD_ID, "cuboid");
+
+        // this was shoehorned in to test OBJ models as an alternative to using MeshDefinitions. The latter seems like
+        // a real PITA to work with. Maybe I'll support JSON models, as well.
+        // FIXME: surprisingly, the first test of rendering OBJ models worked. Keep playing around with it
+        BakedModelRenderable objModel = BakedModelRenderable.of(testModelKey);
+        objModel.render(pMatrixStack, pBuffer, RenderType::armorCutoutNoCull, pPackedLight, 0, pPartialTicks,
+                new BakedModelRenderable.Context(null));
+
         EquipmentSlot[] slots = {
                 EquipmentSlot.FEET,
                 EquipmentSlot.LEGS,
