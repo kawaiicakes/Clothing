@@ -97,20 +97,20 @@ public abstract class ClothingModel implements MeshTransformer {
      * It is suggested that you cache the returned model somewhere. I would have cached the models in this class as a
      * field, but I do fear that this may cause weird rendering issues.
      * @see ZombieVillagerRenderer
-     * @param entityType the {@link EntityType}'s key as a String for render
+     * @param entityTypeKey the {@link EntityType}'s key as a String for render
      * @return an instance of <code>HumanoidModel</code>.
      */
     @Nullable
-    public HumanoidModel<? extends LivingEntity> getModelForEntityType(String entityType) {
-        if (Arrays.stream(getEntityTypes()).noneMatch((e) -> e.equals(entityType)))
+    public HumanoidModel<? extends LivingEntity> getModelForEntityType(String entityTypeKey) {
+        if (Arrays.stream(getEntityTypeKey()).noneMatch((e) -> e.equals(entityTypeKey)))
             throw new IllegalArgumentException("Invalid entity!");
 
         ModelPart modelPart = this.bakedModels.getOrDefault(
-                entityType, null
+                entityTypeKey, null
         );
         if (modelPart == null) throw new IllegalArgumentException("This entity type does not have a model!");
 
-        Constructor<?> objConstructor = this.getModelConstructorForEntityType(entityType);
+        Constructor<?> objConstructor = this.getModelConstructorForEntityType(entityTypeKey);
 
         HumanoidModel<? extends LivingEntity> toReturn = null;
         try {
@@ -122,14 +122,14 @@ public abstract class ClothingModel implements MeshTransformer {
                     = (Constructor<? extends HumanoidModel<? extends LivingEntity>>) objConstructor;
             toReturn = modelConstructor.newInstance(modelPart);
         } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            LOGGER.error("Unable to instantiate model for render on entity type {}!", entityType, e);
+            LOGGER.error("Unable to instantiate model for render on entity type {}!", entityTypeKey, e);
         } catch (NullPointerException e) {
             LOGGER.error(
-                    "Model constructor with ModelPart parameter does not exist for entity type {}!", entityType, e
+                    "Model constructor with ModelPart parameter does not exist for entity type {}!", entityTypeKey, e
             );
         } catch (ClassCastException e) {
             LOGGER.error(
-                    "Unable to cast constructor for model for entity type {}!", entityType, e
+                    "Unable to cast constructor for model for entity type {}!", entityTypeKey, e
             );
         }
         return toReturn;
@@ -144,7 +144,7 @@ public abstract class ClothingModel implements MeshTransformer {
      * <br><br>
      * Implementations should be aware that a check for entity type validity would be redundant here since this is a
      * job better suited to {@link #getModelForEntityType(EntityType)}.
-     * @see #getEntityTypes()
+     * @see #getEntityTypeKey()
      * @param entityType the {@link EntityType} key's <code>String</code> for which this model will be rendered.
      * @return the <code>Constructor</code> who takes a {@link ModelPart} as an argument.
      *          If no such constructor exists, override {@link #getModelForEntityType(EntityType)}
@@ -176,13 +176,13 @@ public abstract class ClothingModel implements MeshTransformer {
      * Creates a {@link LayerDefinition} from a {@link MeshDefinition} that is
      * tweaked according to the passed <code>entityType</code>. This is to allow for slight differences between models
      * depending on what kind of entity is wearing it.
-     * @param entityType the <code>String</code> of the entity's type key. See {@link #getEntityTypes()} for valid
+     * @param entityTypeKey the <code>String</code> of the entity's type key. See {@link #getEntityTypeKey()} for valid
      *                   types.
      * @return the {@link LayerDefinition} that will be registered.
      * @throws IllegalArgumentException if the passed entity type is not supported for clothing rendering.
      */
-    public LayerDefinition generateLayerDefinition(String entityType) {
-        if (Arrays.stream(getEntityTypes()).noneMatch((e) -> e.equals(entityType)))
+    public LayerDefinition generateLayerDefinition(String entityTypeKey) {
+        if (Arrays.stream(getEntityTypeKey()).noneMatch((e) -> e.equals(entityTypeKey)))
             throw new IllegalArgumentException("Invalid entity!");
 
         final MeshDefinition meshDefinition = MeshTransformer.emptyHumanoidMesh();
@@ -201,7 +201,7 @@ public abstract class ClothingModel implements MeshTransformer {
             definitionPart.children.put(childName, basePartChild);
         }
 
-        switch (entityType) {
+        switch (entityTypeKey) {
             case "minecraft:armor_stand" -> this.armorStandMeshTransformation(meshDefinition);
             case "minecraft:drowned" -> this.drownedMeshTransformation(meshDefinition);
             case "minecraft:giant" -> this.giantMeshTransformation(meshDefinition);
@@ -219,15 +219,15 @@ public abstract class ClothingModel implements MeshTransformer {
     /**
      * Creates a {@link ModelLayerLocation} that represents the layer for the passed entity. This exists to allow for
      * reference of a <code>ModelLayerLocation</code> without the need to cache it.
-     * @param entityType the {@link EntityType} key as a <code>String</code> of the entity that owns this layer.
-     *                   See {@link #getEntityTypes()} for valid types.
+     * @param entityTypeKey the {@link EntityType} key as a <code>String</code> of the entity that owns this layer.
+     *                   See {@link #getEntityTypeKey()} for valid types.
      * @return the {@link ModelLayerLocation} for the layer of the passed <code>entityType</code>.
      * @throws IllegalArgumentException if the passed entity type is not supported for clothing rendering.
      */
-    public ModelLayerLocation generateModelLayerLocation(String entityType) {
-        if (Arrays.stream(getEntityTypes()).noneMatch((e) -> e.equals(entityType)))
+    public ModelLayerLocation generateModelLayerLocation(String entityTypeKey) {
+        if (Arrays.stream(getEntityTypeKey()).noneMatch((e) -> e.equals(entityTypeKey)))
             throw new IllegalArgumentException("Invalid entity!");
-        return new ModelLayerLocation(new ResourceLocation(entityType), this.modelId.toString());
+        return new ModelLayerLocation(new ResourceLocation(entityTypeKey), this.modelId.toString());
     }
 
     /**
@@ -238,7 +238,7 @@ public abstract class ClothingModel implements MeshTransformer {
      */
     @ApiStatus.Internal
     public void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
-        for (String entityType : getEntityTypes()) {
+        for (String entityType : getEntityTypeKey()) {
             event.registerLayerDefinition(
                     this.generateModelLayerLocation(entityType),
                     () -> this.generateLayerDefinition(entityType)
@@ -255,7 +255,7 @@ public abstract class ClothingModel implements MeshTransformer {
     public void bakeParts(EntityRenderersEvent.AddLayers event) {
         EntityModelSet modelSet = event.getEntityModels();
 
-        for (String entityType : getEntityTypes()) {
+        for (String entityType : getEntityTypeKey()) {
             this.bakedModels.put(
                     entityType,
                     modelSet.bakeLayer(this.generateModelLayerLocation(entityType))
@@ -272,7 +272,7 @@ public abstract class ClothingModel implements MeshTransformer {
      * @return Returns a <code>Set</code> of all {@link EntityType}s that this model is intended to render on.
      */
     @ApiStatus.Internal
-    public static String[] getEntityTypes() {
+    public static String[] getEntityTypeKey() {
         return new String[] {
                 "minecraft:armor_stand",
                 "minecraft:drowned",

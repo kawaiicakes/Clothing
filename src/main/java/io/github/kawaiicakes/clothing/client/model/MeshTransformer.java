@@ -22,7 +22,7 @@ import java.util.List;
  * <br><br>
  * Furthermore, this interface exists as a sensible entrypoint for anyone trying to add third-party support for a
  * custom entity type (via mixins). With respect to that task, you must also pay attention to
- * {@link ClothingModel#getEntityTypes()} and anything laid out in its Javadoc.
+ * {@link ClothingModel#getEntityTypeKey()} and anything laid out in its Javadoc.
  */
 @OnlyIn(Dist.CLIENT)
 public interface MeshTransformer {
