@@ -35,6 +35,17 @@ import java.util.Map;
 public class GenericDefinitions {
     protected static Logger LOGGER = LogUtils.getLogger();
 
+    public static float[] cubeDeformations() {
+        return new float[] {
+                0.30F,
+                0.31F,
+                0.32F,
+                0.33F,
+                0.80F,
+                1.30F
+        };
+    }
+
     public static <T extends LivingEntity, M extends HumanoidModel<T>> void addLayerHelper(
             String entityTypeKey,
             EntityRenderersEvent.AddLayers event
@@ -48,15 +59,17 @@ public class GenericDefinitions {
             if (renderer == null) {
                 throw new IllegalArgumentException("Unable to obtain renderer for " + entityTypeKey + "!");
             }
+            float[] cubeDeformations = cubeDeformations();
+
             renderer.addLayer(
                     new HumanoidClothingLayer<>(
                             renderer,
-                            getModelForEntityType(entityTypeKey, 0.30F, event),
-                            getModelForEntityType(entityTypeKey, 0.31F, event),
-                            getModelForEntityType(entityTypeKey, 0.32F, event),
-                            getModelForEntityType(entityTypeKey, 0.33F, event),
-                            getModelForEntityType(entityTypeKey, 0.80F, event),
-                            getModelForEntityType(entityTypeKey, 1.30F, event)
+                            getModelForEntityType(entityTypeKey, cubeDeformations[0], event),
+                            getModelForEntityType(entityTypeKey, cubeDeformations[1], event),
+                            getModelForEntityType(entityTypeKey, cubeDeformations[2], event),
+                            getModelForEntityType(entityTypeKey, cubeDeformations[3], event),
+                            getModelForEntityType(entityTypeKey, cubeDeformations[4], event),
+                            getModelForEntityType(entityTypeKey, cubeDeformations[5], event)
                     )
             );
         } catch (RuntimeException e) {
@@ -101,8 +114,8 @@ public class GenericDefinitions {
     }
 
     public static ModelLayerLocation generateModelLayerLocation(String entityTypeKey, float layerDeformation) {
-        int layerInt = (int) ((layerDeformation - 0.30F) * 100);
-        return new ModelLayerLocation(new ResourceLocation(entityTypeKey), "generic_" + layerInt);
+        int layerInt = (int) (layerDeformation * 100);
+        return new ModelLayerLocation(new ResourceLocation(entityTypeKey), "generic_" + layerInt + "F");
     }
 
     public static LayerDefinition generateLayerDefinition(String entityTypeKey, CubeDeformation cubeDeformation) {
@@ -509,7 +522,7 @@ public class GenericDefinitions {
     @SubscribeEvent
     public static void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
         for (String entityType : getEntityTypeKey()) {
-            for (float i = 0.30F; i < 0.34F; i += 0.01F) {
+            for (float i : cubeDeformations()) {
                 final float finalI = i;
 
                 event.registerLayerDefinition(

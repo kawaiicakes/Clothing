@@ -91,6 +91,7 @@ public class GenericClothingItem extends ClothingItem {
                                 )
                         );
 
+                        // TODO: hasOverlay behaviour
                         if (
                                 !this.hasOverlay(
                                         pLivingEntity, pItemStack, GenericClothingItem.this.slotForModel(),
