@@ -3,7 +3,6 @@ package io.github.kawaiicakes.clothing.item;
 import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.DeferredRegister;
@@ -30,11 +29,6 @@ public class ClothingRegistry {
         register("test_boots", () -> new GenericClothingItem(EquipmentSlot.FEET));
 
         register("ouch", () -> new GenericClothingItem(EquipmentSlot.CHEST, 16712019) {
-            @Override
-            public <T extends LivingEntity> boolean hasOverlay(T pLivingEntity, ItemStack pItemStack, EquipmentSlot equipmentSlot, int pPackedLight, float pLimbSwing, float pLimbSwingAmount, float pPartialTicks, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch) {
-                return true;
-            }
-
             @Override
                 public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
                     if (type == null) {

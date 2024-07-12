@@ -1,21 +1,21 @@
 package io.github.kawaiicakes.clothing.item;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
-import net.minecraft.client.model.HumanoidModel;
-import net.minecraft.client.renderer.MultiBufferSource;
+import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.DyeableLeatherItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.loading.FMLEnvironment;
+import net.minecraftforge.fml.loading.FMLLoader;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
-import javax.annotation.ParametersAreNullableByDefault;
+import java.util.function.Consumer;
 
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 
@@ -24,42 +24,20 @@ import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
  * Each implementation of this will likely represent an item that renders as one model type (e.g. JSON, OBJ)
  */
 public abstract class ClothingItem extends ArmorItem implements DyeableLeatherItem {
+    private Object clientClothingRenderManager;
     protected final int defaultColor;
 
     public ClothingItem(ArmorMaterial pMaterial, EquipmentSlot pSlot, Properties pProperties, int defaultColor) {
         super(pMaterial, pSlot, pProperties);
         this.defaultColor = defaultColor;
+        this.initializeClientClothingRenderManager();
     }
 
-    // FIXME: prevent reaching across sides: interface like IClientItemExtensions for this method and adjacent ones?
     /**
-     * TODO
-     * @param pClothingLayer
-     * @param pItemStack
-     * @param pMatrixStack
-     * @param pBuffer
-     * @param pPackedLight
-     * @param pLivingEntity
-     * @param pLimbSwing
-     * @param pLimbSwingAmount
-     * @param pPartialTicks
-     * @param pAgeInTicks
-     * @param pNetHeadYaw
-     * @param pHeadPitch
-     * @param <T>
-     * @param <A>
-     * @param <M>
+     * TODO: this is a critical method to document considering it's how implementations are expected to render models
+     * @param clothingManager
      */
-    public abstract <T extends LivingEntity, M extends HumanoidModel<T>, A extends HumanoidModel<T>> void render(
-            @NotNull HumanoidClothingLayer<T, M, A> pClothingLayer,
-            @NotNull ItemStack pItemStack,
-            @NotNull PoseStack pMatrixStack,
-            @NotNull MultiBufferSource pBuffer, int pPackedLight,
-            @NotNull T pLivingEntity,
-            float pLimbSwing, float pLimbSwingAmount,
-            float pPartialTicks, float pAgeInTicks,
-            float pNetHeadYaw, float pHeadPitch
-    );
+    public abstract void acceptClientClothingRenderManager(Consumer<ClientClothingRenderManager> clothingManager);
 
     /**
      * TODO
@@ -67,26 +45,6 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
     @NotNull
     public EquipmentSlot slotForModel() {
         return this.getSlot();
-    }
-
-    // FIXME: clothing does not become translucent
-    // FIXME: values not equal to 1.0F cause colour of overlay to "infect" base layer for GenericClothingItems
-    /**
-     * Implementations will return the alpha value for render.
-     * @param livingEntity the {@link LivingEntity} the clothing is on.
-     * @param stack the {@link ItemStack} representing this piece of clothing.
-     * @param slot the {@link EquipmentSlot this piece of clothing goes in.}
-     * @return The value of alpha as a float. Permitted values are 0.0 to 1.0 inclusive.
-     */
-    @ParametersAreNullableByDefault
-    public float getAlpha(
-            LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot,
-            int packedLight,
-            float pLimbSwing, float pLimbSwingAmount,
-            float pPartialTicks, float pAgeInTicks,
-            float pNetHeadYaw, float pHeadPitch
-    ) {
-        return 1.0F;
     }
 
     /**
@@ -125,5 +83,31 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
         if ((nbt == null || !nbt.contains(TAG_COLOR, 99)) && toReturn == DEFAULT_LEATHER_COLOR)
             toReturn = this.defaultColor;
         return toReturn;
+    }
+
+    @ApiStatus.Internal
+    public Object getClientClothingRenderManager() {
+        return this.clientClothingRenderManager;
+    }
+
+    @ApiStatus.Internal
+    private void initializeClientClothingRenderManager() {
+        if (!FMLEnvironment.dist.equals(Dist.CLIENT) || FMLLoader.getLaunchHandler().isData()) return;
+
+        acceptClientClothingRenderManager(
+                clothingManager -> {
+                    /*
+                        necessary since acceptClientClothingRenderManager and this class are expected to be implemented.
+                        As to why this check is done to begin with, I have no clue. Forge does it in its client
+                        extensions, so I'll adopt it
+                     */
+                    //noinspection EqualsBetweenInconvertibleTypes
+                    if (this.equals(clothingManager))
+                        throw new IllegalStateException(
+                                "Don't implement ClientClothingRenderManager in this ClothingItem!"
+                        );
+                    this.clientClothingRenderManager = clothingManager;
+                }
+        );
     }
 }

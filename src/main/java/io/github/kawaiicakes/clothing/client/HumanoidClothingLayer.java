@@ -64,6 +64,8 @@ public class HumanoidClothingLayer<
 
     /**
      * Renders stuff onto <code>pLivingEntity</code> according to what exists in its <code>EquipmentSlot</code>s.
+     * <br>
+     * TODO: elaborate on relation to {@link ClientClothingRenderManager}
      * @param pMatrixStack
      * @param pBuffer
      * @param pPackedLight
@@ -95,7 +97,9 @@ public class HumanoidClothingLayer<
             if (!(stack.getItem() instanceof ClothingItem clothing)) continue;
             if (!clothing.getSlot().equals(slot)) continue;
 
-            clothing.render(
+            ClientClothingRenderManager renderManager = ClientClothingRenderManager.of(clothing);
+
+            renderManager.render(
                     this,
                     stack,
                     pMatrixStack,
@@ -108,21 +112,28 @@ public class HumanoidClothingLayer<
         }
     }
 
-    /**
-     * Returns the {@link HumanoidModel} instance associated with a slot; this method is used exclusively for rendering
-     * models defined using {@link net.minecraft.client.model.geom.builders.MeshDefinition}s. If you want to get saucy,
-     * try using {@link #overLegsArmorModel} or {@link #overMainArmorModel}!
-     * @param pSlot the {@link EquipmentSlot} a piece of clothing is primarily worn on.
-     * @return the {@link HumanoidModel} associated with <code>pSlot</code>.
-     */
-    @Override
-    public @NotNull A getArmorModel(@NotNull EquipmentSlot pSlot) {
-        return switch (pSlot) {
-            case LEGS -> this.baseModel;
-            case CHEST -> this.outerModel;
-            case HEAD -> this.overModel;
-            default -> this.innerModel;
-        };
+    public A getBaseModel() {
+        return this.baseModel;
+    }
+
+    public A getInnerModel() {
+        return this.innerModel;
+    }
+
+    public A getOuterModel() {
+        return this.outerModel;
+    }
+
+    public A getOverModel() {
+        return this.overModel;
+    }
+
+    public A getOverLegsArmorModel() {
+        return this.overLegsArmorModel;
+    }
+
+    public A getOverMainArmorModel() {
+        return this.overMainArmorModel;
     }
 
     /**
