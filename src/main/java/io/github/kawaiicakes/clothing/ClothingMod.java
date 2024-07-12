@@ -1,17 +1,11 @@
 package io.github.kawaiicakes.clothing;
 
 import com.mojang.logging.LogUtils;
-import io.github.kawaiicakes.clothing.client.ClothingModelRepository;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
-import io.github.kawaiicakes.clothing.client.model.impl.GenericLayerModel;
-import net.minecraft.client.model.*;
+import io.github.kawaiicakes.clothing.client.model.GenericDefinitions;
+import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.entity.monster.*;
-import net.minecraft.world.entity.monster.piglin.Piglin;
-import net.minecraft.world.entity.monster.piglin.PiglinBrute;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
@@ -43,13 +37,13 @@ public class ClothingMod
         CLOTHING_REGISTRY.register(FMLJavaModLoadingContext.get().getModEventBus());
 
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onInterModEnqueue);
-        FMLJavaModLoadingContext.get().getModEventBus().register(ClothingModelRepository.class);
+        FMLJavaModLoadingContext.get().getModEventBus().register(GenericDefinitions.class);
     }
 
     @SubscribeEvent
     public void onInterModEnqueue(InterModEnqueueEvent event) {
         // this check is necessary as I'm unsure if this will cause issues on clients who do not have Curios installed.
-        // Namely, the reference(s) to classes which only exist in the Curios API
+        // Namely, the reference(s) to SlotTypePreset
         if (CURIOS_LOADED) {
             boolean messageSent = InterModComms.sendTo(
                     "curios",
@@ -58,7 +52,7 @@ public class ClothingMod
             );
 
             String msg = messageSent ? "[Clothing] Successfully registered Curios Clothing slots"
-                    : "[Clothing] Curios is present, but was slots were unable to be registered!";
+                    : "[Clothing] Curios is present, but Clothing slots were unable to be registered!";
 
             LOGGER.info(msg);
         }
@@ -82,186 +76,9 @@ public class ClothingMod
 
         @SubscribeEvent
         public static void addGenericLayers(EntityRenderersEvent.AddLayers event) {
-            GenericLayerModel baseModel =
-                    (GenericLayerModel) ClothingModelRepository.getModel("clothing:generic_base");
-            GenericLayerModel innerModel =
-                    (GenericLayerModel) ClothingModelRepository.getModel("clothing:generic_inner");
-            GenericLayerModel outerModel =
-                    (GenericLayerModel) ClothingModelRepository.getModel("clothing:generic_outer");
-            GenericLayerModel overModel =
-                    (GenericLayerModel) ClothingModelRepository.getModel("clothing:generic_over");
-            // this is so damn scuffed lol, I tried automating this with reflection and iterating over the renderer
-            // types but that didn't work
-            try {
-                LivingEntityRenderer<ArmorStand, ArmorStandModel> armorRenderer
-                        = event.getRenderer(EntityType.ARMOR_STAND);
-                if (armorRenderer != null) {
-                    armorRenderer.addLayer(
-                            new HumanoidClothingLayer<>(
-                                    armorRenderer,
-                                    baseModel.getModelForEntityType(EntityType.ARMOR_STAND),
-                                    innerModel.getModelForEntityType(EntityType.ARMOR_STAND),
-                                    outerModel.getModelForEntityType(EntityType.ARMOR_STAND),
-                                    overModel.getModelForEntityType(EntityType.ARMOR_STAND)
-                            )
-                    );
-                }
-
-                LivingEntityRenderer<Drowned, DrownedModel<Drowned>> drownedRenderer
-                        = event.getRenderer(EntityType.DROWNED);
-                if (drownedRenderer != null) {
-                    drownedRenderer.addLayer(
-                            new HumanoidClothingLayer<>(
-                                    drownedRenderer,
-                                    baseModel.getModelForEntityType(EntityType.DROWNED),
-                                    innerModel.getModelForEntityType(EntityType.DROWNED),
-                                    outerModel.getModelForEntityType(EntityType.DROWNED),
-                                    overModel.getModelForEntityType(EntityType.DROWNED)
-                            )
-                    );
-                }
-
-                LivingEntityRenderer<Giant, GiantZombieModel> giantRenderer
-                        = event.getRenderer(EntityType.GIANT);
-                if (giantRenderer != null) {
-                    giantRenderer.addLayer(
-                            new HumanoidClothingLayer<>(
-                                    giantRenderer,
-                                    baseModel.getModelForEntityType(EntityType.GIANT),
-                                    innerModel.getModelForEntityType(EntityType.GIANT),
-                                    outerModel.getModelForEntityType(EntityType.GIANT),
-                                    overModel.getModelForEntityType(EntityType.GIANT)
-                            )
-                    );
-                }
-
-                LivingEntityRenderer<Husk, ZombieModel<Husk>> huskRenderer
-                        = event.getRenderer(EntityType.HUSK);
-                if (huskRenderer != null) {
-                    huskRenderer.addLayer(
-                            new HumanoidClothingLayer<>(
-                                    huskRenderer,
-                                    baseModel.getModelForEntityType(EntityType.HUSK),
-                                    innerModel.getModelForEntityType(EntityType.HUSK),
-                                    outerModel.getModelForEntityType(EntityType.HUSK),
-                                    overModel.getModelForEntityType(EntityType.HUSK)
-                            )
-                    );
-                }
-
-                LivingEntityRenderer<Piglin, PiglinModel<Piglin>> piglinRenderer
-                        = event.getRenderer(EntityType.PIGLIN);
-                if (piglinRenderer != null) {
-                    piglinRenderer.addLayer(
-                            new HumanoidClothingLayer<>(
-                                    piglinRenderer,
-                                    baseModel.getModelForEntityType(EntityType.PIGLIN),
-                                    innerModel.getModelForEntityType(EntityType.PIGLIN),
-                                    outerModel.getModelForEntityType(EntityType.PIGLIN),
-                                    overModel.getModelForEntityType(EntityType.PIGLIN)
-                            )
-                    );
-                }
-
-                LivingEntityRenderer<PiglinBrute, PiglinModel<PiglinBrute>> piglinBruteRenderer
-                        = event.getRenderer(EntityType.PIGLIN_BRUTE);
-                if (piglinBruteRenderer != null) {
-                    piglinBruteRenderer.addLayer(
-                            new HumanoidClothingLayer<>(
-                                    piglinBruteRenderer,
-                                    baseModel.getModelForEntityType(EntityType.PIGLIN_BRUTE),
-                                    innerModel.getModelForEntityType(EntityType.PIGLIN_BRUTE),
-                                    outerModel.getModelForEntityType(EntityType.PIGLIN_BRUTE),
-                                    overModel.getModelForEntityType(EntityType.PIGLIN_BRUTE)
-                            )
-                    );
-                }
-
-                LivingEntityRenderer<Skeleton, SkeletonModel<Skeleton>> skeletonRenderer
-                        = event.getRenderer(EntityType.SKELETON);
-                if (skeletonRenderer != null) {
-                    skeletonRenderer.addLayer(
-                            new HumanoidClothingLayer<>(
-                                    skeletonRenderer,
-                                    baseModel.getModelForEntityType(EntityType.SKELETON),
-                                    innerModel.getModelForEntityType(EntityType.SKELETON),
-                                    outerModel.getModelForEntityType(EntityType.SKELETON),
-                                    overModel.getModelForEntityType(EntityType.SKELETON)
-                            )
-                    );
-                }
-
-                LivingEntityRenderer<Stray, SkeletonModel<Stray>> strayRenderer
-                        = event.getRenderer(EntityType.STRAY);
-                if (strayRenderer != null) {
-                    strayRenderer.addLayer(
-                            new HumanoidClothingLayer<>(
-                                    strayRenderer,
-                                    baseModel.getModelForEntityType(EntityType.STRAY),
-                                    innerModel.getModelForEntityType(EntityType.STRAY),
-                                    outerModel.getModelForEntityType(EntityType.STRAY),
-                                    overModel.getModelForEntityType(EntityType.STRAY)
-                            )
-                    );
-                }
-
-                LivingEntityRenderer<WitherSkeleton, SkeletonModel<WitherSkeleton>> witherSkeletonRenderer
-                        = event.getRenderer(EntityType.WITHER_SKELETON);
-                if (witherSkeletonRenderer != null) {
-                    witherSkeletonRenderer.addLayer(
-                            new HumanoidClothingLayer<>(
-                                    witherSkeletonRenderer,
-                                    baseModel.getModelForEntityType(EntityType.WITHER_SKELETON),
-                                    innerModel.getModelForEntityType(EntityType.WITHER_SKELETON),
-                                    outerModel.getModelForEntityType(EntityType.WITHER_SKELETON),
-                                    overModel.getModelForEntityType(EntityType.WITHER_SKELETON)
-                            )
-                    );
-                }
-
-                LivingEntityRenderer<Zombie, ZombieModel<Zombie>> zombieRenderer
-                        = event.getRenderer(EntityType.ZOMBIE);
-                if (zombieRenderer != null) {
-                    zombieRenderer.addLayer(
-                            new HumanoidClothingLayer<>(
-                                    zombieRenderer,
-                                    baseModel.getModelForEntityType(EntityType.ZOMBIE),
-                                    innerModel.getModelForEntityType(EntityType.ZOMBIE),
-                                    outerModel.getModelForEntityType(EntityType.ZOMBIE),
-                                    overModel.getModelForEntityType(EntityType.ZOMBIE)
-                            )
-                    );
-                }
-
-                LivingEntityRenderer<ZombieVillager, ZombieVillagerModel<ZombieVillager>> zombieVillagerRenderer
-                        = event.getRenderer(EntityType.ZOMBIE_VILLAGER);
-                if (zombieVillagerRenderer != null) {
-                    zombieVillagerRenderer.addLayer(
-                            new HumanoidClothingLayer<>(
-                                    zombieVillagerRenderer,
-                                    baseModel.getModelForEntityType(EntityType.ZOMBIE_VILLAGER),
-                                    innerModel.getModelForEntityType(EntityType.ZOMBIE_VILLAGER),
-                                    outerModel.getModelForEntityType(EntityType.ZOMBIE_VILLAGER),
-                                    overModel.getModelForEntityType(EntityType.ZOMBIE_VILLAGER)
-                            )
-                    );
-                }
-
-                LivingEntityRenderer<ZombifiedPiglin, PiglinModel<ZombifiedPiglin>> zombifiedPiglinRenderer
-                        = event.getRenderer(EntityType.ZOMBIFIED_PIGLIN);
-                if (zombifiedPiglinRenderer != null) {
-                    zombifiedPiglinRenderer.addLayer(
-                            new HumanoidClothingLayer<>(
-                                    zombifiedPiglinRenderer,
-                                    baseModel.getModelForEntityType(EntityType.ZOMBIFIED_PIGLIN),
-                                    innerModel.getModelForEntityType(EntityType.ZOMBIFIED_PIGLIN),
-                                    outerModel.getModelForEntityType(EntityType.ZOMBIFIED_PIGLIN),
-                                    overModel.getModelForEntityType(EntityType.ZOMBIFIED_PIGLIN)
-                            )
-                    );
-                }
-            } catch (RuntimeException e) {
-                LOGGER.error("Error adding layer to entity!", e);
+            for (String entityTypeKey : GenericDefinitions.getEntityTypeKey()) {
+                if (entityTypeKey.equals("minecraft:player") || entityTypeKey.equals("minecraft:player_slim")) continue;
+                GenericDefinitions.addLayerHelper(entityTypeKey, event);
             }
 
             try {
@@ -270,39 +87,30 @@ public class ClothingMod
                             = event.getSkin(skinName);
                     if (playerRenderer == null) continue;
 
-                    //noinspection unchecked
+                    final String p = "minecraft:player";
+                    final String ps = "minecraft:player_slim";
+
                     playerRenderer.addLayer(
                             new HumanoidClothingLayer<>(
                                     playerRenderer,
                                     skinName.equals("default")
-                                            ? baseModel.getModelForEntityType(EntityType.PLAYER)
-                                            : (HumanoidModel<Player>) baseModel
-                                                    .getModelForEntityType("minecraft:player_slim"),
+                                            ? GenericDefinitions.getModelForEntityType(p, 0.30F, event)
+                                            : GenericDefinitions.getModelForEntityType(ps, 0.30F, event),
                                     skinName.equals("default")
-                                            ? innerModel.getModelForEntityType(EntityType.PLAYER)
-                                            : (HumanoidModel<Player>) innerModel
-                                                    .getModelForEntityType("minecraft:player_slim"),
+                                            ? GenericDefinitions.getModelForEntityType(p, 0.31F, event)
+                                            : GenericDefinitions.getModelForEntityType(ps, 0.31F, event),
                                     skinName.equals("default")
-                                            ? outerModel.getModelForEntityType(EntityType.PLAYER)
-                                            : (HumanoidModel<Player>) outerModel
-                                            .getModelForEntityType("minecraft:player_slim"),
+                                            ? GenericDefinitions.getModelForEntityType(p, 0.32F, event)
+                                            : GenericDefinitions.getModelForEntityType(ps, 0.32F, event),
                                     skinName.equals("default")
-                                            ? overModel.getModelForEntityType(EntityType.PLAYER)
-                                            : (HumanoidModel<Player>) overModel
-                                            .getModelForEntityType("minecraft:player_slim")
+                                            ? GenericDefinitions.getModelForEntityType(p, 0.33F, event)
+                                            : GenericDefinitions.getModelForEntityType(ps, 0.33F, event)
                             )
                     );
                 }
             } catch (RuntimeException e) {
                 LOGGER.error("Error adding layer to player!", e);
             }
-        }
-
-        static {
-            ClothingModelRepository.registerModel(GenericLayerModel::baseModel);
-            ClothingModelRepository.registerModel(GenericLayerModel::innerModel);
-            ClothingModelRepository.registerModel(GenericLayerModel::outerModel);
-            ClothingModelRepository.registerModel(GenericLayerModel::overModel);
         }
     }
 }

@@ -31,6 +31,7 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
         this.defaultColor = defaultColor;
     }
 
+    // FIXME: prevent reaching across sides: interface like IClientItemExtensions for this method and adjacent ones?
     /**
      * TODO
      * @param pClothingLayer
