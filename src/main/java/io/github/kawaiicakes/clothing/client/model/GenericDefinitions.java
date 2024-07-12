@@ -3,10 +3,7 @@ package io.github.kawaiicakes.clothing.client.model;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import net.minecraft.client.model.*;
-import net.minecraft.client.model.geom.EntityModelSet;
-import net.minecraft.client.model.geom.ModelLayerLocation;
-import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.client.model.geom.PartPose;
+import net.minecraft.client.model.geom.*;
 import net.minecraft.client.model.geom.builders.*;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.resources.ResourceLocation;
@@ -27,7 +24,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This class takes care of registering {@link LayerDefinition}s, but tries not to cache anything and does a lot of
+ * This class takes care of registering {@link LayerDefinition}s, similarly to
+ * {@link net.minecraft.client.model.geom.LayerDefinitions} but tries not to cache anything and does a lot of
  * the "heavy lifting" so that {@link io.github.kawaiicakes.clothing.ClothingMod} doesn't need 10,000,000,000 imports.
  * I doubt a modder would need to access the {@link ModelLayerLocation}s of the generic layers anyway, but their names
  * are generated in {@link #registerLayers(EntityRenderersEvent.RegisterLayerDefinitions)} and
@@ -56,7 +54,9 @@ public class GenericDefinitions {
                             getModelForEntityType(entityTypeKey, 0.30F, event),
                             getModelForEntityType(entityTypeKey, 0.31F, event),
                             getModelForEntityType(entityTypeKey, 0.32F, event),
-                            getModelForEntityType(entityTypeKey, 0.33F, event)
+                            getModelForEntityType(entityTypeKey, 0.33F, event),
+                            getModelForEntityType(entityTypeKey, 0.80F, event),
+                            getModelForEntityType(entityTypeKey, 1.30F, event)
                     )
             );
         } catch (RuntimeException e) {
@@ -288,6 +288,11 @@ public class GenericDefinitions {
         return toReturn;
     }
 
+    /*
+        FIXME: I foresee obvious issues with this mesh and the Piglin mesh due to the extending of the CubeDeformation.
+        The adjacent layers are bigger by less than 0.25 or even 0.02, meaning the extended legs will clip over/into
+        other layers. I need to come up with a decent fix for this.
+     */
     public static MeshDefinition drownedGeneric(CubeDeformation cubeDeformation) {
         MeshDefinition toReturn = genericMesh(cubeDeformation);
         PartDefinition parentPart = toReturn.getRoot();
@@ -306,7 +311,11 @@ public class GenericDefinitions {
                         cubeDefinition.dimensions.x(),
                         cubeDefinition.dimensions.y(),
                         cubeDefinition.dimensions.z(),
-                        cubeDefinition.grow.extend(0.25F),
+                        cubeDefinition.grow.extend(
+                                cubeDeformation.equals(new CubeDeformation(0.30F))
+                                        || cubeDeformation.equals(new CubeDeformation(0.80F))
+                                        ? 0.0F : 0.25F
+                        ),
                         cubeDefinition.mirror,
                         cubeDefinition.texScale.u(),
                         cubeDefinition.texScale.v()
@@ -340,7 +349,11 @@ public class GenericDefinitions {
                         cubeDefinition.dimensions.x(),
                         cubeDefinition.dimensions.y(),
                         cubeDefinition.dimensions.z(),
-                        cubeDefinition.grow.extend(0.02F),
+                        cubeDefinition.grow.extend(
+                                cubeDeformation.equals(new CubeDeformation(0.30F))
+                                        || cubeDeformation.equals(new CubeDeformation(0.80F))
+                                        ? 0.0F : 0.02F
+                        ),
                         cubeDefinition.mirror,
                         cubeDefinition.texScale.u(),
                         cubeDefinition.texScale.v()

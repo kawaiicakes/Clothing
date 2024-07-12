@@ -22,7 +22,8 @@ import org.jetbrains.annotations.NotNull;
  * You could view this as the brain of this mod, where everything comes together to give it its primary functionality.
  * This class, like its parent, is responsible for handling the rendering of "stuff" onto an entity based on what
  * {@link ItemStack}s exist in the {@link EquipmentSlot}s of the entity. This class caches two {@link HumanoidModel}
- * instances just like its parent, as well as an additional two such that every "body group" has its own layer.
+ * instances just like its parent, an additional two such that every "body group" has its own layer, and two more
+ * that allow for rendering over the vanilla armour.
  * <br><br>
  * That said, this class works intimately with {@link ClothingItem}s to allow rendering {@link BakedModelRenderable}s;
  * permitting usage of OBJ and JSON models.
@@ -38,12 +39,16 @@ public class HumanoidClothingLayer<
 {
     protected final A baseModel;
     protected final A overModel;
+    protected final A overLegsArmorModel;
+    protected final A overMainArmorModel;
 
     /**
      * Added during {@link EntityRenderersEvent.AddLayers} to appropriate renderer.
      */
     public HumanoidClothingLayer(
-            RenderLayerParent<T, M> pRenderer, A baseModel, A innerModel, A outerModel, A overModel
+            RenderLayerParent<T, M> pRenderer,
+            A baseModel, A innerModel, A outerModel, A overModel,
+            A overLegsArmorModel, A overMainArmorModel
     ) {
         super(
                 pRenderer,
@@ -53,6 +58,8 @@ public class HumanoidClothingLayer<
 
         this.baseModel = baseModel;
         this.overModel = overModel;
+        this.overLegsArmorModel = overLegsArmorModel;
+        this.overMainArmorModel = overMainArmorModel;
     }
 
     /**
@@ -103,7 +110,8 @@ public class HumanoidClothingLayer<
 
     /**
      * Returns the {@link HumanoidModel} instance associated with a slot; this method is used exclusively for rendering
-     * models defined using {@link net.minecraft.client.model.geom.builders.MeshDefinition}s.
+     * models defined using {@link net.minecraft.client.model.geom.builders.MeshDefinition}s. If you want to get saucy,
+     * try using {@link #overLegsArmorModel} or {@link #overMainArmorModel}!
      * @param pSlot the {@link EquipmentSlot} a piece of clothing is primarily worn on.
      * @return the {@link HumanoidModel} associated with <code>pSlot</code>.
      */
@@ -118,9 +126,7 @@ public class HumanoidClothingLayer<
     }
 
     /**
-     * TODO
-     * @param pModel
-     * @param pSlot
+     * Identical to super; but access declaration made public
      */
     @Override
     public void setPartVisibility(@NotNull A pModel, @NotNull EquipmentSlot pSlot) {

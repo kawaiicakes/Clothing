@@ -104,7 +104,13 @@ public class ClothingMod
                                             : GenericDefinitions.getModelForEntityType(ps, 0.32F, event),
                                     skinName.equals("default")
                                             ? GenericDefinitions.getModelForEntityType(p, 0.33F, event)
-                                            : GenericDefinitions.getModelForEntityType(ps, 0.33F, event)
+                                            : GenericDefinitions.getModelForEntityType(ps, 0.33F, event),
+                                    skinName.equals("default")
+                                            ? GenericDefinitions.getModelForEntityType(p, 0.80F, event)
+                                            : GenericDefinitions.getModelForEntityType(ps, 0.80F, event),
+                                    skinName.equals("default")
+                                            ? GenericDefinitions.getModelForEntityType(p, 1.30F, event)
+                                            : GenericDefinitions.getModelForEntityType(ps, 1.30F, event)
                             )
                     );
                 }
