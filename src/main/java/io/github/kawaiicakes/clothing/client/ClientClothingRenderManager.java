@@ -80,6 +80,7 @@ public interface ClientClothingRenderManager {
      * @param slot the {@link EquipmentSlot this piece of clothing goes in.}
      * @return The value of alpha as a float. Permitted values are 0.0 to 1.0 inclusive.
      */
+    @SuppressWarnings("unused")
     @ParametersAreNullableByDefault
     default float getAlpha(
             LivingEntity livingEntity, ItemStack stack, EquipmentSlot slot,
@@ -89,31 +90,5 @@ public interface ClientClothingRenderManager {
             float pNetHeadYaw, float pHeadPitch
     ) {
         return 1.0F;
-    }
-
-    /**
-     * TODO
-     * @param pLivingEntity
-     * @param pItemStack
-     * @param equipmentSlot
-     * @param pPackedLight
-     * @param pLimbSwing
-     * @param pLimbSwingAmount
-     * @param pPartialTicks
-     * @param pAgeInTicks
-     * @param pNetHeadYaw
-     * @param pHeadPitch
-     * @return
-     * @param <T>
-     */
-    default <T extends LivingEntity> boolean hasOverlay(
-            T pLivingEntity,
-            ItemStack pItemStack, EquipmentSlot equipmentSlot,
-            int pPackedLight,
-            float pLimbSwing, float pLimbSwingAmount,
-            float pPartialTicks, float pAgeInTicks,
-            float pNetHeadYaw, float pHeadPitch
-    ) {
-        return false;
     }
 }

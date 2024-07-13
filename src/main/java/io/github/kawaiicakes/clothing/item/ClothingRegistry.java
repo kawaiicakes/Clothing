@@ -1,6 +1,9 @@
 package io.github.kawaiicakes.clothing.item;
 
 import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
@@ -29,6 +32,18 @@ public class ClothingRegistry {
         register("test_boots", () -> new GenericClothingItem(EquipmentSlot.FEET));
 
         register("ouch", () -> new GenericClothingItem(EquipmentSlot.CHEST, 16712019) {
+            @Override
+            public @NotNull ItemStack getDefaultInstance() {
+                ItemStack toReturn = super.getDefaultInstance();
+                CompoundTag rootTag = toReturn.getOrCreateTag().getCompound(CLOTHING_PROPERTY_NBT_KEY);
+
+                ListTag overlays = new ListTag();
+                overlays.add(StringTag.valueOf("overlay"));
+                rootTag.put(OVERLAY_NBT_KEY, overlays);
+
+                return toReturn;
+            }
+
             @Override
                 public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
                     if (type == null) {

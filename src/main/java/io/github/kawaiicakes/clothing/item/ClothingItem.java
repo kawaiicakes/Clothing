@@ -1,14 +1,13 @@
 package io.github.kawaiicakes.clothing.item;
 
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
+import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
+import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.item.ArmorItem;
-import net.minecraft.world.item.ArmorMaterial;
-import net.minecraft.world.item.DyeableLeatherItem;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.*;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLLoader;
@@ -24,6 +23,8 @@ import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
  * Each implementation of this will likely represent an item that renders as one model type (e.g. JSON, OBJ)
  */
 public abstract class ClothingItem extends ArmorItem implements DyeableLeatherItem {
+    public static final String CLOTHING_PROPERTY_NBT_KEY = "ClothingProperties";
+
     private Object clientClothingRenderManager;
     protected final int defaultColor;
 
@@ -32,6 +33,40 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
         this.defaultColor = defaultColor;
         this.initializeClientClothingRenderManager();
     }
+
+    /**
+     * TODO
+     * @param itemStack
+     * @return
+     */
+    @NotNull
+    public CompoundTag getClothingPropertyTag(ItemStack itemStack) {
+        if (!(itemStack.getItem() instanceof GenericClothingItem)) throw new IllegalArgumentException();
+        return itemStack.getOrCreateTag().getCompound(CLOTHING_PROPERTY_NBT_KEY);
+    }
+
+    /**
+     * TODO
+     * @return
+     */
+    @Override
+    public @NotNull ItemStack getDefaultInstance() {
+        ItemStack toReturn = super.getDefaultInstance();
+
+        CompoundTag rootTag = new CompoundTag();
+
+        toReturn.getOrCreateTag().put(CLOTHING_PROPERTY_NBT_KEY, rootTag);
+
+        return toReturn;
+    }
+
+    /**
+     * TODO
+     * @param pCategory
+     * @param pItems
+     */
+    @Override
+    public abstract void fillItemCategory(@NotNull CreativeModeTab pCategory, @NotNull NonNullList<ItemStack> pItems);
 
     /**
      * TODO: this is a critical method to document considering it's how implementations are expected to render models

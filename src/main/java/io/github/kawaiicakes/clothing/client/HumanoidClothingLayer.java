@@ -2,6 +2,7 @@ package io.github.kawaiicakes.clothing.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
+import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
@@ -112,35 +113,27 @@ public class HumanoidClothingLayer<
         }
     }
 
-    public A getBaseModel() {
-        return this.baseModel;
-    }
-
-    public A getInnerModel() {
-        return this.innerModel;
-    }
-
-    public A getOuterModel() {
-        return this.outerModel;
-    }
-
-    public A getOverModel() {
-        return this.overModel;
-    }
-
-    public A getOverLegsArmorModel() {
-        return this.overLegsArmorModel;
-    }
-
-    public A getOverMainArmorModel() {
-        return this.overMainArmorModel;
-    }
-
     /**
      * Identical to super; but access declaration made public
      */
     @Override
     public void setPartVisibility(@NotNull A pModel, @NotNull EquipmentSlot pSlot) {
         super.setPartVisibility(pModel, pSlot);
+    }
+
+    /**
+     * TODO
+     * @param modelStrata
+     * @return
+     */
+    public A modelForLayer(GenericClothingItem.ModelStrata modelStrata) {
+        return switch (modelStrata) {
+            case BASE -> this.baseModel;
+            case INNER -> this.innerModel;
+            case OUTER -> this.outerModel;
+            case OVER -> this.overModel;
+            case OVER_LEG_ARMOR -> this.overLegsArmorModel;
+            case OVER_ARMOR -> this.overMainArmorModel;
+        };
     }
 }

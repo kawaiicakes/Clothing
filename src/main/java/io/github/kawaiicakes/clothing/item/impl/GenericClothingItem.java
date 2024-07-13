@@ -12,7 +12,13 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.core.NonNullList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -20,14 +26,19 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Locale;
 import java.util.function.Consumer;
 
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 
 /**
- * Implementation of {@link ClothingItem} for simple cosmetics like T-shirts or anything that looks like thinner armour.
+ * Implementation of {@link ClothingItem} for simple cosmetics like T-shirts or anything that looks like default armour.
  */
 public class GenericClothingItem extends ClothingItem {
+    public static final String MODEL_LAYER_NBT_KEY = "modelLayer";
+    public static final String TEXTURE_LOCATION_NBT_KEY = "texture";
+    public static final String OVERLAY_NBT_KEY = "overlays";
+
     // TODO: final assets, etc.
     // TODO: item icon changes with texture
     public GenericClothingItem(EquipmentSlot pSlot) {
@@ -43,6 +54,92 @@ public class GenericClothingItem extends ClothingItem {
                         .stacksTo(1),
                 defaultColor
         );
+    }
+
+    @Override
+    public @NotNull ItemStack getDefaultInstance() {
+        ItemStack toReturn = super.getDefaultInstance();
+        CompoundTag rootTag = toReturn.getOrCreateTag().getCompound(CLOTHING_PROPERTY_NBT_KEY);
+
+        rootTag.putString(MODEL_LAYER_NBT_KEY, ModelStrata.forSlot(this.slot).getSerializedName());
+        rootTag.putString(TEXTURE_LOCATION_NBT_KEY, "default");
+        rootTag.put(OVERLAY_NBT_KEY, new ListTag());
+
+        return toReturn;
+    }
+
+    // TODO
+    @Override
+    public void fillItemCategory(@NotNull CreativeModeTab pCategory, @NotNull NonNullList<ItemStack> pItems) {
+        if (!pCategory.equals(this.getItemCategory())) return;
+        pItems.add(this.getDefaultInstance());
+    }
+
+    /**
+     * TODO
+     * @param itemStack
+     * @return
+     */
+    public ModelStrata getGenericLayerForRender(ItemStack itemStack) {
+        String strataString = this.getClothingPropertyTag(itemStack).getString(MODEL_LAYER_NBT_KEY);
+        return ModelStrata.byName(strataString);
+    }
+
+    /**
+     * TODO
+     * @param itemStack
+     * @param modelStrata
+     */
+    public void setGenericLayerForRender(ItemStack itemStack, ModelStrata modelStrata) {
+        this.getClothingPropertyTag(itemStack).putString(MODEL_LAYER_NBT_KEY, modelStrata.getSerializedName());
+    }
+
+    /**
+     * TODO
+     * @param itemStack
+     * @return
+     */
+    public String getTextureLocation(ItemStack itemStack) {
+        return this.getClothingPropertyTag(itemStack).getString(TEXTURE_LOCATION_NBT_KEY);
+    }
+
+    /**
+     * TODO
+     * @param itemStack
+     * @param textureLocation
+     */
+    public void setTextureLocation(ItemStack itemStack, String textureLocation) {
+        this.getClothingPropertyTag(itemStack).putString(TEXTURE_LOCATION_NBT_KEY, textureLocation);
+    }
+
+    /**
+     * TODO
+     * @param itemStack
+     * @return
+     */
+    public String[] getOverlays(ItemStack itemStack) {
+        ListTag listTag = this.getClothingPropertyTag(itemStack).getList(OVERLAY_NBT_KEY, Tag.TAG_STRING);
+        String[] toReturn = new String[listTag.size()];
+        for (int i = 0; i < listTag.size(); i++) {
+            if (!(listTag.get(i) instanceof StringTag stringTag)) throw new RuntimeException();
+            toReturn[i] = stringTag.getAsString();
+        }
+        return toReturn;
+    }
+
+    /**
+     * TODO
+     * @param itemStack
+     * @param overlays
+     */
+    public void setOverlays(ItemStack itemStack, String[] overlays) {
+        ListTag overlayTag = new ListTag();
+
+        for (String overlay : overlays) {
+            overlayTag.add(StringTag.valueOf(overlay));
+        }
+
+        this.getClothingPropertyTag(itemStack).put(OVERLAY_NBT_KEY, overlayTag);
     }
 
     @Override
@@ -62,8 +159,8 @@ public class GenericClothingItem extends ClothingItem {
                     ) {
                         boolean hasGlint = pItemStack.hasFoil();
 
-                        // TODO: get appropriate model for GenericClothingItem.this
-                        A clothingModel = pClothingLayer.getBaseModel();
+                        ModelStrata modelStrata = GenericClothingItem.this.getGenericLayerForRender(pItemStack);
+                        A clothingModel = pClothingLayer.modelForLayer(modelStrata);
 
                         pClothingLayer.getParentModel().copyPropertiesTo(clothingModel);
                         pClothingLayer.setPartVisibility(clothingModel, GenericClothingItem.this.slotForModel());
@@ -91,35 +188,29 @@ public class GenericClothingItem extends ClothingItem {
                                 )
                         );
 
-                        // TODO: hasOverlay behaviour
-                        if (
-                                !this.hasOverlay(
-                                        pLivingEntity, pItemStack, GenericClothingItem.this.slotForModel(),
-                                        pPackedLight,
-                                        pLimbSwing, pLimbSwingAmount,
-                                        pPartialTicks, pAgeInTicks,
-                                        pNetHeadYaw, pHeadPitch
-                                )
-                        ) return;
+                        String[] overlays = GenericClothingItem.this.getOverlays(pItemStack);
+                        if (overlays.length < 1) return;
 
-                        this.renderModel(
-                                pMatrixStack,
-                                pBuffer, pPackedLight,
-                                hasGlint,
-                                clothingModel,
-                                1.0F, 1.0F, 1.0F, this.getAlpha(
-                                        pLivingEntity,
-                                        pItemStack, GenericClothingItem.this.slotForModel(),
-                                        pPackedLight,
-                                        pLimbSwing, pLimbSwingAmount,
-                                        pPartialTicks, pAgeInTicks,
-                                        pNetHeadYaw, pHeadPitch
-                                ),
-                                pClothingLayer.getArmorResource(
-                                        pLivingEntity, pItemStack,
-                                        GenericClothingItem.this.slotForModel(), "overlay"
-                                )
-                        );
+                        for (String overlay : overlays) {
+                            this.renderModel(
+                                    pMatrixStack,
+                                    pBuffer, pPackedLight,
+                                    hasGlint,
+                                    clothingModel,
+                                    1.0F, 1.0F, 1.0F, this.getAlpha(
+                                            pLivingEntity,
+                                            pItemStack, GenericClothingItem.this.slotForModel(),
+                                            pPackedLight,
+                                            pLimbSwing, pLimbSwingAmount,
+                                            pPartialTicks, pAgeInTicks,
+                                            pNetHeadYaw, pHeadPitch
+                                    ),
+                                    pClothingLayer.getArmorResource(
+                                            pLivingEntity, pItemStack,
+                                            GenericClothingItem.this.slotForModel(), overlay
+                                    )
+                            );
+                        }
                     }
 
                     public void renderModel(
@@ -155,16 +246,15 @@ public class GenericClothingItem extends ClothingItem {
 
     @Override
     public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-        // TODO: final implementation as per super
-        // FIXME: formal implementation of obtaining texture name from ClothingItem; I see why the ArmorMaterial was
-        // used now lol
+        // TODO: final implementation as per super and texture location NBT value
+        // FIXME: formal implementation of obtaining texture name from ClothingItem; I see why the ArmorMaterial was used now lol
         final boolean usesGenericInnerLayer = EquipmentSlot.LEGS.equals(slot);
         return String.format(
-                java.util.Locale.ROOT,
+                Locale.ROOT,
                 "%s:textures/models/armor/clothing/test_%s%s.png",
                 MOD_ID,
                 (usesGenericInnerLayer ? "legs" : "body"),
-                type == null ? "" : String.format(java.util.Locale.ROOT, "_%s", type)
+                type == null ? "" : String.format(Locale.ROOT, "_%s", type)
         );
     }
 
@@ -176,5 +266,44 @@ public class GenericClothingItem extends ClothingItem {
     @Override
     public boolean isDamageable(ItemStack stack) {
         return false;
+    }
+
+    public enum ModelStrata implements StringRepresentable {
+        BASE("generic_base"),
+        INNER("generic_inner"),
+        OUTER("generic_outer"),
+        OVER("generic_over"),
+        OVER_LEG_ARMOR("generic_over_leg_armor"),
+        OVER_ARMOR("generic_over_armor");
+
+        private final String nbtTagID;
+
+        ModelStrata(String nbtTagID) {
+            this.nbtTagID = nbtTagID;
+        }
+
+        public static ModelStrata byName(String pTargetName) {
+            for(ModelStrata modelStrata : values()) {
+                if (modelStrata.getSerializedName().equals(pTargetName)) {
+                    return modelStrata;
+                }
+            }
+
+            throw new IllegalArgumentException("Invalid model name '" + pTargetName + "'");
+        }
+
+        @Override
+        public @NotNull String getSerializedName() {
+            return this.nbtTagID;
+        }
+
+        public static ModelStrata forSlot(EquipmentSlot equipmentSlot) {
+            return switch (equipmentSlot) {
+                case FEET -> INNER;
+                case LEGS -> BASE;
+                case HEAD -> OVER;
+                default -> OUTER;
+            };
+        }
     }
 }
