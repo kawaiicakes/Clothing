@@ -1,16 +1,10 @@
 package io.github.kawaiicakes.clothing.item;
 
 import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Supplier;
 
@@ -26,40 +20,19 @@ public class ClothingRegistry {
 
     // I don't think I'm going to need to reference specific items anytime soon, so caching this isn't necessary
     static {
-        register("test_helmet", () -> new GenericClothingItem(EquipmentSlot.HEAD));
-        register("test", () -> new GenericClothingItem(EquipmentSlot.CHEST));
-        register("test_pants", () -> new GenericClothingItem(EquipmentSlot.LEGS));
-        register("test_boots", () -> new GenericClothingItem(EquipmentSlot.FEET));
-
-        register("ouch", () -> new GenericClothingItem(EquipmentSlot.CHEST, 16712019) {
-            @Override
-            public @NotNull ItemStack getDefaultInstance() {
-                ItemStack toReturn = super.getDefaultInstance();
-                CompoundTag rootTag = toReturn.getOrCreateTag().getCompound(CLOTHING_PROPERTY_NBT_KEY);
-
-                ListTag overlays = new ListTag();
-                overlays.add(StringTag.valueOf("overlay"));
-                rootTag.put(OVERLAY_NBT_KEY, overlays);
-
-                return toReturn;
-            }
-
-            @Override
-                public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-                    if (type == null) {
-                        return "clothing:textures/models/armor/clothing/ouch.png";
-                    }
-                    return "clothing:textures/models/armor/clothing/ouch_overlay.png";
-                }
-            }
+        register("test_helmet", () -> new GenericClothingItem(EquipmentSlot.HEAD, "test"));
+        register("test", () -> new GenericClothingItem(EquipmentSlot.CHEST, "test"));
+        register("test_pants", () -> new GenericClothingItem(EquipmentSlot.LEGS, "test"));
+        register("test_boots", () -> new GenericClothingItem(EquipmentSlot.FEET, "test"));
+        register(
+                "ouch",
+                () -> new GenericClothingItem(
+                        EquipmentSlot.CHEST,
+                        "ouch",
+                        new String[]{"overlay"},
+                        16712019
+                )
         );
-
-        register("glowie_helm", () -> new GenericClothingItem(EquipmentSlot.HEAD, 12345679) {
-                @Override
-                public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-                    return "clothing:textures/models/armor/clothing/glowie_helm.png";
-                }
-            }
-        );
+        register("glowie_helm", () -> new GenericClothingItem(EquipmentSlot.HEAD, "glowie", 12345679));
     }
 }

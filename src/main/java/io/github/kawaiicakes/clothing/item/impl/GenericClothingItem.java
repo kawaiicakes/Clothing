@@ -39,13 +39,20 @@ public class GenericClothingItem extends ClothingItem {
     public static final String TEXTURE_LOCATION_NBT_KEY = "texture";
     public static final String OVERLAY_NBT_KEY = "overlays";
 
+    protected final String defaultTexture;
+    protected final String[] overlays;
+
     // TODO: final assets, etc.
     // TODO: item icon changes with texture
-    public GenericClothingItem(EquipmentSlot pSlot) {
-        this(pSlot, 0xFFFFFF);
+    public GenericClothingItem(EquipmentSlot pSlot, String defaultTexture) {
+        this(pSlot, defaultTexture, 0xFFFFFF);
     }
 
-    public GenericClothingItem(EquipmentSlot pSlot, int defaultColor) {
+    public GenericClothingItem(EquipmentSlot pSlot, String defaultTexture, int defaultColor) {
+        this(pSlot, defaultTexture, new String[]{}, defaultColor);
+    }
+
+    public GenericClothingItem(EquipmentSlot pSlot, String defaultTexture, String[] overlays, int defaultColor) {
         super(
                 ClothingMaterials.CLOTH,
                 pSlot,
@@ -54,6 +61,9 @@ public class GenericClothingItem extends ClothingItem {
                         .stacksTo(1),
                 defaultColor
         );
+
+        this.defaultTexture = defaultTexture;
+        this.overlays = overlays;
     }
 
     @Override
@@ -61,14 +71,23 @@ public class GenericClothingItem extends ClothingItem {
         ItemStack toReturn = super.getDefaultInstance();
         CompoundTag rootTag = toReturn.getOrCreateTag().getCompound(CLOTHING_PROPERTY_NBT_KEY);
 
-        rootTag.putString(MODEL_LAYER_NBT_KEY, ModelStrata.forSlot(this.slot).getSerializedName());
-        rootTag.putString(TEXTURE_LOCATION_NBT_KEY, "default");
-        rootTag.put(OVERLAY_NBT_KEY, new ListTag());
+        rootTag.putString(MODEL_LAYER_NBT_KEY, ModelStrata.forSlot(this.slotForModel()).getSerializedName());
+        rootTag.putString(TEXTURE_LOCATION_NBT_KEY, this.defaultTexture);
+
+        ListTag overlayTag = new ListTag();
+        for (String overlay : this.overlays) {
+            overlayTag.add(StringTag.valueOf(overlay));
+        }
+        rootTag.put(OVERLAY_NBT_KEY, overlayTag);
 
         return toReturn;
     }
 
-    // TODO
+    /*
+    TODO: GenericClothingItem but only one instance; somehow I need to change NBT automatically without relying on
+    instantiating new items... it would begin in this method I'd imagine... maybe it's possible to obtain the names
+    of the folders in textures/models/armor/generic and iterate through them?
+     */
     @Override
     public void fillItemCategory(@NotNull CreativeModeTab pCategory, @NotNull NonNullList<ItemStack> pItems) {
         if (!pCategory.equals(this.getItemCategory())) return;
@@ -243,17 +262,23 @@ public class GenericClothingItem extends ClothingItem {
         );
     }
 
-
+    /**
+     * TODO
+     * @param stack  ItemStack for the equipped armor
+     * @param entity The entity wearing the clothing
+     * @param slot   The slot the clothing is in
+     * @param type   The subtype, can be any valid String according to
+     *              {@link net.minecraft.resources.ResourceLocation#isValidResourceLocation(String)}.
+     * @return
+     */
     @Override
     public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-        // TODO: final implementation as per super and texture location NBT value
-        // FIXME: formal implementation of obtaining texture name from ClothingItem; I see why the ArmorMaterial was used now lol
-        final boolean usesGenericInnerLayer = EquipmentSlot.LEGS.equals(slot);
         return String.format(
                 Locale.ROOT,
-                "%s:textures/models/armor/clothing/test_%s%s.png",
+                "%s:textures/models/armor/generic/%s/%s%s.png",
                 MOD_ID,
-                (usesGenericInnerLayer ? "legs" : "body"),
+                this.getTextureLocation(stack),
+                this.getGenericLayerForRender(stack).getSerializedName(),
                 type == null ? "" : String.format(Locale.ROOT, "_%s", type)
         );
     }
