@@ -24,6 +24,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.Entity;
@@ -31,16 +32,15 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
@@ -64,8 +64,7 @@ public class GenericClothingItem extends ClothingItem {
                 pSlot,
                 new Properties()
                         .tab(ClothingTab.CLOTHING_TAB)
-                        .stacksTo(1),
-                0xFFFFFF
+                        .stacksTo(1)
         );
     }
 
@@ -173,6 +172,18 @@ public class GenericClothingItem extends ClothingItem {
         }
 
         this.getClothingPropertyTag(itemStack).put(OVERLAY_NBT_KEY, overlayTag);
+    }
+
+    // TODO: custom name from data entries/lang key generated from clothing
+    @Override
+    public String getDescriptionId(ItemStack pStack) {
+        return super.getDescriptionId(pStack);
+    }
+
+    // TODO: cool tooltip stuff lol
+    @Override
+    public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
+        super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
     }
 
     /**

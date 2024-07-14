@@ -22,11 +22,9 @@ import java.util.function.Consumer;
 public abstract class ClothingItem extends ArmorItem implements DyeableLeatherItem {
     public static final String CLOTHING_PROPERTY_NBT_KEY = "ClothingProperties";
     private Object clientClothingRenderManager;
-    protected final int defaultColor;
 
-    public ClothingItem(ArmorMaterial pMaterial, EquipmentSlot pSlot, Properties pProperties, int defaultColor) {
+    public ClothingItem(ArmorMaterial pMaterial, EquipmentSlot pSlot, Properties pProperties) {
         super(pMaterial, pSlot, pProperties);
-        this.defaultColor = defaultColor;
         this.initializeClientClothingRenderManager();
     }
 
@@ -50,8 +48,9 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
         ItemStack toReturn = super.getDefaultInstance();
 
         CompoundTag rootTag = new CompoundTag();
-
         toReturn.getOrCreateTag().put(CLOTHING_PROPERTY_NBT_KEY, rootTag);
+
+        this.setColor(toReturn, 0xFFFFFF);
 
         return toReturn;
     }
@@ -99,12 +98,27 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
 
     @Override
     public int getColor(@NotNull ItemStack pStack) {
-        // contrived implementation is done in case a third-party mod changes the super
-        int toReturn = DyeableLeatherItem.super.getColor(pStack);
-        CompoundTag nbt = pStack.getTagElement(TAG_DISPLAY);
-        if ((nbt == null || !nbt.contains(TAG_COLOR, 99)) && toReturn == DEFAULT_LEATHER_COLOR)
-            toReturn = this.defaultColor;
-        return toReturn;
+        try {
+            return pStack.getOrCreateTag().getCompound(CLOTHING_PROPERTY_NBT_KEY).getInt(TAG_COLOR);
+        } catch (RuntimeException ignored) {
+            return 0xFFFFFF;
+        }
+    }
+
+    @Override
+    public void setColor(@NotNull ItemStack pStack, int pColor) {
+        pStack.getOrCreateTag().getCompound(CLOTHING_PROPERTY_NBT_KEY).putInt(TAG_COLOR, pColor);
+    }
+
+    @Override
+    public boolean hasCustomColor(@NotNull ItemStack pStack) {
+        CompoundTag root = this.getClothingPropertyTag(pStack);
+        return root.contains(TAG_COLOR, 99);
+    }
+
+    @Override
+    public void clearColor(@NotNull ItemStack pStack) {
+        this.setColor(pStack, 0xFFFFFF);
     }
 
     @ApiStatus.Internal
