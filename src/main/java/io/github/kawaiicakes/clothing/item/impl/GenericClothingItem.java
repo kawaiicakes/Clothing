@@ -294,12 +294,12 @@ public class GenericClothingItem extends ClothingItem {
     }
 
     public enum ModelStrata implements StringRepresentable {
-        BASE("generic_base"),
-        INNER("generic_inner"),
-        OUTER("generic_outer"),
-        OVER("generic_over"),
-        OVER_LEG_ARMOR("generic_over_leg_armor"),
-        OVER_ARMOR("generic_over_armor");
+        BASE("base"),
+        INNER("inner"),
+        OUTER("outer"),
+        OVER("over"),
+        OVER_LEG_ARMOR("over_leg_armor"),
+        OVER_ARMOR("over_armor");
 
         private final String nbtTagID;
 
