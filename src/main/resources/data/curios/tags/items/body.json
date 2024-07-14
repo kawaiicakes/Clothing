@@ -1,8 +1,7 @@
 {
   "replace": false,
   "values": [
-    "clothing:test",
-    "clothing:ouch",
+    "clothing:generic_shirt",
     "#forge:armors/chestplates"
   ]
 }

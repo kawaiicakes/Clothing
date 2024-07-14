@@ -25,9 +25,5 @@ public class ClothingRegistry {
         register("generic_shirt", () -> new GenericClothingItem(EquipmentSlot.CHEST));
         register("generic_pants", () -> new GenericClothingItem(EquipmentSlot.LEGS));
         register("generic_shoes", () -> new GenericClothingItem(EquipmentSlot.FEET));
-        // TODO: colour 16712019
-        // register("ouch", () -> new GenericClothingItem(EquipmentSlot.CHEST));
-        // TODO: colour 12345679
-        // register("glowie_helm", () -> new GenericClothingItem(EquipmentSlot.HEAD));
     }
 }

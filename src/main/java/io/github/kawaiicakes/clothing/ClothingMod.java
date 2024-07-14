@@ -3,6 +3,7 @@ package io.github.kawaiicakes.clothing;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.client.model.GenericDefinitions;
+import io.github.kawaiicakes.clothing.common.resources.GenericClothingResourceLoader;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.resources.ResourceLocation;
@@ -10,6 +11,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.ModelEvent;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.AddReloadListenerEvent;
+import net.minecraftforge.event.OnDatapackSyncEvent;
+import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.InterModComms;
 import net.minecraftforge.fml.ModList;
@@ -33,10 +38,24 @@ public class ClothingMod
 
     public ClothingMod()
     {
-        // un/comment as needed
-        CLOTHING_REGISTRY.register(FMLJavaModLoadingContext.get().getModEventBus());
+        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+        IEventBus forgeEventBus = MinecraftForge.EVENT_BUS;
 
-        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onInterModEnqueue);
+        CLOTHING_REGISTRY.register(modEventBus);
+
+        modEventBus.addListener(this::onInterModEnqueue);
+
+        forgeEventBus.addListener(this::onAddReloadListener);
+    }
+
+    @SubscribeEvent
+    public void onAddReloadListener(AddReloadListenerEvent event) {
+        event.addListener(GenericClothingResourceLoader.getInstance());
+    }
+
+    @SubscribeEvent
+    public void onDatapackSync(OnDatapackSyncEvent event) {
+
     }
 
     @SubscribeEvent
