@@ -3,16 +3,19 @@ package io.github.kawaiicakes.clothing.client.model;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import net.minecraft.client.model.*;
-import net.minecraft.client.model.geom.*;
+import net.minecraft.client.model.geom.EntityModelSet;
+import net.minecraft.client.model.geom.ModelLayerLocation;
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -23,6 +26,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
+
 /**
  * This class takes care of registering {@link LayerDefinition}s, similarly to
  * {@link net.minecraft.client.model.geom.LayerDefinitions} but tries not to cache anything and does a lot of
@@ -31,7 +36,7 @@ import java.util.Map;
  * are generated in {@link #registerLayers(EntityRenderersEvent.RegisterLayerDefinitions)} and
  * {@link #generateModelLayerLocation(String, float)} if you are curious.
  */
-@OnlyIn(Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class GenericDefinitions {
     protected static Logger LOGGER = LogUtils.getLogger();
 

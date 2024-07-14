@@ -37,7 +37,6 @@ public class ClothingMod
         CLOTHING_REGISTRY.register(FMLJavaModLoadingContext.get().getModEventBus());
 
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onInterModEnqueue);
-        FMLJavaModLoadingContext.get().getModEventBus().register(GenericDefinitions.class);
     }
 
     @SubscribeEvent
