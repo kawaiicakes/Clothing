@@ -6,6 +6,7 @@ import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
 import io.github.kawaiicakes.clothing.item.ClothingMaterials;
+import io.github.kawaiicakes.clothing.item.ClothingTab;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.Model;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -25,6 +26,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -38,59 +40,46 @@ public class GenericClothingItem extends ClothingItem {
     public static final String MODEL_LAYER_NBT_KEY = "modelLayer";
     public static final String TEXTURE_LOCATION_NBT_KEY = "texture";
     public static final String OVERLAY_NBT_KEY = "overlays";
-
-    protected final String defaultTexture;
-    protected final String[] overlays;
+    public static final String SLOT_VISIBILITY_KEY = "slotVisibility";
+    public static final String DEFAULT_TEXTURE_NBT_KEY = "default";
 
     // TODO: final assets, etc.
     // TODO: item icon changes with texture
-    public GenericClothingItem(EquipmentSlot pSlot, String defaultTexture) {
-        this(pSlot, defaultTexture, 0xFFFFFF);
-    }
-
-    public GenericClothingItem(EquipmentSlot pSlot, String defaultTexture, int defaultColor) {
-        this(pSlot, defaultTexture, new String[]{}, defaultColor);
-    }
-
-    public GenericClothingItem(EquipmentSlot pSlot, String defaultTexture, String[] overlays, int defaultColor) {
+    public GenericClothingItem(EquipmentSlot pSlot) {
         super(
                 ClothingMaterials.CLOTH,
                 pSlot,
                 new Properties()
-                        .tab(CreativeModeTab.TAB_COMBAT)
+                        .tab(ClothingTab.CLOTHING_TAB)
                         .stacksTo(1),
-                defaultColor
+                0xFFFFFF
         );
-
-        this.defaultTexture = defaultTexture;
-        this.overlays = overlays;
     }
 
+    /**
+     * Returns the default texture generic clothing. The returned {@link ItemStack} is guaranteed to return non-null
+     * values from the {@link ItemStack}'s tag via {@link CompoundTag#get(String)} for the arguments
+     * {@link #CLOTHING_PROPERTY_NBT_KEY}, {@link #MODEL_LAYER_NBT_KEY}, {@link #TEXTURE_LOCATION_NBT_KEY},
+     * and {@link #OVERLAY_NBT_KEY}.
+     * @return the default {@link ItemStack} for this item.
+     */
     @Override
     public @NotNull ItemStack getDefaultInstance() {
         ItemStack toReturn = super.getDefaultInstance();
-        CompoundTag rootTag = toReturn.getOrCreateTag().getCompound(CLOTHING_PROPERTY_NBT_KEY);
 
-        rootTag.putString(MODEL_LAYER_NBT_KEY, ModelStrata.forSlot(this.slotForModel()).getSerializedName());
-        rootTag.putString(TEXTURE_LOCATION_NBT_KEY, this.defaultTexture);
-
-        ListTag overlayTag = new ListTag();
-        for (String overlay : this.overlays) {
-            overlayTag.add(StringTag.valueOf(overlay));
-        }
-        rootTag.put(OVERLAY_NBT_KEY, overlayTag);
+        this.setGenericLayerForRender(toReturn, ModelStrata.forSlot(this.getSlot()));
+        this.setTextureLocation(toReturn, DEFAULT_TEXTURE_NBT_KEY);
+        this.setOverlays(toReturn, new String[]{});
+        this.setSlotsForVisibility(toReturn, new EquipmentSlot[]{this.slotForModel()});
 
         return toReturn;
     }
 
-    /*
-    TODO: GenericClothingItem but only one instance; somehow I need to change NBT automatically without relying on
-    instantiating new items... it would begin in this method I'd imagine... maybe it's possible to obtain the names
-    of the folders in textures/models/armor/generic and iterate through them?
-     */
+    // TODO: data-driven system for filling the category
     @Override
     public void fillItemCategory(@NotNull CreativeModeTab pCategory, @NotNull NonNullList<ItemStack> pItems) {
-        if (!pCategory.equals(this.getItemCategory())) return;
+        if (!this.allowedIn(pCategory)) return;
+
         pItems.add(this.getDefaultInstance());
     }
 
@@ -161,6 +150,50 @@ public class GenericClothingItem extends ClothingItem {
         this.getClothingPropertyTag(itemStack).put(OVERLAY_NBT_KEY, overlayTag);
     }
 
+    /**
+     * TODO
+     * @param itemStack
+     * @return
+     */
+    public EquipmentSlot[] getSlotsForVisibility(ItemStack itemStack) {
+        ListTag slotList = this.getClothingPropertyTag(itemStack).getList(SLOT_VISIBILITY_KEY, Tag.TAG_STRING);
+
+        EquipmentSlot[] toReturn = new EquipmentSlot[slotList.size()];
+        for (int i = 0; i < slotList.size(); i++) {
+            toReturn[i] = EquipmentSlot.byName(slotList.getString(i));
+        }
+
+        return toReturn;
+    }
+
+    /**
+     * TODO
+     * @param itemStack
+     * @param slots
+     */
+    public void setSlotsForVisibility(ItemStack itemStack, EquipmentSlot[] slots) {
+        ListTag slotList = new ListTag();
+
+        for (EquipmentSlot slot : slots) {
+            slotList.add(StringTag.valueOf(slot.getName()));
+        }
+
+        this.getClothingPropertyTag(itemStack).put(SLOT_VISIBILITY_KEY, slotList);
+    }
+
+    /**
+     * Identical to super, but this is here for documentation purposes. In this class, this method is used exclusively
+     * for setting {@link net.minecraft.client.model.geom.ModelPart} visibility on the generic model as returned by
+     * {@link #getGenericLayerForRender(ItemStack)} and {@link HumanoidClothingLayer#modelForLayer(ModelStrata)}.
+     * <br><br>
+     * See {@link HumanoidClothingLayer#setPartVisibility(HumanoidModel, EquipmentSlot)} for further info.
+     * @return the {@link EquipmentSlot} this item is worn in.
+     */
+    @Override
+    public @NotNull EquipmentSlot slotForModel() {
+        return super.slotForModel();
+    }
+
     @Override
     public void acceptClientClothingRenderManager(Consumer<ClientClothingRenderManager> clothingManager) {
         clothingManager.accept(
@@ -182,7 +215,9 @@ public class GenericClothingItem extends ClothingItem {
                         A clothingModel = pClothingLayer.modelForLayer(modelStrata);
 
                         pClothingLayer.getParentModel().copyPropertiesTo(clothingModel);
-                        pClothingLayer.setPartVisibility(clothingModel, GenericClothingItem.this.slotForModel());
+                        pClothingLayer.setPartVisibility(
+                                clothingModel, GenericClothingItem.this.getSlotsForVisibility(pItemStack)
+                        );
 
                         int i = GenericClothingItem.this.getColor(pItemStack);
                         float r = (float)(i >> 16 & 255) / 255.0F;
@@ -196,14 +231,14 @@ public class GenericClothingItem extends ClothingItem {
                                 clothingModel,
                                 r, g, b, this.getAlpha(
                                         pLivingEntity,
-                                        pItemStack, GenericClothingItem.this.slotForModel(),
+                                        pItemStack, GenericClothingItem.this.getSlot(),
                                         pPackedLight,
                                         pLimbSwing, pLimbSwingAmount,
                                         pPartialTicks, pAgeInTicks,
                                         pNetHeadYaw, pHeadPitch
                                 ),
                                 pClothingLayer.getArmorResource(
-                                        pLivingEntity, pItemStack, GenericClothingItem.this.slotForModel(), null
+                                        pLivingEntity, pItemStack, GenericClothingItem.this.getSlot(), null
                                 )
                         );
 
@@ -218,7 +253,7 @@ public class GenericClothingItem extends ClothingItem {
                                     clothingModel,
                                     1.0F, 1.0F, 1.0F, this.getAlpha(
                                             pLivingEntity,
-                                            pItemStack, GenericClothingItem.this.slotForModel(),
+                                            pItemStack, GenericClothingItem.this.getSlot(),
                                             pPackedLight,
                                             pLimbSwing, pLimbSwingAmount,
                                             pPartialTicks, pAgeInTicks,
@@ -226,7 +261,7 @@ public class GenericClothingItem extends ClothingItem {
                                     ),
                                     pClothingLayer.getArmorResource(
                                             pLivingEntity, pItemStack,
-                                            GenericClothingItem.this.slotForModel(), overlay
+                                            GenericClothingItem.this.getSlot(), overlay
                                     )
                             );
                         }
@@ -272,14 +307,21 @@ public class GenericClothingItem extends ClothingItem {
      * @return
      */
     @Override
-    public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
+    public @NotNull String getArmorTexture(ItemStack stack, Entity entity, @Nullable EquipmentSlot slot, String type) {
+        if (type != null) return String.format(
+                Locale.ROOT,
+                "%s:textures/models/armor/generic/overlays/%s%s.png",
+                MOD_ID,
+                this.getGenericLayerForRender(stack).getSerializedName(),
+                "_" + type
+        );
+
         return String.format(
                 Locale.ROOT,
-                "%s:textures/models/armor/generic/%s/%s%s.png",
+                "%s:textures/models/armor/generic/%s/%s.png",
                 MOD_ID,
                 this.getTextureLocation(stack),
-                this.getGenericLayerForRender(stack).getSerializedName(),
-                type == null ? "" : String.format(Locale.ROOT, "_%s", type)
+                this.getGenericLayerForRender(stack).getSerializedName()
         );
     }
 

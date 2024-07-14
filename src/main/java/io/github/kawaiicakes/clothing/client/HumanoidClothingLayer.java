@@ -122,6 +122,39 @@ public class HumanoidClothingLayer<
     }
 
     /**
+     * Overload of {@link #setPartVisibility(HumanoidModel, EquipmentSlot)} unique to this class.
+     * Allows for greater control of setting part visibility.
+     * @param pModel the {@link A} to set part visibility on.
+     * @param pSlots the array of {@link EquipmentSlot}s to toggle visibility for. See
+     * {@link #setPartVisibility(HumanoidModel, EquipmentSlot)}
+     */
+    public void setPartVisibility(@NotNull A pModel, @NotNull EquipmentSlot[] pSlots) {
+        pModel.setAllVisible(false);
+
+        for (EquipmentSlot slot : pSlots) {
+            switch (slot) {
+                case HEAD:
+                    pModel.head.visible = true;
+                    pModel.hat.visible = true;
+                    break;
+                case CHEST:
+                    pModel.body.visible = true;
+                    pModel.rightArm.visible = true;
+                    pModel.leftArm.visible = true;
+                    break;
+                case LEGS:
+                    pModel.body.visible = true;
+                    pModel.rightLeg.visible = true;
+                    pModel.leftLeg.visible = true;
+                    break;
+                case FEET:
+                    pModel.rightLeg.visible = true;
+                    pModel.leftLeg.visible = true;
+            }
+        }
+    }
+
+    /**
      * TODO
      * @param modelStrata
      * @return

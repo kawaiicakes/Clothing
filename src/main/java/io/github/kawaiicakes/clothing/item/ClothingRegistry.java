@@ -19,20 +19,15 @@ public class ClothingRegistry {
     }
 
     // I don't think I'm going to need to reference specific items anytime soon, so caching this isn't necessary
+    // I lied. TODO: make icon for ClothingTab
     static {
-        register("test_helmet", () -> new GenericClothingItem(EquipmentSlot.HEAD, "test"));
-        register("test", () -> new GenericClothingItem(EquipmentSlot.CHEST, "test"));
-        register("test_pants", () -> new GenericClothingItem(EquipmentSlot.LEGS, "test"));
-        register("test_boots", () -> new GenericClothingItem(EquipmentSlot.FEET, "test"));
-        register(
-                "ouch",
-                () -> new GenericClothingItem(
-                        EquipmentSlot.CHEST,
-                        "ouch",
-                        new String[]{"overlay"},
-                        16712019
-                )
-        );
-        register("glowie_helm", () -> new GenericClothingItem(EquipmentSlot.HEAD, "glowie", 12345679));
+        register("generic_hat", () -> new GenericClothingItem(EquipmentSlot.HEAD));
+        register("generic_shirt", () -> new GenericClothingItem(EquipmentSlot.CHEST));
+        register("generic_pants", () -> new GenericClothingItem(EquipmentSlot.LEGS));
+        register("generic_shoes", () -> new GenericClothingItem(EquipmentSlot.FEET));
+        // TODO: colour 16712019
+        // register("ouch", () -> new GenericClothingItem(EquipmentSlot.CHEST));
+        // TODO: colour 12345679
+        // register("glowie_helm", () -> new GenericClothingItem(EquipmentSlot.HEAD));
     }
 }

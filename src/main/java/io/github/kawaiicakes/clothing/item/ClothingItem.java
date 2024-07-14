@@ -71,7 +71,9 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
     public abstract void acceptClientClothingRenderManager(Consumer<ClientClothingRenderManager> clothingManager);
 
     /**
-     * TODO
+     * To be used by implementations to determine where a piece of clothing should appear according to the slot
+     * it's worn in.
+     * @return the {@link EquipmentSlot} this item is worn in.
      */
     @NotNull
     public EquipmentSlot slotForModel() {
