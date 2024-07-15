@@ -4,6 +4,8 @@ import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.client.model.GenericDefinitions;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingResourceLoader;
+import io.github.kawaiicakes.clothing.item.ClothingItem;
+import io.github.kawaiicakes.clothing.item.ClothingRegistry;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.resources.ResourceLocation;
@@ -11,6 +13,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.ModelEvent;
+import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.OnDatapackSyncEvent;
@@ -78,6 +81,17 @@ public class ClothingMod
 
     @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientEvents {
+        @SubscribeEvent
+        public static void onRegisterItemColorHandlers(RegisterColorHandlersEvent.Item event) {
+            event.register(
+                    (
+                            (pStack, pTintIndex) ->
+                                    pTintIndex > 0 ? -1 :  ((ClothingItem) pStack.getItem()).getColor(pStack)
+                    ),
+                    ClothingRegistry.getAll()
+            );
+        }
+
         @SubscribeEvent
         public static void onModelRegistration(ModelEvent.RegisterAdditional event) {
             event.register(new ResourceLocation(MOD_ID, "cuboid"));

@@ -1,0 +1,9 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "clothing:item/generic_shirt"
+  },
+  "overrides": [
+    {"predicate": {"custom_model_data": 8093325}, "model": "clothing:item/ouch_chest"}
+  ]
+}

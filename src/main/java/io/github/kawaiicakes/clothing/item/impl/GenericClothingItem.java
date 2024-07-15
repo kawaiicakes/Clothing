@@ -15,6 +15,7 @@ import io.github.kawaiicakes.clothing.item.ClothingMaterials;
 import io.github.kawaiicakes.clothing.item.ClothingTab;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.Model;
+import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.ItemRenderer;
@@ -142,6 +143,20 @@ public class GenericClothingItem extends ClothingItem {
      */
     public void setTextureLocation(ItemStack itemStack, String textureLocation) {
         this.getClothingPropertyTag(itemStack).putString(TEXTURE_LOCATION_NBT_KEY, textureLocation);
+
+        String slotString = switch (this.getSlot()) {
+            case FEET -> "_feet";
+            case LEGS -> "_legs";
+            case HEAD -> "_head";
+            default -> "_chest";
+        };
+
+        int texHash = (textureLocation + slotString).hashCode();
+
+        assert itemStack.getTag() != null;
+        itemStack.getTag().putInt(
+                "CustomModelData", texHash
+        );
     }
 
     /**
@@ -219,7 +234,7 @@ public class GenericClothingItem extends ClothingItem {
 
     /**
      * Identical to super, but this is here for documentation purposes. In this class, this method is used exclusively
-     * for setting {@link net.minecraft.client.model.geom.ModelPart} visibility on the generic model as returned by
+     * for setting {@link ModelPart} visibility on the generic model as returned by
      * {@link #getGenericLayerForRender(ItemStack)} and {@link HumanoidClothingLayer#modelForLayer(ModelStrata)}.
      * <br><br>
      * See {@link HumanoidClothingLayer#setPartVisibility(HumanoidModel, EquipmentSlot)} for further info.
@@ -339,7 +354,7 @@ public class GenericClothingItem extends ClothingItem {
      * @param entity The entity wearing the clothing
      * @param slot   The slot the clothing is in
      * @param type   The subtype, can be any valid String according to
-     *              {@link net.minecraft.resources.ResourceLocation#isValidResourceLocation(String)}.
+     *              {@link ResourceLocation#isValidResourceLocation(String)}.
      * @return
      */
     @Override
