@@ -14,7 +14,11 @@ import org.slf4j.Logger;
 import javax.annotation.ParametersAreNullableByDefault;
 
 /**
- * TODO
+ * This is responsible for handling rendering of clothing on a per-implementation basis. It's expected that each
+ * "type" of model will have its own implementation; e.g. OBJ, JSON, etc.
+ * <br><br>
+ * Its purpose is to prevent accidentally reaching across sides, and is quite similar to
+ * {@link net.minecraftforge.client.extensions.common.IClientItemExtensions} both in intent and usage.
  */
 public interface ClientClothingRenderManager {
     Logger LOGGER = LogUtils.getLogger();
@@ -43,22 +47,21 @@ public interface ClientClothingRenderManager {
     }
 
     /**
-     * TODO
-     * @param pClothingLayer
-     * @param pItemStack
-     * @param pMatrixStack
-     * @param pBuffer
-     * @param pPackedLight
-     * @param pLivingEntity
-     * @param pLimbSwing
-     * @param pLimbSwingAmount
-     * @param pPartialTicks
-     * @param pAgeInTicks
-     * @param pNetHeadYaw
-     * @param pHeadPitch
-     * @param <T>
-     * @param <A>
-     * @param <M>
+     * This method renders something to the passed {@code pBuffer}. What it renders and how it does it is entirely
+     * dependent on your goals and the implementation of the item this is responsible for. A lot of valuable render
+     * parameters are included for these purposes.
+     * @param pClothingLayer the {@link HumanoidClothingLayer} responsible for doing the rendering. Its type arguments
+     *                       will depend on what kind of entity was instantiated for.
+     * @param pItemStack    the {@link ItemStack} representing the piece of clothing for render.
+     * @param pMatrixStack  the {@link PoseStack} for rendering with. You may manipulate it to adjust model positioning.
+     * @param pBuffer       the {@link MultiBufferSource} being rendered to.
+     * @param pPackedLight  an {@code int} whose purpose I'm unsure of.
+     * @param pLivingEntity the {@link LivingEntity} who {@code pClothingLayer} is for and would be wearing
+     *                      the {@code pItemStack}.
+     * @param <T> the type of the passed {@code pLivingEntity}.
+     * @param <A> the type of the {@code pClothingLayer}'s generic models.
+     * @param <M> the type of the {@code pClothingLayer}'s entity's {@link HumanoidModel}. Usually identical to
+     *              {@link A}.
      */
     <T extends LivingEntity, M extends HumanoidModel<T>, A extends HumanoidModel<T>> void render(
             @NotNull HumanoidClothingLayer<T, M, A> pClothingLayer,

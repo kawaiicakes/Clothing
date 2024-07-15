@@ -31,7 +31,6 @@ import org.jetbrains.annotations.NotNull;
  * @version Forge 1.19.2
  * @author kawaiicakes
  */
-// TODO: document this class fully
 // TODO: expose more methods from super
 @OnlyIn(Dist.CLIENT)
 public class HumanoidClothingLayer<
@@ -44,7 +43,12 @@ public class HumanoidClothingLayer<
     protected final A overMainArmorModel;
 
     /**
-     * Added during {@link EntityRenderersEvent.AddLayers} to appropriate renderer.
+     * Added during {@link EntityRenderersEvent.AddLayers} to appropriate renderer. Creates a
+     * {@link net.minecraft.client.renderer.entity.layers.RenderLayer} that behaves vaguely like its parent,
+     * {@link HumanoidArmorLayer}, but is made to work specifically with {@link ClothingItem} instances.
+     * <br><br>
+     * Each parameter of type {@link A} represents a model for rendering as in {@link HumanoidArmorLayer}, each of whom
+     * is layered on top of the previously provided one.
      */
     public HumanoidClothingLayer(
             RenderLayerParent<T, M> pRenderer,
@@ -64,19 +68,9 @@ public class HumanoidClothingLayer<
     }
 
     /**
-     * Renders stuff onto <code>pLivingEntity</code> according to what exists in its <code>EquipmentSlot</code>s.
-     * <br>
-     * TODO: elaborate on relation to {@link ClientClothingRenderManager}
-     * @param pMatrixStack
-     * @param pBuffer
-     * @param pPackedLight
-     * @param pLivingEntity
-     * @param pLimbSwing
-     * @param pLimbSwingAmount
-     * @param pPartialTicks
-     * @param pAgeInTicks
-     * @param pNetHeadYaw
-     * @param pHeadPitch
+     * Renders stuff onto <code>pLivingEntity</code> according to what exists in its <code>EquipmentSlot</code>s. This
+     * method renders clothing to the buffer according to the instructions specified by the {@link ClothingItem}
+     * in a slot, as provided by {@link ClientClothingRenderManager#of(ClothingItem)}
      */
     @Override
     public void render(
@@ -155,9 +149,11 @@ public class HumanoidClothingLayer<
     }
 
     /**
-     * TODO
-     * @param modelStrata
-     * @return
+     * Simply returns the appropriate generic model from the corresponding
+     * {@link io.github.kawaiicakes.clothing.item.impl.GenericClothingItem.ModelStrata}.
+     * @param modelStrata the {@link io.github.kawaiicakes.clothing.item.impl.GenericClothingItem.ModelStrata} whose
+     *                    value corresponds to one of the model fields.
+     * @return the appropriate {@link A} to render to.
      */
     public A modelForLayer(GenericClothingItem.ModelStrata modelStrata) {
         return switch (modelStrata) {

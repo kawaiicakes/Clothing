@@ -33,6 +33,8 @@ import static io.github.kawaiicakes.clothing.item.ClothingRegistry.CLOTHING_REGI
 @Mod(ClothingMod.MOD_ID)
 public class ClothingMod
 {
+    // TODO: networking
+    // TODO: https://docs.minecraftforge.net/en/1.19.x/rendering/modelextensions/visibility/
     public static final String MOD_ID = "clothing";
 
     private static final Logger LOGGER = LogUtils.getLogger();

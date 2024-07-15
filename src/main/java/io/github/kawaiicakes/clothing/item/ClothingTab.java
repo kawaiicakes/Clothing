@@ -13,7 +13,7 @@ public class ClothingTab extends CreativeModeTab {
         super("clothing");
     }
 
-    // TODO
+    // TODO: make a custom one
     @Override
     public @NotNull ItemStack makeIcon() {
         DyeableArmorItem dyeableArmorItem = (DyeableArmorItem) Items.LEATHER_CHESTPLATE;

@@ -16,8 +16,10 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.Consumer;
 
 /**
- * TODO
- * Each implementation of this will likely represent an item that renders as one model type (e.g. JSON, OBJ)
+ * Each implementation of this will likely represent an item that renders as one model type (e.g. JSON, OBJ). The
+ * {@code ClothingItem} simply subclasses {@link ArmorItem} and is made to flexibly create and render pieces of
+ * clothing. The {@link io.github.kawaiicakes.clothing.client.HumanoidClothingLayer} is reliant on implementations
+ * of this class' methods.
  */
 public abstract class ClothingItem extends ArmorItem implements DyeableLeatherItem {
     public static final String CLOTHING_PROPERTY_NBT_KEY = "ClothingProperties";
@@ -29,9 +31,9 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
     }
 
     /**
-     * TODO
-     * @param itemStack
-     * @return
+     * Obtains the recommended root NBT {@link CompoundTag} for clothing properties.
+     * @param itemStack an {@link ItemStack} of this item.
+     * @return the recommended root NBT {@link CompoundTag} for clothing properties.
      */
     @NotNull
     public CompoundTag getClothingPropertyTag(ItemStack itemStack) {
@@ -40,8 +42,12 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
     }
 
     /**
-     * TODO
-     * @return
+     * Returns the default {@link ItemStack} for this. Since it's anticipated that rendering properties are stored in
+     * the stack's {@link CompoundTag}, the top-level NBT structure has been pre-prepared here.
+     * <br><br>
+     * Further implementations should adjust the NBT data as necessary; further reading provides an example.
+     * @see GenericClothingItem#getDefaultInstance()
+     * @return the default {@link ItemStack} for this.
      */
     @Override
     public @NotNull ItemStack getDefaultInstance() {
@@ -56,16 +62,23 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
     }
 
     /**
-     * TODO
-     * @param pCategory
-     * @param pItems
+     * Used to display the {@link ItemStack}s in {@code pItems} in the creative menu. See super for examples.
+     * @param pCategory the {@link CreativeModeTab} to place the items in. See {@link Item#allowedIn(CreativeModeTab)}
+     *                  for usage.
+     * @param pItems    the {@link NonNullList} of {@link ItemStack}s that contains the items for display.
      */
     @Override
     public abstract void fillItemCategory(@NotNull CreativeModeTab pCategory, @NotNull NonNullList<ItemStack> pItems);
 
     /**
-     * TODO: this is a critical method to document considering it's how implementations are expected to render models
-     * @param clothingManager
+     * Implementations essentially provide an instance of {@link ClientClothingRenderManager} to the client-exclusive
+     * part of this item. The {@link ClientClothingRenderManager} is responsible for rendering clothing to a buffer.
+     * How this is done will depend on what type of model is used, thus your own implementations are necessary.
+     * <br><br>
+     * This mod provides implementations of this that will suffice in the majority of use cases.
+     * @see GenericClothingItem#acceptClientClothingRenderManager(Consumer)
+     * @param clothingManager the {@link java.util.function.Supplier} of {@link ClientClothingRenderManager}.
+     *                        Do not implement in this class; use an anonymous class or a separate implementation.
      */
     public abstract void acceptClientClothingRenderManager(Consumer<ClientClothingRenderManager> clothingManager);
 

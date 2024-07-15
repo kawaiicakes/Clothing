@@ -20,7 +20,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * TODO:
+ * This class simply loads clothing for display in the creative menu from datapacks. The data here is also used to
+ * determine valid overlay/texture IDs on the server-side.
  */
 public class GenericClothingResourceLoader extends SimpleJsonResourceReloadListener {
     protected static final Logger LOGGER = LogUtils.getLogger();
@@ -51,8 +52,10 @@ public class GenericClothingResourceLoader extends SimpleJsonResourceReloadListe
     }
 
     /**
-     * TODO
-     * @param clothingMap
+     * You may add clothing entries for display here during data reload.
+     * @param clothingMap a {@link ImmutableMap} of types {@link ResourceLocation} and
+     * {@link io.github.kawaiicakes.clothing.item.impl.GenericClothingItem.ItemStackInitializer}. Its key corresponds
+     *                    to the item's texture identifier; including its namespace.
      */
     public void addClothing(ImmutableMap<ResourceLocation, GenericClothingItem.ItemStackInitializer> clothingMap) {
         ImmutableMap.Builder<ResourceLocation, GenericClothingItem.ItemStackInitializer> builder

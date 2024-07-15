@@ -109,9 +109,9 @@ public class GenericClothingItem extends ClothingItem {
     }
 
     /**
-     * TODO
-     * @param itemStack
-     * @return
+     * @param itemStack the {@code itemStack} representing this.
+     * @return the {@link ModelStrata} indicating which layer the passed stack renders to.
+     * @see HumanoidClothingLayer#modelForLayer(ModelStrata)
      */
     public ModelStrata getGenericLayerForRender(ItemStack itemStack) {
         String strataString = this.getClothingPropertyTag(itemStack).getString(MODEL_LAYER_NBT_KEY);
@@ -119,27 +119,27 @@ public class GenericClothingItem extends ClothingItem {
     }
 
     /**
-     * TODO
-     * @param itemStack
-     * @param modelStrata
+     * @param itemStack the {@code itemStack} representing this.
+     * @param modelStrata the {@link ModelStrata} indicating which layer the passed stack renders to.
+     * @see HumanoidClothingLayer#modelForLayer(ModelStrata)
      */
     public void setGenericLayerForRender(ItemStack itemStack, ModelStrata modelStrata) {
         this.getClothingPropertyTag(itemStack).putString(MODEL_LAYER_NBT_KEY, modelStrata.getSerializedName());
     }
 
     /**
-     * TODO
-     * @param itemStack
-     * @return
+     * @param itemStack the {@code itemStack} representing this.
+     * @return the {@link String} pointing to the location of the texture folder.
+     * @see ItemStackInitializer
      */
     public String getTextureLocation(ItemStack itemStack) {
         return this.getClothingPropertyTag(itemStack).getString(TEXTURE_LOCATION_NBT_KEY);
     }
 
     /**
-     * TODO
-     * @param itemStack
-     * @param textureLocation
+     * @param itemStack the {@code itemStack} representing this.
+     * @param textureLocation the {@link String} pointing to the location of the texture folder.
+     * @see ItemStackInitializer
      */
     public void setTextureLocation(ItemStack itemStack, String textureLocation) {
         this.getClothingPropertyTag(itemStack).putString(TEXTURE_LOCATION_NBT_KEY, textureLocation);
@@ -160,9 +160,8 @@ public class GenericClothingItem extends ClothingItem {
     }
 
     /**
-     * TODO
-     * @param itemStack
-     * @return
+     * @param itemStack the {@code itemStack} representing this.
+     * @return the array of {@link String}s whose values point to the overlay textures.
      */
     public String[] getOverlays(ItemStack itemStack) {
         ListTag listTag = this.getClothingPropertyTag(itemStack).getList(OVERLAY_NBT_KEY, Tag.TAG_STRING);
@@ -175,9 +174,8 @@ public class GenericClothingItem extends ClothingItem {
     }
 
     /**
-     * TODO
-     * @param itemStack
-     * @param overlays
+     * @param itemStack the {@code itemStack} representing this.
+     * @param overlays the array of {@link String}s whose values point to the overlay textures.
      */
     public void setOverlays(ItemStack itemStack, String[] overlays) {
         ListTag overlayTag = new ListTag();
@@ -191,20 +189,22 @@ public class GenericClothingItem extends ClothingItem {
 
     // TODO: custom name from data entries/lang key generated from clothing
     @Override
-    public String getDescriptionId(ItemStack pStack) {
+    public @NotNull String getDescriptionId(@NotNull ItemStack pStack) {
         return super.getDescriptionId(pStack);
     }
 
     // TODO: cool tooltip stuff lol
     @Override
+    @ParametersAreNonnullByDefault
     public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
         super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
     }
 
     /**
-     * TODO
-     * @param itemStack
-     * @return
+     * @param itemStack the {@code itemStack} representing this.
+     * @return an array of {@link EquipmentSlot} whose elements correspond to what body parts the clothing
+     *         will visibly render on.
+     * @see HumanoidClothingLayer#setPartVisibility(HumanoidModel, EquipmentSlot[])
      */
     public EquipmentSlot[] getSlotsForVisibility(ItemStack itemStack) {
         ListTag slotList = this.getClothingPropertyTag(itemStack).getList(SLOT_VISIBILITY_KEY, Tag.TAG_STRING);
@@ -218,9 +218,10 @@ public class GenericClothingItem extends ClothingItem {
     }
 
     /**
-     * TODO
-     * @param itemStack
-     * @param slots
+     * @param itemStack the {@code itemStack} representing this.
+     * @param slots an array of {@link EquipmentSlot} whose elements correspond to what body parts the clothing
+     *              will visibly render on.
+     * @see HumanoidClothingLayer#setPartVisibility(HumanoidModel, EquipmentSlot[])
      */
     public void setSlotsForVisibility(ItemStack itemStack, EquipmentSlot[] slots) {
         ListTag slotList = new ListTag();
@@ -349,13 +350,14 @@ public class GenericClothingItem extends ClothingItem {
     }
 
     /**
-     * TODO
+     * Override of super that returns the appropriate texture for this generic clothing item. The passed {@code type}
+     * is the texture identifier.
      * @param stack  ItemStack for the equipped armor
      * @param entity The entity wearing the clothing
      * @param slot   The slot the clothing is in
      * @param type   The subtype, can be any valid String according to
      *              {@link ResourceLocation#isValidResourceLocation(String)}.
-     * @return
+     * @return the {@link String} that points to the texture for render.
      */
     @Override
     public @NotNull String getArmorTexture(ItemStack stack, Entity entity, @Nullable EquipmentSlot slot, String type) {
@@ -425,13 +427,21 @@ public class GenericClothingItem extends ClothingItem {
     }
 
     /**
-     * TODO
-     * @param slot
-     * @param modelLayer
-     * @param textureIdentifier
-     * @param overlays
-     * @param slotsForVisibility
-     * @param defaultColor
+     * The {@link ItemStackInitializer} is simply an immutable data carrier intended for serialization and
+     * deserialization between client & server and from datapacks. Its fields are used in
+     * {@link GenericClothingItem#fillItemCategory(CreativeModeTab, NonNullList)} to fill the appropriate creative
+     * tab with data-driven clothing entries.
+     * @param slot the {@link EquipmentSlot} the piece of clothing is worn in.
+     * @param modelLayer the {@link ModelStrata} the piece of clothing will render on.
+     *                   See {@link HumanoidClothingLayer#modelForLayer(ModelStrata)}.
+     * @param textureIdentifier a simple {@link String} representing the folder name in which the clothing's textures
+     *                          are stored.
+     * @param overlays an array of {@link String}s whose elements represent the names of the overlays to add to the
+     *                 clothing.
+     * @param slotsForVisibility an array of {@link EquipmentSlot}s whose elements represent the parts of the body
+     *                           will be made visible for render for this piece of clothing. See
+     *                           {@link HumanoidClothingLayer#setPartVisibility(HumanoidModel, EquipmentSlot[])}.
+     * @param defaultColor a hexadecimal colour as an {@code int} for which the clothing will be tinted.
      */
     @ApiStatus.Internal
     @ParametersAreNonnullByDefault
@@ -472,9 +482,9 @@ public class GenericClothingItem extends ClothingItem {
         }
 
         /**
-         * TODO
-         * @param stackData
-         * @return
+         * @param stackData a {@link JsonObject} containing the item entry information.
+         * @return a {@link Set} of {@link ItemStackInitializer}s that are used to load item entries in the creative
+         * menu.
          */
         @Nullable
         public static Set<ItemStackInitializer> fromJson(ResourceLocation entryId, JsonObject stackData) {

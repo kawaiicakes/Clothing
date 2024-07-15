@@ -55,7 +55,6 @@ public class ClothingRegistry {
         }
     }
 
-    // TODO: make custom icon for ClothingTab
     static {
         register("generic_hat", () -> new GenericClothingItem(EquipmentSlot.HEAD));
         register("generic_shirt", () -> new GenericClothingItem(EquipmentSlot.CHEST));
