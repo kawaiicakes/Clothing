@@ -35,7 +35,15 @@ import static io.github.kawaiicakes.clothing.item.ClothingRegistry.CLOTHING_REGI
 @Mod(ClothingMod.MOD_ID)
 public class ClothingMod
 {
+    // TODO: BakedModelClothingItem, see comment below
+    /*
+        So the BeeStingerLayer feeds the VertexConsumer arbitrarily-declared vertices representing the stinger;
+        evidently, the consumer also has methods for rendering quads, and thus can theoretically handle rendering
+        a BakedModel using #getQuads. This could be the easiest way of rendering stuff like OBJ models that can be
+        loaded using an IGeometryLoader
+     */
     // TODO: https://docs.minecraftforge.net/en/1.19.x/rendering/modelextensions/visibility/
+    // TODO: Subclass CompositeModel for clothing icons (so the overlay system isn't a complete nightmare)
     public static final String MOD_ID = "clothing";
 
     private static final Logger LOGGER = LogUtils.getLogger();
