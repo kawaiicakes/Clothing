@@ -3,6 +3,7 @@ package io.github.kawaiicakes.clothing;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.client.model.GenericDefinitions;
+import io.github.kawaiicakes.clothing.common.network.ClothingPackets;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingResourceLoader;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
 import io.github.kawaiicakes.clothing.item.ClothingRegistry;
@@ -23,6 +24,7 @@ import net.minecraftforge.fml.InterModComms;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
@@ -33,7 +35,6 @@ import static io.github.kawaiicakes.clothing.item.ClothingRegistry.CLOTHING_REGI
 @Mod(ClothingMod.MOD_ID)
 public class ClothingMod
 {
-    // TODO: networking
     // TODO: https://docs.minecraftforge.net/en/1.19.x/rendering/modelextensions/visibility/
     public static final String MOD_ID = "clothing";
 
@@ -48,9 +49,16 @@ public class ClothingMod
 
         CLOTHING_REGISTRY.register(modEventBus);
 
+        modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::onInterModEnqueue);
 
         forgeEventBus.addListener(this::onAddReloadListener);
+        forgeEventBus.addListener(this::onDatapackSync);
+    }
+
+    @SubscribeEvent
+    public void commonSetup(FMLCommonSetupEvent event) {
+        ClothingPackets.register();
     }
 
     @SubscribeEvent
@@ -60,7 +68,12 @@ public class ClothingMod
 
     @SubscribeEvent
     public void onDatapackSync(OnDatapackSyncEvent event) {
-
+        ClothingPackets.sendToPlayer(
+                new ClothingPackets.S2CClothingPacket(
+                        GenericClothingResourceLoader.getInstance().getClothing()
+                ),
+                event.getPlayer()
+        );
     }
 
     @SubscribeEvent

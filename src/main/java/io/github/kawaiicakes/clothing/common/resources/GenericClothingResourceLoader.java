@@ -43,6 +43,10 @@ public class GenericClothingResourceLoader extends SimpleJsonResourceReloadListe
         return INSTANCE;
     }
 
+    public ImmutableMap<ResourceLocation, GenericClothingItem.ItemStackInitializer> getClothing() {
+        return ImmutableMap.copyOf(this.clothing);
+    }
+
     public Set<GenericClothingItem.ItemStackInitializer> genericClothingEntries() {
         Set<GenericClothingItem.ItemStackInitializer> toReturn = new HashSet<>(this.clothing.size());
         for (GenericClothingItem.ItemStackInitializer initializer : this.clothing.values()) {

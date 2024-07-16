@@ -25,6 +25,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.StringRepresentable;
@@ -580,6 +581,45 @@ public class GenericClothingItem extends ClothingItem {
                 toReturn[i] = primitive.getAsString();
             }
             return toReturn;
+        }
+
+        public static ItemStackInitializer readFromNetwork(FriendlyByteBuf buf) {
+            EquipmentSlot slot = buf.readEnum(EquipmentSlot.class);
+            ModelStrata modelLayer = buf.readEnum(ModelStrata.class);
+            String textureIdentifier = buf.readUtf();
+            List<String> overlaysList = buf.readCollection(
+                    ArrayList::new,
+                    FriendlyByteBuf::readUtf
+            );
+            List<EquipmentSlot> slotsList = buf.readCollection(
+                    ArrayList::new,
+                    buf1 -> buf1.readEnum(EquipmentSlot.class)
+            );
+            int defaultColor = buf.readInt();
+
+            return new ItemStackInitializer(
+                    slot,
+                    modelLayer,
+                    textureIdentifier,
+                    overlaysList.toArray(String[]::new),
+                    slotsList.toArray(EquipmentSlot[]::new),
+                    defaultColor
+            );
+        }
+
+        public static void writeToNetwork(FriendlyByteBuf buf, ItemStackInitializer itemStackInitializer) {
+            buf.writeEnum(itemStackInitializer.slot);
+            buf.writeEnum(itemStackInitializer.modelLayer);
+            buf.writeUtf(itemStackInitializer.textureIdentifier);
+            buf.writeCollection(
+                    Arrays.stream(itemStackInitializer.overlays).toList(),
+                    FriendlyByteBuf::writeUtf
+            );
+            buf.writeCollection(
+                    Arrays.stream(itemStackInitializer.slotsForVisibility).toList(),
+                    FriendlyByteBuf::writeEnum
+            );
+            buf.writeInt(itemStackInitializer.defaultColor);
         }
     }
 }
