@@ -1,6 +1,7 @@
 package io.github.kawaiicakes.clothing.item.impl;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Vector3f;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
@@ -9,7 +10,7 @@ import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
-import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -72,7 +73,6 @@ public abstract class BakedModelClothingItem extends ClothingItem {
     public ClientClothingRenderManager getDefaultRenderManager() {
         return new ClientClothingRenderManager() {
             private BakedModel modelForRender = null;
-            private final ItemRenderer itemRenderer = Minecraft.getInstance().getItemRenderer();
 
             @Override
             public <T extends LivingEntity, M extends HumanoidModel<T>, A extends HumanoidModel<T>> void render(
@@ -96,17 +96,24 @@ public abstract class BakedModelClothingItem extends ClothingItem {
 
                 pMatrixStack.pushPose();
                 parentModelPart.translateAndRotate(pMatrixStack);
+                /*
+                    These values were set according to what would place the "center" of a model made in
+                    Blockbench 4.10.4 at the "center" of the part model; assuming the model's center in Blockbench is
+                    at 0, 4, 0.
+                 */
+                pMatrixStack.translate(0.50, -0.50, -0.50);
+                pMatrixStack.mulPose(Vector3f.XP.rotationDegrees(180.00F));
 
-                // TODO: test if this even works properly
-                this.itemRenderer.render(
+                Minecraft.getInstance().getItemRenderer().render(
                         pItemStack,
                         ItemTransforms.TransformType.NONE,
                         false,
                         pMatrixStack,
                         pBuffer,
                         pPackedLight,
-                        0,
-                        this.modelForRender);
+                        OverlayTexture.NO_OVERLAY,
+                        this.modelForRender
+                );
 
                pMatrixStack.popPose();
             }

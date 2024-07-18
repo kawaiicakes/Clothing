@@ -1,12 +1,22 @@
 package io.github.kawaiicakes.clothing.item;
 
 import com.mojang.logging.LogUtils;
+import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
+import io.github.kawaiicakes.clothing.item.impl.BakedModelClothingItem;
 import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.core.NonNullList;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ArmorMaterials;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -22,6 +32,24 @@ public class ClothingRegistry {
     // this saves a little bit of effort when typing lol
     public static void register(String itemName, Supplier<? extends Item> itemSupplier) {
         CLOTHING_REGISTRY.register(itemName, itemSupplier);
+    }
+
+    @Nullable
+    public static Item[] itemsWithColorableModels() {
+        try {
+            return CLOTHING_REGISTRY.getEntries()
+                    .stream()
+                    .filter(obj -> {
+                        if (!(obj.get() instanceof ClothingItem clothing)) return false;
+                        return clothing.hasDynamicColorModel();
+                    })
+                    .map(RegistryObject::get)
+                    .toArray(Item[]::new);
+
+        } catch (RuntimeException e) {
+            LOGGER.error("Error returning Clothing from registry!", e);
+            return null;
+        }
     }
 
     @Nullable
@@ -60,5 +88,39 @@ public class ClothingRegistry {
         register("generic_shirt", () -> new GenericClothingItem(EquipmentSlot.CHEST));
         register("generic_pants", () -> new GenericClothingItem(EquipmentSlot.LEGS));
         register("generic_shoes", () -> new GenericClothingItem(EquipmentSlot.FEET));
+
+        register("riot_helmet", () -> new BakedModelClothingItem(
+                ArmorMaterials.NETHERITE,
+                EquipmentSlot.HEAD,
+                new Item.Properties().tab(ClothingTab.CLOTHING_TAB)
+        ) {
+            @Override
+            public ModelPart getModelPartForParent(ItemStack itemStack, Object clothingLayer) {
+                if (!(clothingLayer instanceof HumanoidClothingLayer<?,?,?> layer)) return null;
+                return layer.getParentModel().hat;
+            }
+
+            @Override
+            public ResourceLocation bakedModelLocation(ItemStack itemStack) {
+                return new ResourceLocation(MOD_ID, "riot_helmet");
+            }
+
+            @Override
+            public boolean hasDynamicColorModel() {
+                return false;
+            }
+
+            @Override
+            public void fillItemCategory(@NotNull CreativeModeTab pCategory, @NotNull NonNullList<ItemStack> pItems) {
+                if (this.allowedIn(pCategory)) {
+                    pItems.add(new ItemStack(this));
+                }
+            }
+
+            @Override
+            public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
+                return "clothing:textures/models/riot_helmet.png";
+            }
+        });
     }
 }

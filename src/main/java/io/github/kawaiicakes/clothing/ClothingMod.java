@@ -111,13 +111,14 @@ public class ClothingMod
                             (pStack, pTintIndex) ->
                                     pTintIndex > 0 ? -1 :  ((ClothingItem) pStack.getItem()).getColor(pStack)
                     ),
-                    ClothingRegistry.getAll()
+                    ClothingRegistry.itemsWithColorableModels()
             );
         }
 
         @SubscribeEvent
         public static void onModelRegistration(ModelEvent.RegisterAdditional event) {
             event.register(new ResourceLocation(MOD_ID, "cuboid"));
+            event.register(new ResourceLocation(MOD_ID, "riot_helmet"));
         }
 
         @SubscribeEvent
