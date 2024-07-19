@@ -101,8 +101,9 @@ public abstract class BakedModelClothingItem extends ClothingItem {
                     Blockbench 4.10.4 at the "center" of the part model; assuming the model's center in Blockbench is
                     at 0, 4, 0.
                  */
-                pMatrixStack.translate(0.50, -0.50, -0.50);
+                pMatrixStack.translate(-0.50, -0.50, 0.50);
                 pMatrixStack.mulPose(Vector3f.XP.rotationDegrees(180.00F));
+                pMatrixStack.mulPose(Vector3f.YP.rotationDegrees(180.00F));
 
                 Minecraft.getInstance().getItemRenderer().render(
                         pItemStack,
