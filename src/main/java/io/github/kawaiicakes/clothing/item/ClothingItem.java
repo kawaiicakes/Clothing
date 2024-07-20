@@ -12,6 +12,7 @@ import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLLoader;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
 
@@ -115,6 +116,11 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
      * path to the texture that should be used for this piece of clothing. It's used internally by both Minecraft
      * and this mod to return the texture for a model. It would be easiest if this was implemented per model type,
      * so it's left abstract.
+     * <br><br>
+     * It's fine to immediately return null if you aren't relying on the generic models in
+     * {@link io.github.kawaiicakes.clothing.client.HumanoidClothingLayer} or on a similar implementation, since this
+     * method is ultimately used in {@link net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer} for these
+     * purposes.
      * @param stack  ItemStack for the equipped armor
      * @param entity The entity wearing the clothing
      * @param slot   The slot the clothing is in
@@ -124,7 +130,7 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
      *         clothing.
      */
     @Override
-    @NotNull
+    @Nullable
     public abstract String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type);
 
     @Override

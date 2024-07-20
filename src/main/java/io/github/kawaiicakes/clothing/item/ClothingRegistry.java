@@ -118,8 +118,8 @@ public class ClothingRegistry {
             }
 
             @Override
-            public @NotNull String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-                return "clothing:textures/models/riot_helmet.png";
+            public String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
+                return null;
             }
         });
     }
