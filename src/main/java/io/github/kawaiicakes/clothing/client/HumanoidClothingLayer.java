@@ -2,11 +2,14 @@ package io.github.kawaiicakes.clothing.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
+import io.github.kawaiicakes.clothing.item.impl.BakedModelClothingItem;
 import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
 import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
+import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
@@ -44,7 +47,7 @@ public class HumanoidClothingLayer<
 
     /**
      * Added during {@link EntityRenderersEvent.AddLayers} to appropriate renderer. Creates a
-     * {@link net.minecraft.client.renderer.entity.layers.RenderLayer} that behaves vaguely like its parent,
+     * {@link RenderLayer} that behaves vaguely like its parent,
      * {@link HumanoidArmorLayer}, but is made to work specifically with {@link ClothingItem} instances.
      * <br><br>
      * Each parameter of type {@link A} represents a model for rendering as in {@link HumanoidArmorLayer}, each of whom
@@ -150,8 +153,8 @@ public class HumanoidClothingLayer<
 
     /**
      * Simply returns the appropriate generic model from the corresponding
-     * {@link io.github.kawaiicakes.clothing.item.impl.GenericClothingItem.ModelStrata}.
-     * @param modelStrata the {@link io.github.kawaiicakes.clothing.item.impl.GenericClothingItem.ModelStrata} whose
+     * {@link GenericClothingItem.ModelStrata}.
+     * @param modelStrata the {@link GenericClothingItem.ModelStrata} whose
      *                    value corresponds to one of the model fields.
      * @return the appropriate {@link A} to render to.
      */
@@ -163,6 +166,28 @@ public class HumanoidClothingLayer<
             case OVER -> this.overModel;
             case OVER_LEG_ARMOR -> this.overLegsArmorModel;
             case OVER_ARMOR -> this.overMainArmorModel;
+        };
+    }
+
+    /**
+     * Simply returns the appropriate model part from the corresponding
+     * {@link io.github.kawaiicakes.clothing.item.impl.BakedModelClothingItem.ModelPartReference}. Exists to avoid
+     * directly referencing client-only classes in common classes.
+     * @see BakedModelClothingItem#getModelPartForParent(ItemStack)
+     * @param reference the {@link io.github.kawaiicakes.clothing.item.impl.BakedModelClothingItem.ModelPartReference}
+     *                  corresponding to the desired {@link ModelPart}
+     * @return the desired {@link ModelPart}
+     */
+    public @NotNull ModelPart modelPartByReference(BakedModelClothingItem.ModelPartReference reference) {
+        M parent = this.getParentModel();
+        return switch (reference) {
+            case HEAD -> parent.head;
+            case HAT -> parent.hat;
+            case BODY -> parent.body;
+            case RIGHT_ARM -> parent.rightArm;
+            case LEFT_ARM -> parent.leftArm;
+            case RIGHT_LEG -> parent.rightLeg;
+            case LEFT_LEG -> parent.leftLeg;
         };
     }
 }

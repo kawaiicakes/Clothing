@@ -94,10 +94,10 @@ public class ClothingRegistry {
                 EquipmentSlot.HEAD,
                 new Item.Properties().tab(ClothingTab.CLOTHING_TAB)
         ) {
+
             @Override
-            public ModelPart getModelPartForParent(ItemStack itemStack, Object clothingLayer) {
-                if (!(clothingLayer instanceof HumanoidClothingLayer<?,?,?> layer)) return null;
-                return layer.getParentModel().hat;
+            public @NotNull ModelPartReference getModelPartForParent(ItemStack itemStack) {
+                return ModelPartReference.HAT;
             }
 
             @Override

@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ArmorMaterial;
@@ -37,22 +38,15 @@ public abstract class BakedModelClothingItem extends ClothingItem {
     }
 
     /**
-     * Implementations indicate the {@link ModelPart} this item will be parented to. The {@link ItemStack} and
-     * {@link HumanoidClothingLayer} are included for the implementer's benefit.
-     * <br><br>
-     * One should take care not to mutate any model parts returned from the {@code clothingLayer} as those mutations
-     * will be reflected on the actual model. Consider using {@link ModelPart#copyFrom(ModelPart)} prior to performing
-     * a mutating operation.
+     * Implementations indicate the {@link ModelPart} this item will be parented to using a {@link ModelPartReference}.
+     * The {@link ItemStack} is included for the implementer's benefit. This method is used in
+     * {@link #getDefaultRenderManager()} to reference model parts without explicit references to them in server/client
+     * common classes.
      * @param itemStack the {@link ItemStack} instance of this.
-     * @param clothingLayer the {@link HumanoidClothingLayer} of the
-     *                      {@link net.minecraft.client.renderer.entity.LivingEntityRenderer}. The parameter type is
-     *                      left as an {@link Object} as a {@link ClassNotFoundException} would be thrown on the
-     *                      serverside otherwise. An {@link IllegalArgumentException} will be thrown if the passed
-     *                      object is not a {@link HumanoidClothingLayer} instance.
-     * @return          the {@link ModelPart} this item is worn on.
+     * @return          the {@link ModelPartReference} for the body group this item is worn on.
      */
-    public abstract ModelPart
-    getModelPartForParent(ItemStack itemStack, Object clothingLayer);
+    public @NotNull abstract ModelPartReference
+    getModelPartForParent(ItemStack itemStack);
 
     /**
      * Used to point to the location of the {@link BakedModel} for render. A baked model is not directly declared
@@ -91,8 +85,10 @@ public abstract class BakedModelClothingItem extends ClothingItem {
                     );
                 }
 
+                ModelPartReference modelPartReference = BakedModelClothingItem.this.getModelPartForParent(pItemStack);
+
                 ModelPart parentModelPart
-                        = BakedModelClothingItem.this.getModelPartForParent(pItemStack, pClothingLayer);
+                        = pClothingLayer.modelPartByReference(modelPartReference);
 
                 pMatrixStack.pushPose();
                 parentModelPart.translateAndRotate(pMatrixStack);
@@ -124,5 +120,31 @@ public abstract class BakedModelClothingItem extends ClothingItem {
     @Override
     public void acceptClientClothingRenderManager(Consumer<ClientClothingRenderManager> clothingManager) {
         clothingManager.accept(this.getDefaultRenderManager());
+    }
+
+    /**
+     * {@link ModelPart} and references to {@link HumanoidClothingLayer}s which contain the models from which parts may
+     * come are client-only classes; directly referencing them in {@link net.minecraft.world.item.Item} increases the
+     * chances of serverside crashes due to {@link ClassNotFoundException}s.
+     */
+    public enum ModelPartReference implements StringRepresentable {
+        HEAD("head"),
+        HAT("hat"),
+        BODY("body"),
+        RIGHT_ARM("right_arm"),
+        LEFT_ARM("left_arm"),
+        RIGHT_LEG("right_leg"),
+        LEFT_LEG("left_leg");
+
+        private final String childName;
+
+        ModelPartReference(String childName) {
+            this.childName = childName;
+        }
+
+        @Override
+        public @NotNull String getSerializedName() {
+            return this.childName;
+        }
     }
 }
