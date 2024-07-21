@@ -146,5 +146,15 @@ public abstract class BakedModelClothingItem extends ClothingItem {
         public @NotNull String getSerializedName() {
             return this.childName;
         }
+
+        public static ModelPartReference byName(String pTargetName) {
+            for (ModelPartReference reference : values()) {
+                if (reference.getSerializedName().equals(pTargetName)) {
+                    return reference;
+                }
+            }
+
+            throw new IllegalArgumentException("Invalid model reference '" + pTargetName + "'");
+        }
     }
 }
