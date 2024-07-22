@@ -91,11 +91,6 @@ public class GenericClothingItem extends ClothingItem {
     }
 
     @Override
-    public boolean hasDynamicColorModel() {
-        return true;
-    }
-
-    @Override
     public void fillItemCategory(@NotNull CreativeModeTab pCategory, @NotNull NonNullList<ItemStack> pItems) {
         if (!this.allowedIn(pCategory)) return;
 

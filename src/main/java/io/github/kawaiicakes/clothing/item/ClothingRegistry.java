@@ -1,10 +1,8 @@
 package io.github.kawaiicakes.clothing.item;
 
 import com.mojang.logging.LogUtils;
-import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.item.impl.BakedModelClothingItem;
 import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
-import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.core.NonNullList;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
@@ -32,24 +30,6 @@ public class ClothingRegistry {
     // this saves a little bit of effort when typing lol
     public static void register(String itemName, Supplier<? extends Item> itemSupplier) {
         CLOTHING_REGISTRY.register(itemName, itemSupplier);
-    }
-
-    @Nullable
-    public static Item[] itemsWithColorableModels() {
-        try {
-            return CLOTHING_REGISTRY.getEntries()
-                    .stream()
-                    .filter(obj -> {
-                        if (!(obj.get() instanceof ClothingItem clothing)) return false;
-                        return clothing.hasDynamicColorModel();
-                    })
-                    .map(RegistryObject::get)
-                    .toArray(Item[]::new);
-
-        } catch (RuntimeException e) {
-            LOGGER.error("Error returning Clothing from registry!", e);
-            return null;
-        }
     }
 
     @Nullable
@@ -89,6 +69,7 @@ public class ClothingRegistry {
         register("generic_pants", () -> new GenericClothingItem(EquipmentSlot.LEGS));
         register("generic_shoes", () -> new GenericClothingItem(EquipmentSlot.FEET));
 
+        // TODO: texture1 in OBJ model json
         register("riot_helmet", () -> new BakedModelClothingItem(
                 ArmorMaterials.NETHERITE,
                 EquipmentSlot.HEAD,
@@ -102,18 +83,13 @@ public class ClothingRegistry {
 
             @Override
             public ResourceLocation bakedModelLocation(ItemStack itemStack) {
-                return new ResourceLocation(MOD_ID, "riot_helmet");
-            }
-
-            @Override
-            public boolean hasDynamicColorModel() {
-                return false;
+                return new ResourceLocation(MOD_ID, "clothing/riot_helmet");
             }
 
             @Override
             public void fillItemCategory(@NotNull CreativeModeTab pCategory, @NotNull NonNullList<ItemStack> pItems) {
                 if (this.allowedIn(pCategory)) {
-                    pItems.add(new ItemStack(this));
+                    pItems.add(this.getDefaultInstance());
                 }
             }
 

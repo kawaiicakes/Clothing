@@ -64,22 +64,6 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
         return toReturn;
     }
 
-    // FIXME: returning true affects OBJ rendering as well.
-    /*
-        If layer0 is presumed to be changed, but any other layers remain the same, then this can be taken advantage of.
-        Presumably since it's a baked model, registering it in the colour handler would make it expect to be coloured
-        thus explaining why it turns black; even for the OBJ baked models.
-     */
-    /**
-     * Used during {@link net.minecraftforge.client.event.RegisterColorHandlersEvent} to determine whether this item
-     * is automatically registered there. If true, ensure that the item's texture is grayscale otherwise it will not
-     * work. You may return false for a lot of reasons, one being that item model colours change according to item
-     * predicates rather than the NBT colour property.
-     * @return whether this item should automatically be registered with the
-     *         {@link net.minecraftforge.client.event.RegisterColorHandlersEvent}.
-     */
-    public abstract boolean hasDynamicColorModel();
-
     /**
      * Used to display the {@link ItemStack}s in {@code pItems} in the creative menu. See super for examples.
      * @param pCategory the {@link CreativeModeTab} to place the items in. See {@link Item#allowedIn(CreativeModeTab)}

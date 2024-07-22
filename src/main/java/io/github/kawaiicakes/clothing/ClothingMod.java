@@ -35,13 +35,6 @@ import static io.github.kawaiicakes.clothing.item.ClothingRegistry.CLOTHING_REGI
 @Mod(ClothingMod.MOD_ID)
 public class ClothingMod
 {
-    // TODO: BakedModelClothingItem, see comment below
-    /*
-        So the BeeStingerLayer feeds the VertexConsumer arbitrarily-declared vertices representing the stinger;
-        evidently, the consumer also has methods for rendering quads, and thus can theoretically handle rendering
-        a BakedModel using #getQuads. This could be the easiest way of rendering stuff like OBJ models that can be
-        loaded using an IGeometryLoader
-     */
     // TODO: https://docs.minecraftforge.net/en/1.19.x/rendering/modelextensions/visibility/
     // TODO: Subclass CompositeModel for clothing icons (so the overlay system isn't a complete nightmare)
     public static final String MOD_ID = "clothing";
@@ -109,16 +102,16 @@ public class ClothingMod
             event.register(
                     (
                             (pStack, pTintIndex) ->
-                                    pTintIndex > 0 ? -1 :  ((ClothingItem) pStack.getItem()).getColor(pStack)
+                                    pTintIndex > 0 ? -1 : ((ClothingItem) pStack.getItem()).getColor(pStack)
                     ),
-                    ClothingRegistry.itemsWithColorableModels()
+                    ClothingRegistry.getAll()
             );
         }
 
         @SubscribeEvent
         public static void onModelRegistration(ModelEvent.RegisterAdditional event) {
-            event.register(new ResourceLocation(MOD_ID, "cuboid"));
-            event.register(new ResourceLocation(MOD_ID, "riot_helmet"));
+            event.register(new ResourceLocation(MOD_ID, "clothing/cuboid"));
+            event.register(new ResourceLocation(MOD_ID, "clothing/riot_helmet"));
         }
 
         @SubscribeEvent

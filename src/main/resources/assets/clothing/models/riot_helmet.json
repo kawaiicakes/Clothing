@@ -1,8 +1,0 @@
-{
-  "loader": "forge:obj",
-  "flip_v": true,
-  "model": "clothing:models/riot_helmet.obj",
-  "textures": {
-    "texture0": "clothing:models/riot_helmet"
-  }
-}

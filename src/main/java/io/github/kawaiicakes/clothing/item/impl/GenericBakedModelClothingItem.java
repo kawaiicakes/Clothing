@@ -28,13 +28,17 @@ public class GenericBakedModelClothingItem extends BakedModelClothingItem {
     }
 
     @Override
-    public boolean hasDynamicColorModel() {
-        return false;
+    public @NotNull ItemStack getDefaultInstance() {
+        ItemStack toReturn = super.getDefaultInstance();
+        this.setColor(toReturn, 0xFFFFFF);
+        return toReturn;
     }
 
     @Override
     public void fillItemCategory(@NotNull CreativeModeTab pCategory, @NotNull NonNullList<ItemStack> pItems) {
+        if (!this.allowedIn(pCategory)) return;
 
+        pItems.add(this.getDefaultInstance());
     }
 
     @Override
