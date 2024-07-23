@@ -68,8 +68,6 @@ public class ClothingRegistry {
         register("generic_shirt", () -> new GenericClothingItem(EquipmentSlot.CHEST));
         register("generic_pants", () -> new GenericClothingItem(EquipmentSlot.LEGS));
         register("generic_shoes", () -> new GenericClothingItem(EquipmentSlot.FEET));
-
-        // FIXME: prevent overlay textures from being dyed on in-game model
         register("riot_helmet", () -> new BakedModelClothingItem(
                 ArmorMaterials.NETHERITE,
                 EquipmentSlot.HEAD,

@@ -100,10 +100,10 @@ public class ClothingMod
         @SubscribeEvent
         public static void onRegisterItemColorHandlers(RegisterColorHandlersEvent.Item event) {
             event.register(
-                    (
-                            (pStack, pTintIndex) ->
-                                    pTintIndex > 0 ? -1 : ((ClothingItem) pStack.getItem()).getColor(pStack)
-                    ),
+                        (pStack, pTintIndex) -> {
+                            if (pTintIndex == 1) return 0xFFFFFF;
+                            return pTintIndex > 0 ? pTintIndex : ((ClothingItem) pStack.getItem()).getColor(pStack);
+                        },
                     ClothingRegistry.getAll()
             );
         }
