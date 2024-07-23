@@ -83,18 +83,6 @@ public class ClothingRegistry {
             public ResourceLocation bakedModelLocation(ItemStack itemStack) {
                 return new ResourceLocation(MOD_ID, "clothing/riot_helmet");
             }
-
-            @Override
-            public void fillItemCategory(@NotNull CreativeModeTab pCategory, @NotNull NonNullList<ItemStack> pItems) {
-                if (this.allowedIn(pCategory)) {
-                    pItems.add(this.getDefaultInstance());
-                }
-            }
-
-            @Override
-            public String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-                return null;
-            }
         });
     }
 }
