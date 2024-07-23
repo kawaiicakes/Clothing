@@ -1,19 +1,25 @@
 package io.github.kawaiicakes.clothing.item;
 
+import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.*;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLLoader;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 
+import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -23,7 +29,11 @@ import java.util.function.Consumer;
  * of this class' methods.
  */
 public abstract class ClothingItem extends ArmorItem implements DyeableLeatherItem {
+    protected static final Logger LOGGER = LogUtils.getLogger();
+
     public static final String CLOTHING_PROPERTY_NBT_KEY = "ClothingProperties";
+    public static final String CLOTHING_NAME_KEY = "name";
+
     private Object clientClothingRenderManager;
 
     public ClothingItem(ArmorMaterial pMaterial, EquipmentSlot pSlot, Properties pProperties) {
@@ -117,6 +127,14 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
     @Nullable
     public abstract String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type);
 
+    public String getClothingName(ItemStack itemStack) {
+        return this.getClothingPropertyTag(itemStack).getString(CLOTHING_NAME_KEY);
+    }
+
+    public void setClothingName(ItemStack itemStack, String name) {
+        this.getClothingPropertyTag(itemStack).putString(CLOTHING_NAME_KEY, name);
+    }
+
     @Override
     public int getColor(@NotNull ItemStack pStack) {
         try {
@@ -140,6 +158,28 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
     @Override
     public void clearColor(@NotNull ItemStack pStack) {
         this.setColor(pStack, 0xFFFFFF);
+    }
+
+    // TODO: custom name from data entries/lang key generated from clothing
+    @Override
+    public @NotNull String getDescriptionId(@NotNull ItemStack pStack) {
+        final String original = super.getDescriptionId(pStack);
+        try {
+            final String suffix = this.getClothingName(pStack);
+            if (suffix.isEmpty()) throw new RuntimeException();
+            return original + "." + suffix;
+        } catch (RuntimeException e) {
+            LOGGER.error("ItemStack {} does not have a valid clothing name in its NBT!", pStack, e);
+            LOGGER.error("Falling back on default name!");
+            return original;
+        }
+    }
+
+    // TODO: cool tooltip stuff lol
+    @Override
+    @ParametersAreNonnullByDefault
+    public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
+        super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
     }
 
     @ApiStatus.Internal

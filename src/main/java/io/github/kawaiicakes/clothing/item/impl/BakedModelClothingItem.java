@@ -82,6 +82,14 @@ public class BakedModelClothingItem extends ClothingItem {
     }
 
     @Override
+    public @NotNull ItemStack getDefaultInstance() {
+        // TODO: temporary clothing name
+        ItemStack toReturn = super.getDefaultInstance();
+        this.setClothingName(toReturn, this.bakedModelLocation(toReturn).getPath());
+        return toReturn;
+    }
+
+    @Override
     public void fillItemCategory(@NotNull CreativeModeTab pCategory, @NotNull NonNullList<ItemStack> pItems) {
         if (!this.allowedIn(pCategory)) return;
 

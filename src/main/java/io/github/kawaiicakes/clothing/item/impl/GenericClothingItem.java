@@ -26,7 +26,6 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.Entity;
@@ -34,8 +33,6 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -99,6 +96,8 @@ public class GenericClothingItem extends ClothingItem {
 
             ItemStack stackForTab = this.getDefaultInstance();
 
+            // TODO: temporary clothing name
+            this.setClothingName(stackForTab, itemEntry.textureIdentifier());
             this.setGenericLayerForRender(stackForTab, itemEntry.modelLayer());
             this.setTextureLocation(stackForTab, itemEntry.textureIdentifier());
             this.setOverlays(stackForTab, itemEntry.overlays());
@@ -186,19 +185,6 @@ public class GenericClothingItem extends ClothingItem {
         }
 
         this.getClothingPropertyTag(itemStack).put(OVERLAY_NBT_KEY, overlayTag);
-    }
-
-    // TODO: custom name from data entries/lang key generated from clothing
-    @Override
-    public @NotNull String getDescriptionId(@NotNull ItemStack pStack) {
-        return super.getDescriptionId(pStack);
-    }
-
-    // TODO: cool tooltip stuff lol
-    @Override
-    @ParametersAreNonnullByDefault
-    public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
-        super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
     }
 
     /**
