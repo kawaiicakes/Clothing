@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+// TODO: new format for generic/baked clothing
 /**
  * This class simply loads clothing for display in the creative menu from datapacks. The data here is also used to
  * determine valid overlay/texture IDs on the server-side.

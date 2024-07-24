@@ -3,15 +3,11 @@ package io.github.kawaiicakes.clothing.item;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.item.impl.BakedModelClothingItem;
 import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.item.ArmorMaterials;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -65,21 +61,9 @@ public class ClothingRegistry {
         register("generic_shirt", () -> new GenericClothingItem(EquipmentSlot.CHEST));
         register("generic_pants", () -> new GenericClothingItem(EquipmentSlot.LEGS));
         register("generic_shoes", () -> new GenericClothingItem(EquipmentSlot.FEET));
-        register("riot_helmet", () -> new BakedModelClothingItem(
-                ArmorMaterials.NETHERITE,
-                EquipmentSlot.HEAD,
-                new Item.Properties().tab(ClothingTab.CLOTHING_TAB)
-        ) {
-
-            @Override
-            public @NotNull ModelPartReference getModelPartForParent(ItemStack itemStack) {
-                return ModelPartReference.HAT;
-            }
-
-            @Override
-            public ResourceLocation bakedModelLocation(ItemStack itemStack) {
-                return new ResourceLocation(MOD_ID, "clothing/riot_helmet");
-            }
-        });
+        register("baked_hat", () -> new BakedModelClothingItem(EquipmentSlot.HEAD));
+        register("baked_shirt", () -> new BakedModelClothingItem(EquipmentSlot.CHEST));
+        register("baked_pants", () -> new BakedModelClothingItem(EquipmentSlot.LEGS));
+        register("baked_shoes", () -> new BakedModelClothingItem(EquipmentSlot.FEET));
     }
 }

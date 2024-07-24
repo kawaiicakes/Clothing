@@ -5,6 +5,8 @@ import com.mojang.math.Vector3f;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
+import io.github.kawaiicakes.clothing.item.ClothingMaterials;
+import io.github.kawaiicakes.clothing.item.ClothingTab;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
@@ -38,6 +40,16 @@ public class BakedModelClothingItem extends ClothingItem {
 
     public BakedModelClothingItem(ArmorMaterial pMaterial, EquipmentSlot pSlot, Properties pProperties) {
         super(pMaterial, pSlot, pProperties);
+    }
+
+    public BakedModelClothingItem(EquipmentSlot pSlot) {
+        super(
+                ClothingMaterials.CLOTH,
+                pSlot,
+                new Properties()
+                        .tab(ClothingTab.CLOTHING_TAB)
+                        .stacksTo(1)
+        );
     }
 
     /**
@@ -197,5 +209,16 @@ public class BakedModelClothingItem extends ClothingItem {
 
             throw new IllegalArgumentException("Invalid model reference '" + pTargetName + "'");
         }
+    }
+
+    // TODO: extract this and the GenericClothing one to generic interface for more formal serialization handling?
+    public record ItemStackInitializer(
+            EquipmentSlot slot,
+            ModelPartReference parent,
+            String modelLocation,
+            String[] overlays,
+            int defaultColor
+    ) {
+
     }
 }
