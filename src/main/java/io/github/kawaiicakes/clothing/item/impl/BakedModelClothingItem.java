@@ -211,7 +211,7 @@ public class BakedModelClothingItem extends ClothingItem {
         }
     }
 
-    // TODO: extract this and the GenericClothing one to generic interface for more formal serialization handling?
+    // TODO: new resource listener
     public record ItemStackInitializer(
             EquipmentSlot slot,
             ModelPartReference parent,

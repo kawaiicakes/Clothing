@@ -350,14 +350,14 @@ public class GenericClothingItem extends ClothingItem {
     public @NotNull String getArmorTexture(ItemStack stack, Entity entity, @Nullable EquipmentSlot slot, String type) {
         if (type != null) return String.format(
                 Locale.ROOT,
-                "%s:textures/models/armor/generic/overlays/%s.png",
+                "%s:textures/models/clothing/generic/overlays/%s.png",
                 MOD_ID,
                 type
         );
 
         return String.format(
                 Locale.ROOT,
-                "%s:textures/models/armor/generic/%s/%s.png",
+                "%s:textures/models/clothing/generic/%s/%s.png",
                 MOD_ID,
                 this.getTextureLocation(stack),
                 this.getGenericLayerForRender(stack).getSerializedName()

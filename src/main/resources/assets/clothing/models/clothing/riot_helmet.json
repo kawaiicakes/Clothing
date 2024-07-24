@@ -3,7 +3,7 @@
   "flip_v": true,
   "model": "clothing:models/clothing/riot_helmet.obj",
   "textures": {
-    "texture0": "clothing:models/armor/riot_helmet_base",
-    "texture1": "clothing:models/armor/riot_helmet_visor"
+    "texture0": "clothing:models/clothing/baked/riot_helmet_base",
+    "texture1": "clothing:models/clothing/baked/riot_helmet_visor"
   }
 }

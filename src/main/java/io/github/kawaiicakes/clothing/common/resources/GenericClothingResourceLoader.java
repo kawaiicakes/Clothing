@@ -32,7 +32,7 @@ public class GenericClothingResourceLoader extends SimpleJsonResourceReloadListe
     protected Map<ResourceLocation, GenericClothingItem.ItemStackInitializer> clothing = ImmutableMap.of();
 
     protected GenericClothingResourceLoader() {
-        super(GSON, "generic_clothing");
+        super(GSON, "clothing/generic");
         INSTANCE = this;
     }
 
