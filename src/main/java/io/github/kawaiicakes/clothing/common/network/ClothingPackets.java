@@ -1,8 +1,10 @@
 package io.github.kawaiicakes.clothing.common.network;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
+import io.github.kawaiicakes.clothing.common.resources.BakedClothingResourceLoader;
+import io.github.kawaiicakes.clothing.common.resources.ClothingResourceLoader;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingResourceLoader;
-import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -21,9 +23,9 @@ import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 
 public class ClothingPackets {
     private static SimpleChannel INSTANCE;
-    private static int packetId = 0;
+    private static int PACKET_ID = 0;
     private static int id() {
-        return packetId++;
+        return PACKET_ID++;
     }
 
     public static void register() {
@@ -57,33 +59,39 @@ public class ClothingPackets {
     }
 
     public static class S2CClothingPacket {
-        protected final ImmutableMap<ResourceLocation, GenericClothingItem.ItemStackInitializer> clothingEntries;
+        protected final String loaderClass;
+        protected final ImmutableList<CompoundTag> clothingEntries;
 
-        public S2CClothingPacket(ImmutableMap<ResourceLocation, GenericClothingItem.ItemStackInitializer> clothingEntries) {
-            this.clothingEntries = clothingEntries;
+        public S2CClothingPacket(ClothingResourceLoader<?> clothingResourceLoader) {
+            this.loaderClass = clothingResourceLoader.getName();
+            this.clothingEntries = clothingResourceLoader.getStacks();
         }
 
         public S2CClothingPacket(FriendlyByteBuf buf) {
-            this.clothingEntries = ImmutableMap.copyOf(
-                    buf.readMap(
-                            FriendlyByteBuf::readResourceLocation,
-                            GenericClothingItem.ItemStackInitializer::readFromNetwork
-                    )
+            this.loaderClass = buf.readUtf();
+            this.clothingEntries = ImmutableList.copyOf(
+                    buf.readList(FriendlyByteBuf::readAnySizeNbt)
             );
         }
 
         public void toBytes(FriendlyByteBuf buf) {
-            buf.writeMap(
+            buf.writeUtf(this.loaderClass);
+            buf.writeCollection(
                     this.clothingEntries,
-                    FriendlyByteBuf::writeResourceLocation,
-                    GenericClothingItem.ItemStackInitializer::writeToNetwork
+                    FriendlyByteBuf::writeNbt
             );
         }
 
         @SuppressWarnings("unused")
         public void handle(Supplier<NetworkEvent.Context> contextSupplier) {
             if (!contextSupplier.get().getDirection().equals(NetworkDirection.PLAY_TO_CLIENT)) return;
-            GenericClothingResourceLoader.getInstance().addClothing(this.clothingEntries);
+
+            // TODO: redo this, damn this is scuffed lmao
+            switch (this.loaderClass) {
+                case "generic": GenericClothingResourceLoader.getInstance().addStacks(this.clothingEntries);
+                case "baked": BakedClothingResourceLoader.getInstance().addStacks(this.clothingEntries);
+                default: throw new IllegalArgumentException("Unrecognized loader '" + this.loaderClass + "'!");
+            }
         }
     }
 }

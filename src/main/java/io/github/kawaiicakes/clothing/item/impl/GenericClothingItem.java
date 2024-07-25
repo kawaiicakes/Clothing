@@ -1,14 +1,10 @@
 package io.github.kawaiicakes.clothing.item.impl;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
+import io.github.kawaiicakes.clothing.common.resources.ClothingResourceLoader;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingResourceLoader;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
 import io.github.kawaiicakes.clothing.item.ClothingMaterials;
@@ -20,26 +16,20 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
 
-import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.*;
+import java.util.Locale;
 import java.util.function.Consumer;
 
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
@@ -47,7 +37,7 @@ import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 /**
  * Implementation of {@link ClothingItem} for simple cosmetics like T-shirts or anything that looks like default armour.
  */
-public class GenericClothingItem extends ClothingItem {
+public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
     public static final String MODEL_LAYER_NBT_KEY = "modelLayer";
     public static final String TEXTURE_LOCATION_NBT_KEY = "texture";
     public static final String OVERLAY_NBT_KEY = "overlays";
@@ -88,27 +78,8 @@ public class GenericClothingItem extends ClothingItem {
     }
 
     @Override
-    public void fillItemCategory(@NotNull CreativeModeTab pCategory, @NotNull NonNullList<ItemStack> pItems) {
-        if (!this.allowedIn(pCategory)) return;
-
-        for (ItemStackInitializer itemEntry : GenericClothingResourceLoader.getInstance().genericClothingEntries()) {
-            if (!this.getSlot().equals(itemEntry.slot())) continue;
-
-            ItemStack stackForTab = this.getDefaultInstance();
-
-            String clothingName = this.usesDefaultModelStrata(stackForTab)
-                    ? itemEntry.textureIdentifier()
-                    : itemEntry.textureIdentifier() + "_" + itemEntry.modelLayer().getSerializedName();
-
-            this.setClothingName(stackForTab, clothingName);
-            this.setGenericLayerForRender(stackForTab, itemEntry.modelLayer());
-            this.setTextureLocation(stackForTab, itemEntry.textureIdentifier());
-            this.setOverlays(stackForTab, itemEntry.overlays());
-            this.setSlotsForVisibility(stackForTab, itemEntry.slotsForVisibility());
-            this.setColor(stackForTab, itemEntry.defaultColor());
-
-            pItems.add(stackForTab);
-        }
+    public @NotNull ClothingResourceLoader<GenericClothingItem> loaderForType() {
+        return GenericClothingResourceLoader.getInstance();
     }
 
     /**
@@ -133,7 +104,6 @@ public class GenericClothingItem extends ClothingItem {
     /**
      * @param itemStack the {@code itemStack} representing this.
      * @return the {@link String} pointing to the location of the texture folder.
-     * @see ItemStackInitializer
      */
     public String getTextureLocation(ItemStack itemStack) {
         return this.getClothingPropertyTag(itemStack).getString(TEXTURE_LOCATION_NBT_KEY);
@@ -142,7 +112,6 @@ public class GenericClothingItem extends ClothingItem {
     /**
      * @param itemStack the {@code itemStack} representing this.
      * @param textureLocation the {@link String} pointing to the location of the texture folder.
-     * @see ItemStackInitializer
      */
     public void setTextureLocation(ItemStack itemStack, String textureLocation) {
         this.getClothingPropertyTag(itemStack).putString(TEXTURE_LOCATION_NBT_KEY, textureLocation);
@@ -224,16 +193,17 @@ public class GenericClothingItem extends ClothingItem {
     }
 
     /**
-     * Identical to super, but this is here for documentation purposes. In this class, this method is used exclusively
-     * for setting {@link ModelPart} visibility on the generic model as returned by
-     * {@link #getGenericLayerForRender(ItemStack)} and {@link HumanoidClothingLayer#modelForLayer(ModelStrata)}.
+     * To be used by implementations to determine where a piece of clothing should appear according to the slot
+     * it's worn in. This method is used exclusively for setting {@link ModelPart} visibility on the generic model as
+     * returned by {@link #getGenericLayerForRender(ItemStack)} and
+     * {@link HumanoidClothingLayer#modelForLayer(ModelStrata)}.
      * <br><br>
      * See {@link HumanoidClothingLayer#setPartVisibility(HumanoidModel, EquipmentSlot)} for further info.
-     * @return the {@link EquipmentSlot} this item is worn in.
+     * @return the {@link EquipmentSlot} this item will appear to be worn on.
      */
-    @Override
-    public @NotNull EquipmentSlot slotForModel() {
-        return super.slotForModel();
+    @NotNull
+    public EquipmentSlot slotForModel() {
+        return this.getSlot();
     }
 
     /**
@@ -423,202 +393,6 @@ public class GenericClothingItem extends ClothingItem {
                 case HEAD -> OVER;
                 default -> OUTER;
             };
-        }
-    }
-
-    /**
-     * The {@link ItemStackInitializer} is simply an immutable data carrier intended for serialization and
-     * deserialization between client & server and from datapacks. Its fields are used in
-     * {@link GenericClothingItem#fillItemCategory(CreativeModeTab, NonNullList)} to fill the appropriate creative
-     * tab with data-driven clothing entries.
-     * @param slot the {@link EquipmentSlot} the piece of clothing is worn in.
-     * @param modelLayer the {@link ModelStrata} the piece of clothing will render on.
-     *                   See {@link HumanoidClothingLayer#modelForLayer(ModelStrata)}.
-     * @param textureIdentifier a simple {@link String} representing the folder name in which the clothing's textures
-     *                          are stored.
-     * @param overlays an array of {@link String}s whose elements represent the names of the overlays to add to the
-     *                 clothing.
-     * @param slotsForVisibility an array of {@link EquipmentSlot}s whose elements represent the parts of the body
-     *                           will be made visible for render for this piece of clothing. See
-     *                           {@link HumanoidClothingLayer#setPartVisibility(HumanoidModel, EquipmentSlot[])}.
-     * @param defaultColor a hexadecimal colour as an {@code int} for which the clothing will be tinted.
-     */
-    @ApiStatus.Internal
-    @ParametersAreNonnullByDefault
-    public record ItemStackInitializer(
-            EquipmentSlot slot,
-            ModelStrata modelLayer,
-            String textureIdentifier,
-            String[] overlays,
-            EquipmentSlot[] slotsForVisibility,
-            int defaultColor
-    ) {
-        private static final Logger LOGGER = LogUtils.getLogger();
-
-        /**
-         * Returns a shallow copy. Not sure if this is even necessary, but I want to take care not to allow mutation
-         * of values from the {@link GenericClothingResourceLoader}
-         * @param original the instance of this to copy
-         * @return shallow copy of passed instance
-         */
-        public static ItemStackInitializer copyOf(ItemStackInitializer original) {
-            String[] overlays = new String[original.overlays.length];
-            System.arraycopy(original.overlays, 0, overlays, 0, original.overlays.length);
-
-            EquipmentSlot[] slotsForVisibility = new EquipmentSlot[original.slotsForVisibility.length];
-            System.arraycopy(
-                    original.slotsForVisibility, 0,
-                    slotsForVisibility, 0, original.slotsForVisibility.length
-            );
-
-            return new ItemStackInitializer(
-                    original.slot,
-                    original.modelLayer,
-                    original.textureIdentifier,
-                    overlays,
-                    slotsForVisibility,
-                    original.defaultColor
-            );
-        }
-
-        /**
-         * @param stackData a {@link JsonObject} containing the item entry information.
-         * @return a {@link Set} of {@link ItemStackInitializer}s that are used to load item entries in the creative
-         * menu.
-         */
-        @Nullable
-        public static Set<ItemStackInitializer> fromJson(ResourceLocation entryId, JsonObject stackData) {
-            Set<ItemStackInitializer> toReturn = new HashSet<>();
-
-            for (String slotKey : stackData.keySet()) {
-                final EquipmentSlot slot;
-
-                try {
-                    slot = EquipmentSlot.byName(slotKey);
-                    if (slot.getType().equals(EquipmentSlot.Type.HAND)) throw new IllegalArgumentException();
-                } catch (IllegalArgumentException e) {
-                    LOGGER.error("Data entry has invalid slot \"{}\" for clothing!", slotKey, e);
-                    return null;
-                } catch (IllegalStateException e) {
-                    LOGGER.error("Slot \"{}\" is not a JSON array!", slotKey, e);
-                    return null;
-                }
-
-                try {
-                    JsonArray itemsForSlot = stackData.get(slotKey).getAsJsonArray();
-
-                    for (int i = 0; i < itemsForSlot.size(); i++) {
-                        JsonElement itemElement = itemsForSlot.get(i);
-                        JsonObject itemObject = itemElement.getAsJsonObject();
-                        final ItemStackInitializer item = fromArrayEntry(entryId, slot, itemObject);
-                        if (item == null) throw new RuntimeException();
-                        toReturn.add(item);
-                    }
-                } catch (IllegalStateException e) {
-                    LOGGER.error("Clothing entry is of invalid JSON type!", e);
-                    return null;
-                } catch (RuntimeException e) {
-                    LOGGER.error("Error while deserializing clothing data!", e);
-                    return null;
-                }
-            }
-
-            return toReturn;
-        }
-
-        @Nullable
-        @ParametersAreNonnullByDefault
-        public static ItemStackInitializer fromArrayEntry(
-                ResourceLocation fileLocation, EquipmentSlot slot, JsonObject element
-        ) {
-            try {
-                final ModelStrata modelLayer =
-                        element.has("layer")
-                                ? ModelStrata.byName(element.get("layer").getAsJsonPrimitive().getAsString())
-                                : ModelStrata.forSlot(slot);
-
-                final String[] overlays =
-                        element.has("overlays")
-                                ? collapseJsonArrayToStringArray(element.get("overlays").getAsJsonArray())
-                                : new String[0];
-
-                if (overlays == null) throw new RuntimeException("String array for overlays returned null!");
-
-                final EquipmentSlot[] slotsForVisibility =
-                        element.has("slot_visibility")
-                                ? Arrays.stream(
-                                        collapseJsonArrayToStringArray(element.get("slot_visibility").getAsJsonArray())
-                                )
-                                        .map(EquipmentSlot::byName)
-                                        .toArray(EquipmentSlot[]::new)
-                                : new EquipmentSlot[]{slot};
-
-                final int defaultColor =
-                        element.has("color")
-                                ? element.get("color").getAsJsonPrimitive().getAsInt()
-                                : 0xFFFFFF;
-
-                return new ItemStackInitializer(
-                        slot,
-                        modelLayer,
-                        fileLocation.getPath(),
-                        overlays,
-                        slotsForVisibility,
-                        defaultColor
-                );
-            } catch (RuntimeException e) {
-                LOGGER.error("Error deserializing from JSON array entry!", e);
-                return null;
-            }
-        }
-
-        @Nullable
-        public static String[] collapseJsonArrayToStringArray(JsonArray jsonArray) {
-            String[] toReturn = new String[jsonArray.size()];
-            for (int i = 0; i < jsonArray.size(); i++) {
-                if (!(jsonArray.get(i) instanceof JsonPrimitive primitive)) return null;
-                toReturn[i] = primitive.getAsString();
-            }
-            return toReturn;
-        }
-
-        public static ItemStackInitializer readFromNetwork(FriendlyByteBuf buf) {
-            EquipmentSlot slot = buf.readEnum(EquipmentSlot.class);
-            ModelStrata modelLayer = buf.readEnum(ModelStrata.class);
-            String textureIdentifier = buf.readUtf();
-            List<String> overlaysList = buf.readCollection(
-                    ArrayList::new,
-                    FriendlyByteBuf::readUtf
-            );
-            List<EquipmentSlot> slotsList = buf.readCollection(
-                    ArrayList::new,
-                    buf1 -> buf1.readEnum(EquipmentSlot.class)
-            );
-            int defaultColor = buf.readInt();
-
-            return new ItemStackInitializer(
-                    slot,
-                    modelLayer,
-                    textureIdentifier,
-                    overlaysList.toArray(String[]::new),
-                    slotsList.toArray(EquipmentSlot[]::new),
-                    defaultColor
-            );
-        }
-
-        public static void writeToNetwork(FriendlyByteBuf buf, ItemStackInitializer itemStackInitializer) {
-            buf.writeEnum(itemStackInitializer.slot);
-            buf.writeEnum(itemStackInitializer.modelLayer);
-            buf.writeUtf(itemStackInitializer.textureIdentifier);
-            buf.writeCollection(
-                    Arrays.stream(itemStackInitializer.overlays).toList(),
-                    FriendlyByteBuf::writeUtf
-            );
-            buf.writeCollection(
-                    Arrays.stream(itemStackInitializer.slotsForVisibility).toList(),
-                    FriendlyByteBuf::writeEnum
-            );
-            buf.writeInt(itemStackInitializer.defaultColor);
         }
     }
 }

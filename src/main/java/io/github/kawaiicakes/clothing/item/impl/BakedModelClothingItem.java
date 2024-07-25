@@ -4,6 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Vector3f;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
+import io.github.kawaiicakes.clothing.common.resources.BakedClothingResourceLoader;
+import io.github.kawaiicakes.clothing.common.resources.ClothingResourceLoader;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
 import io.github.kawaiicakes.clothing.item.ClothingMaterials;
 import io.github.kawaiicakes.clothing.item.ClothingTab;
@@ -14,14 +16,12 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.core.NonNullList;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ArmorMaterial;
-import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -34,7 +34,7 @@ import java.util.function.Consumer;
  * {@link net.minecraft.client.resources.model.BakedModel} instances will work interchangeably at runtime regardless
  * of how the model was loaded or what type it was (e.g. OBJ, JSON).
  */
-public class BakedModelClothingItem extends ClothingItem {
+public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem> {
     public static final String MODEL_ID_KEY = "modelId";
     public static final String MODEL_PART_REFERENCE_KEY = "parentPart";
 
@@ -102,10 +102,8 @@ public class BakedModelClothingItem extends ClothingItem {
     }
 
     @Override
-    public void fillItemCategory(@NotNull CreativeModeTab pCategory, @NotNull NonNullList<ItemStack> pItems) {
-        if (!this.allowedIn(pCategory)) return;
-
-        pItems.add(this.getDefaultInstance());
+    public @NotNull ClothingResourceLoader<BakedModelClothingItem> loaderForType() {
+        return BakedClothingResourceLoader.getInstance();
     }
 
     @Override
@@ -209,16 +207,5 @@ public class BakedModelClothingItem extends ClothingItem {
 
             throw new IllegalArgumentException("Invalid model reference '" + pTargetName + "'");
         }
-    }
-
-    // TODO: new resource listener
-    public record ItemStackInitializer(
-            EquipmentSlot slot,
-            ModelPartReference parent,
-            String modelLocation,
-            String[] overlays,
-            int defaultColor
-    ) {
-
     }
 }

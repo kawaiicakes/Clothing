@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.client.model.GenericDefinitions;
 import io.github.kawaiicakes.clothing.common.network.ClothingPackets;
+import io.github.kawaiicakes.clothing.common.resources.BakedClothingResourceLoader;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingResourceLoader;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
 import io.github.kawaiicakes.clothing.item.ClothingRegistry;
@@ -65,13 +66,21 @@ public class ClothingMod
     @SubscribeEvent
     public void onAddReloadListener(AddReloadListenerEvent event) {
         event.addListener(GenericClothingResourceLoader.getInstance());
+        event.addListener(BakedClothingResourceLoader.getInstance());
     }
 
     @SubscribeEvent
     public void onDatapackSync(OnDatapackSyncEvent event) {
         ClothingPackets.sendToPlayer(
                 new ClothingPackets.S2CClothingPacket(
-                        GenericClothingResourceLoader.getInstance().getClothing()
+                        GenericClothingResourceLoader.getInstance()
+                ),
+                event.getPlayer()
+        );
+
+        ClothingPackets.sendToPlayer(
+                new ClothingPackets.S2CClothingPacket(
+                        BakedClothingResourceLoader.getInstance()
                 ),
                 event.getPlayer()
         );
@@ -102,7 +111,7 @@ public class ClothingMod
             event.register(
                         (pStack, pTintIndex) -> {
                             if (pTintIndex == 1) return 0xFFFFFF;
-                            return pTintIndex > 0 ? pTintIndex : ((ClothingItem) pStack.getItem()).getColor(pStack);
+                            return pTintIndex > 0 ? pTintIndex : ((ClothingItem<?>) pStack.getItem()).getColor(pStack);
                         },
                     ClothingRegistry.getAll()
             );

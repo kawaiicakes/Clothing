@@ -2,6 +2,7 @@ package io.github.kawaiicakes.clothing.item;
 
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
+import io.github.kawaiicakes.clothing.common.resources.ClothingResourceLoader;
 import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
@@ -28,11 +29,12 @@ import java.util.function.Consumer;
  * clothing. The {@link io.github.kawaiicakes.clothing.client.HumanoidClothingLayer} is reliant on implementations
  * of this class' methods.
  */
-public abstract class ClothingItem extends ArmorItem implements DyeableLeatherItem {
+public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem implements DyeableLeatherItem {
     protected static final Logger LOGGER = LogUtils.getLogger();
 
     public static final String CLOTHING_PROPERTY_NBT_KEY = "ClothingProperties";
     public static final String CLOTHING_NAME_KEY = "name";
+    public static final String CLOTHING_SLOT_NBT_KEY = "slot";
 
     private Object clientClothingRenderManager;
 
@@ -69,19 +71,44 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
         CompoundTag rootTag = new CompoundTag();
         toReturn.getOrCreateTag().put(CLOTHING_PROPERTY_NBT_KEY, rootTag);
 
+        // The slot tag does not have a setter method by design to discourage changing it
+        this.getClothingPropertyTag(toReturn).putString(CLOTHING_SLOT_NBT_KEY, this.getSlot().getName());
         this.setColor(toReturn, 0xFFFFFF);
 
         return toReturn;
     }
 
     /**
-     * Used to display the {@link ItemStack}s in {@code pItems} in the creative menu. See super for examples.
+     * Used to display the {@link ItemStack}s in {@code pItems} in the creative menu. See super for examples. This is
+     * handled automatically by the {@link io.github.kawaiicakes.clothing.common.resources.ClothingResourceLoader} of
+     * the implementing class. Clothing data is declared in serverside datapacks, then received on the client for
+     * use here.
      * @param pCategory the {@link CreativeModeTab} to place the items in. See {@link Item#allowedIn(CreativeModeTab)}
      *                  for usage.
      * @param pItems    the {@link NonNullList} of {@link ItemStack}s that contains the items for display.
      */
     @Override
-    public abstract void fillItemCategory(@NotNull CreativeModeTab pCategory, @NotNull NonNullList<ItemStack> pItems);
+    public void fillItemCategory(@NotNull CreativeModeTab pCategory, @NotNull NonNullList<ItemStack> pItems) {
+        if (!this.allowedIn(pCategory)) return;
+
+        try {
+            final ClothingResourceLoader<T> loader = this.loaderForType();
+
+            //noinspection unchecked
+            pItems.addAll(loader.generateStacks((T) this));
+        } catch (RuntimeException e) {
+            LOGGER.error("Unable to generate clothing entries!", e);
+        }
+    }
+
+    /**
+     * Used by {@link #fillItemCategory(CreativeModeTab, NonNullList)}. Implementations return the singleton
+     * {@link ClothingResourceLoader} that loads clothing entries for that implementation. Do not cache the
+     * return or attempt to mutate it.
+     * @return the singleton {@link ClothingResourceLoader} that loads clothing entries for this.
+     */
+    @NotNull
+    public abstract ClothingResourceLoader<T> loaderForType();
 
     /**
      * Implementations essentially provide an instance of {@link ClientClothingRenderManager} to the client-exclusive
@@ -94,16 +121,6 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
      *                        Do not implement in this class; use an anonymous class or a separate implementation.
      */
     public abstract void acceptClientClothingRenderManager(Consumer<ClientClothingRenderManager> clothingManager);
-
-    /**
-     * To be used by implementations to determine where a piece of clothing should appear according to the slot
-     * it's worn in.
-     * @return the {@link EquipmentSlot} this item is worn in.
-     */
-    @NotNull
-    public EquipmentSlot slotForModel() {
-        return this.getSlot();
-    }
 
     /**
      * Overridden Forge method; see super for more details. This method returns a <code>String</code> representing the
@@ -133,6 +150,15 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
 
     public void setClothingName(ItemStack itemStack, String name) {
         this.getClothingPropertyTag(itemStack).putString(CLOTHING_NAME_KEY, name);
+    }
+
+    /**
+     * Used for verification purposes while loading {@link ItemStack}s into the creative menu, etc. This method should
+     * always return the same {@link EquipmentSlot} as {@link #getSlot()}.
+     * @param itemStack the {@link ItemStack} representing this
+     */
+    public EquipmentSlot getSlot(ItemStack itemStack) {
+        return EquipmentSlot.byName(this.getClothingPropertyTag(itemStack).getString(CLOTHING_SLOT_NBT_KEY));
     }
 
     @Override
@@ -175,7 +201,7 @@ public abstract class ClothingItem extends ArmorItem implements DyeableLeatherIt
         }
     }
 
-    // TODO: cool tooltip stuff lol
+    // TODO: cool tooltip stuff? lol
     @Override
     @ParametersAreNonnullByDefault
     public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
