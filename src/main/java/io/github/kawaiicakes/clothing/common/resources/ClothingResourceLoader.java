@@ -13,6 +13,7 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -95,7 +96,7 @@ public abstract class ClothingResourceLoader<T extends ClothingItem<?>> extends 
     /**
      * Adds stacks for the {@link net.minecraft.world.item.CreativeModeTab}. Used on the client; this overwrites
      * existing entries since the server will send ALL entries at least once per reload anyway.
-     * @param stacks
+     * @param stacks the {@link ImmutableList} of {@link CompoundTag}s which will be written onto {@link ItemStack}s.
      * @see net.minecraftforge.event.AddReloadListenerEvent
      */
     public void addStacks(ImmutableList<CompoundTag> stacks) {
@@ -169,6 +170,21 @@ public abstract class ClothingResourceLoader<T extends ClothingItem<?>> extends 
      * @return {@code true} if the passed JSON contains valid slot information. {@code false} otherwise.
      */
     protected static boolean entryContainsSlotDeclaration(JsonObject jsonObject) {
-        return jsonObject.has("slot") && jsonObject.get("slot").isJsonPrimitive();
+        if (jsonObject.get("slot") == null) return false;
+        if (
+                !jsonObject.get("slot").isJsonPrimitive() ||
+                        !jsonObject.getAsJsonPrimitive("slot").isString()
+        ) return false;
+
+        String slotName = jsonObject.getAsJsonPrimitive("slot").getAsString();
+        try {
+            //noinspection ResultOfMethodCallIgnored
+            EquipmentSlot.byName(slotName);
+        } catch (IllegalArgumentException e) {
+            LOGGER.error("{} is not a valid slot name!", slotName, e);
+            return false;
+        }
+
+        return true;
     }
 }
