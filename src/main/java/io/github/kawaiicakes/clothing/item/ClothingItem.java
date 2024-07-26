@@ -27,6 +27,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
 import java.util.function.Consumer;
 
+// TODO: subclass new BakedClothing item that can render multiple models on different model part parents
 /**
  * Each implementation of this will likely represent an item that renders as one model type (e.g. JSON, OBJ). The
  * {@code ClothingItem} simply subclasses {@link ArmorItem} and is made to flexibly create and render pieces of
@@ -204,7 +205,6 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         this.setColor(pStack, 0xFFFFFF);
     }
 
-    // TODO: custom name from data entries/lang key generated from clothing
     @Override
     public @NotNull String getDescriptionId(@NotNull ItemStack pStack) {
         final String original = super.getDescriptionId(pStack);

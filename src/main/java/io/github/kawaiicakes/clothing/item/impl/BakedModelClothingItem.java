@@ -24,6 +24,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.client.model.geometry.IGeometryLoader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,8 +32,8 @@ import java.util.function.Consumer;
 
 /**
  * As the name suggests, instances are intended to work with any kind of baked model supplied by an
- * {@link net.minecraftforge.client.model.geometry.IGeometryLoader}. In the majority of cases
- * {@link net.minecraft.client.resources.model.BakedModel} instances will work interchangeably at runtime regardless
+ * {@link IGeometryLoader}. In the majority of cases
+ * {@link BakedModel} instances will work interchangeably at runtime regardless
  * of how the model was loaded or what type it was (e.g. OBJ, JSON).
  */
 public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem> {
@@ -44,7 +45,7 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
      * so entries aren't duplicated
      * @param pMaterial the {@link ArmorMaterial} to use
      * @param pSlot the {@link EquipmentSlot} this will be worn on
-     * @param pProperties the {@link net.minecraft.world.item.Item.Properties} for this item
+     * @param pProperties the {@link Properties} for this item
      */
     public BakedModelClothingItem(ArmorMaterial pMaterial, EquipmentSlot pSlot, Properties pProperties) {
         super(pMaterial, pSlot, pProperties);
@@ -73,8 +74,18 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
         return ModelPartReference.byName(modelPartReferenceString);
     }
 
-    public void setModelPartForReference(ItemStack itemStack, ModelPartReference modelPart) {
+    public void setModelPartForParent(ItemStack itemStack, ModelPartReference modelPart) {
         this.getClothingPropertyTag(itemStack).putString(MODEL_PART_REFERENCE_KEY, modelPart.getSerializedName());
+    }
+
+    public ModelPartReference defaultModelPart() {
+        return switch (this.getSlot()) {
+            case MAINHAND -> ModelPartReference.RIGHT_ARM;
+            case OFFHAND -> ModelPartReference.LEFT_ARM;
+            case FEET, LEGS -> ModelPartReference.RIGHT_LEG;
+            case CHEST -> ModelPartReference.BODY;
+            case HEAD -> ModelPartReference.HEAD;
+        };
     }
 
     /**
@@ -103,9 +114,11 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
 
     @Override
     public @NotNull ItemStack getDefaultInstance() {
-        // TODO: temporary clothing name
         ItemStack toReturn = super.getDefaultInstance();
-        this.setClothingName(toReturn, this.bakedModelLocation(toReturn).getPath());
+
+        this.setModelPartForParent(toReturn, this.defaultModelPart());
+        this.setBakedModelLocation(toReturn, new ResourceLocation("clothing:error"));
+
         return toReturn;
     }
 
@@ -120,7 +133,7 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
     }
 
     /**
-     * If for some reason a {@link net.minecraft.client.resources.model.BakedModel} instance isn't rendering properly,
+     * If for some reason a {@link BakedModel} instance isn't rendering properly,
      * implement this method.
      */
     public ClientClothingRenderManager getDefaultRenderManager() {

@@ -16,6 +16,7 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -186,5 +187,15 @@ public abstract class ClothingResourceLoader<T extends ClothingItem<?>> extends 
         }
 
         return true;
+    }
+
+    @Nullable
+    public static String[] collapseJsonArrayToStringArray(JsonArray jsonArray) {
+        String[] toReturn = new String[jsonArray.size()];
+        for (int i = 0; i < jsonArray.size(); i++) {
+            if (!(jsonArray.get(i) instanceof JsonPrimitive primitive)) return null;
+            toReturn[i] = primitive.getAsString();
+        }
+        return toReturn;
     }
 }

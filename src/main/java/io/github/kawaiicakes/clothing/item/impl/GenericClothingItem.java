@@ -62,6 +62,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
     // TODO: final assets, etc.
     // TODO: item icon changes with texture
     // TODO: server-sided texture/overlay picker; data from GenericClothingResourceLoader prevents choosing arbitrarily
+    // TODO: new asset storage format
     public GenericClothingItem(EquipmentSlot pSlot) {
         this(
                 ClothingMaterials.CLOTH,
@@ -87,7 +88,6 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
         this.setTextureLocation(toReturn, DEFAULT_TEXTURE_NBT_KEY);
         this.setOverlays(toReturn, new String[]{});
         this.setPartsForVisibility(toReturn, this.defaultPartVisibility());
-        this.setColor(toReturn, 0xFFFFFF);
 
         return toReturn;
     }
@@ -247,16 +247,6 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
                         ModelPartReference.LEFT_LEG
                 };
         };
-    }
-
-    /**
-     * Method determines whether the piece of clothing renders on a different {@link ModelStrata} than the default for
-     * the slot it's worn on
-     * @param pStack the {@link GenericClothingItem} as an {@link ItemStack} under scrutiny
-     * @return {@code true} if matches default. {@code false} otherwise.
-     */
-    public boolean usesDefaultModelStrata(@NotNull ItemStack pStack) {
-        return ModelStrata.forSlot(this.getSlot()).equals(this.getGenericLayerForRender(pStack));
     }
 
     @Override

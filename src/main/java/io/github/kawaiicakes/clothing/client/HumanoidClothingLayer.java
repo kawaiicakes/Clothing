@@ -2,7 +2,6 @@ package io.github.kawaiicakes.clothing.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
-import io.github.kawaiicakes.clothing.item.impl.BakedModelClothingItem;
 import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
@@ -129,7 +128,7 @@ public class HumanoidClothingLayer<
         if (pParts == null || pParts.length == 0) throw new IllegalArgumentException("Empty part list!");
 
         for (ClothingItem.ModelPartReference part : pParts) {
-            this.modelPartByReference(part).visible = true;
+            this.modelPartByReference(pModel, part).visible = true;
         }
     }
 
@@ -153,23 +152,35 @@ public class HumanoidClothingLayer<
 
     /**
      * Simply returns the appropriate model part from the corresponding
-     * {@link io.github.kawaiicakes.clothing.item.impl.BakedModelClothingItem.ModelPartReference}. Exists to avoid
+     * {@link io.github.kawaiicakes.clothing.item.ClothingItem.ModelPartReference}. Exists to avoid
      * directly referencing client-only classes in common classes.
-     * @see BakedModelClothingItem#getModelPartForParent(ItemStack)
-     * @param reference the {@link io.github.kawaiicakes.clothing.item.impl.BakedModelClothingItem.ModelPartReference}
+     * @param model the {@link A} model to return a part from
+     * @param reference the {@link io.github.kawaiicakes.clothing.item.ClothingItem.ModelPartReference}
      *                  corresponding to the desired {@link ModelPart}
      * @return the desired {@link ModelPart}
      */
-    public @NotNull ModelPart modelPartByReference(BakedModelClothingItem.ModelPartReference reference) {
-        M parent = this.getParentModel();
+    public @NotNull ModelPart modelPartByReference(A model, ClothingItem.ModelPartReference reference) {
         return switch (reference) {
-            case HEAD -> parent.head;
-            case HAT -> parent.hat;
-            case BODY -> parent.body;
-            case RIGHT_ARM -> parent.rightArm;
-            case LEFT_ARM -> parent.leftArm;
-            case RIGHT_LEG -> parent.rightLeg;
-            case LEFT_LEG -> parent.leftLeg;
+            case HEAD -> model.head;
+            case HAT -> model.hat;
+            case BODY -> model.body;
+            case RIGHT_ARM -> model.rightArm;
+            case LEFT_ARM -> model.leftArm;
+            case RIGHT_LEG -> model.rightLeg;
+            case LEFT_LEG -> model.leftLeg;
         };
+    }
+
+    /**
+     * Overload that returns model parts from the parent model according to {@link #getParentModel()}.
+     * @param reference the {@link io.github.kawaiicakes.clothing.item.ClothingItem.ModelPartReference}
+     *                  corresponding to the desired {@link ModelPart}
+     * @return the desired {@link ModelPart}
+     */
+    public @NotNull ModelPart modelPartByReference(ClothingItem.ModelPartReference reference) {
+        // this should be fine as it should always be a widening cast back to a HumanoidModel
+        @SuppressWarnings("unchecked")
+        A parent = (A) this.getParentModel();
+        return this.modelPartByReference(parent, reference);
     }
 }
