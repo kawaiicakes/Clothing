@@ -70,11 +70,10 @@ public abstract class ClothingResourceLoader<T extends ClothingItem<?>> extends 
         NonNullList<ItemStack> stacks = NonNullList.create();
         for (Map.Entry<ResourceLocation, NbtStackInitializer<T>> entry : this.stackEntries.entrySet()) {
             try {
-                // FIXME: entry duplication error
                 ItemStack generated = stackType.getDefaultInstance();
-                if (!stackType.getSlot().equals(stackType.getSlot(generated))) continue;
                 entry.getValue().writeToStack(stackType, generated);
                 if (generated.equals(stackType.getDefaultInstance())) continue;
+                if (!stackType.getSlot().equals(stackType.getSlot(generated))) continue;
                 stacks.add(generated);
             } catch (RuntimeException e) {
                 LOGGER.error("Exception while attempting to load clothing entry {}! Skipped!", entry.getKey(), e);
@@ -139,21 +138,37 @@ public abstract class ClothingResourceLoader<T extends ClothingItem<?>> extends 
             if (entryId.getPath().startsWith("_")) continue;
 
             try {
+                final JsonObject jsonEntry
+                        = GsonHelper.convertToJsonObject(entry.getValue(), "top element");
+
+                if (!entryContainsSlotDeclaration(jsonEntry))
+                    throw new IllegalArgumentException("Slot not declared for clothing entry!");
+
                 builder.put(
                         entryId,
                         this.deserializeFromJson(
                                 entryId,
-                                GsonHelper.convertToJsonObject(entry.getValue(), "top element")
+                                jsonEntry
                         )
                 );
 
             } catch (IllegalArgumentException | JsonParseException jsonParseException) {
-                LOGGER.error("Parsing error loading recipe {}", entryId, jsonParseException);
+                LOGGER.error("Parsing error loading clothing entry {}!", entryId, jsonParseException);
             }
         }
 
         this.addEntries(builder.build());
 
         LOGGER.info("Loaded {} clothing entries in directory {}!", this.stackEntries.size(), this.subDirectory);
+    }
+
+    /**
+     * Since a slot MUST be declared in the {@link NbtStackInitializer} for purposes of preventing duplicated entries,
+     * This method exists to test whether to throw exceptions if the passed JSON data does not declare a slot.
+     * @param jsonObject the {@link JsonObject} clothing data entry to verify.
+     * @return {@code true} if the passed JSON contains valid slot information. {@code false} otherwise.
+     */
+    protected static boolean entryContainsSlotDeclaration(JsonObject jsonObject) {
+        return jsonObject.has("slot") && jsonObject.get("slot").isJsonPrimitive();
     }
 }

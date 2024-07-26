@@ -1,5 +1,6 @@
 package io.github.kawaiicakes.clothing.item;
 
+import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.common.resources.ClothingResourceLoader;
@@ -71,8 +72,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         CompoundTag rootTag = new CompoundTag();
         toReturn.getOrCreateTag().put(CLOTHING_PROPERTY_NBT_KEY, rootTag);
 
-        // The slot tag does not have a setter method by design to discourage changing it
-        this.getClothingPropertyTag(toReturn).putString(CLOTHING_SLOT_NBT_KEY, this.getSlot().getName());
+        this.setSlot(toReturn, this.getSlot());
         this.setColor(toReturn, 0xFFFFFF);
 
         return toReturn;
@@ -159,6 +159,21 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
      */
     public EquipmentSlot getSlot(ItemStack itemStack) {
         return EquipmentSlot.byName(this.getClothingPropertyTag(itemStack).getString(CLOTHING_SLOT_NBT_KEY));
+    }
+
+    /**
+     * This should not be freely used. This method exists to allow
+     * {@link io.github.kawaiicakes.clothing.common.resources.NbtStackInitializer}s to easily indicate the slot
+     * this piece of clothing is worn on. This ensures that only instances of this whose {@link #getSlot()} returns the
+     * slot indicated in the clothing entry gets added to the creative menu.
+     * @param itemStack the {@link ItemStack} instance of this; regardless of whether the return of {@link #getSlot()}
+     *                  matches what the clothing data entry says.
+     * @param slot the {@link EquipmentSlot} which a clothing data entry indicates it is worn on.
+     * @see io.github.kawaiicakes.clothing.common.resources.NbtStackInitializer#writeToStack(Object, ItemStack)
+     * @see ClothingResourceLoader#entryContainsSlotDeclaration(JsonObject)
+     */
+    public void setSlot(ItemStack itemStack, EquipmentSlot slot) {
+        this.getClothingPropertyTag(itemStack).putString(CLOTHING_SLOT_NBT_KEY, slot.getName());
     }
 
     @Override
