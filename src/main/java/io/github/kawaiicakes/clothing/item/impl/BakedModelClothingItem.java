@@ -18,7 +18,6 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.NonNullList;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -180,41 +179,5 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
     @Override
     public void acceptClientClothingRenderManager(Consumer<ClientClothingRenderManager> clothingManager) {
         clothingManager.accept(this.getDefaultRenderManager());
-    }
-
-    /**
-     * {@link ModelPart} and references to {@link HumanoidClothingLayer}s which contain the models from which parts may
-     * come are client-only classes; directly referencing them in {@link net.minecraft.world.item.Item} increases the
-     * chances of serverside crashes due to {@link ClassNotFoundException}s.
-     */
-    public enum ModelPartReference implements StringRepresentable {
-        HEAD("head"),
-        HAT("hat"),
-        BODY("body"),
-        RIGHT_ARM("right_arm"),
-        LEFT_ARM("left_arm"),
-        RIGHT_LEG("right_leg"),
-        LEFT_LEG("left_leg");
-
-        private final String childName;
-
-        ModelPartReference(String childName) {
-            this.childName = childName;
-        }
-
-        @Override
-        public @NotNull String getSerializedName() {
-            return this.childName;
-        }
-
-        public static ModelPartReference byName(String pTargetName) {
-            for (ModelPartReference reference : values()) {
-                if (reference.getSerializedName().equals(pTargetName)) {
-                    return reference;
-                }
-            }
-
-            throw new IllegalArgumentException("Invalid model reference '" + pTargetName + "'");
-        }
     }
 }

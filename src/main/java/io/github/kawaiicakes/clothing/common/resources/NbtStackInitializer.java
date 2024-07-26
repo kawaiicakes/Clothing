@@ -17,7 +17,8 @@ import net.minecraft.world.item.ItemStack;
 public interface NbtStackInitializer<T> {
     /**
      * Implementations MUST write to the stack's slot using {@link ClothingItem#setSlot(ItemStack, EquipmentSlot)}.
-     * An {@link IllegalArgumentException} will be thrown otherwise.
+     * An {@link IllegalArgumentException} will be thrown otherwise. It's encouraged that implementations throw
+     * their own {@link IllegalArgumentException}s if some required information is missing.
      * @param clothingItem the {@link T} clothing item for which a stack will be made.
      * @param clothingStack the {@link ItemStack} returned from {@link ClothingItem#getDefaultInstance()} of {@link T}.
      *                      Operate on this argument to manipulate the stack that will be returned later down the line.

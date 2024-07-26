@@ -34,7 +34,6 @@ import org.jetbrains.annotations.NotNull;
  * @version Forge 1.19.2
  * @author kawaiicakes
  */
-// TODO: expose more methods from super
 @OnlyIn(Dist.CLIENT)
 public class HumanoidClothingLayer<
         T extends LivingEntity, M extends HumanoidModel<T>, A extends HumanoidModel<T>>
@@ -92,7 +91,7 @@ public class HumanoidClothingLayer<
 
         for (EquipmentSlot slot : slots) {
             ItemStack stack = pLivingEntity.getItemBySlot(slot);
-            if (!(stack.getItem() instanceof ClothingItem clothing)) continue;
+            if (!(stack.getItem() instanceof ClothingItem<?> clothing)) continue;
             if (!clothing.getSlot().equals(slot)) continue;
 
             ClientClothingRenderManager renderManager = ClientClothingRenderManager.of(clothing);
@@ -122,32 +121,15 @@ public class HumanoidClothingLayer<
      * Overload of {@link #setPartVisibility(HumanoidModel, EquipmentSlot)} unique to this class.
      * Allows for greater control of setting part visibility.
      * @param pModel the {@link A} to set part visibility on.
-     * @param pSlots the array of {@link EquipmentSlot}s to toggle visibility for. See
-     * {@link #setPartVisibility(HumanoidModel, EquipmentSlot)}
+     * @param pParts the array of {@link io.github.kawaiicakes.clothing.item.ClothingItem.ModelPartReference}s to toggle
+     *               visibility for.
      */
-    public void setPartVisibility(@NotNull A pModel, @NotNull EquipmentSlot[] pSlots) {
+    public void setPartVisibility(@NotNull A pModel, @NotNull ClothingItem.ModelPartReference[] pParts) {
         pModel.setAllVisible(false);
+        if (pParts == null || pParts.length == 0) throw new IllegalArgumentException("Empty part list!");
 
-        for (EquipmentSlot slot : pSlots) {
-            switch (slot) {
-                case HEAD:
-                    pModel.head.visible = true;
-                    pModel.hat.visible = true;
-                    break;
-                case CHEST:
-                    pModel.body.visible = true;
-                    pModel.rightArm.visible = true;
-                    pModel.leftArm.visible = true;
-                    break;
-                case LEGS:
-                    pModel.body.visible = true;
-                    pModel.rightLeg.visible = true;
-                    pModel.leftLeg.visible = true;
-                    break;
-                case FEET:
-                    pModel.rightLeg.visible = true;
-                    pModel.leftLeg.visible = true;
-            }
+        for (ClothingItem.ModelPartReference part : pParts) {
+            this.modelPartByReference(part).visible = true;
         }
     }
 

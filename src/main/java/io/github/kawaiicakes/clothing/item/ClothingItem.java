@@ -3,11 +3,14 @@ package io.github.kawaiicakes.clothing.item;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
+import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.common.resources.ClothingResourceLoader;
 import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
+import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.*;
@@ -247,5 +250,43 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
                     this.clientClothingRenderManager = clothingManager;
                 }
         );
+    }
+
+    /**
+     * {@link ModelPart} and references to {@link HumanoidClothingLayer}s which contain the models from which parts may
+     * come are client-only classes; directly referencing them in {@link net.minecraft.world.item.Item} increases the
+     * chances of serverside crashes due to {@link ClassNotFoundException}s.
+     * <br><br>
+     * Use this instead to reference {@link ModelPart}s.
+     */
+    public enum ModelPartReference implements StringRepresentable {
+        HEAD("head"),
+        HAT("hat"),
+        BODY("body"),
+        RIGHT_ARM("right_arm"),
+        LEFT_ARM("left_arm"),
+        RIGHT_LEG("right_leg"),
+        LEFT_LEG("left_leg");
+
+        private final String childName;
+
+        ModelPartReference(String childName) {
+            this.childName = childName;
+        }
+
+        @Override
+        public @NotNull String getSerializedName() {
+            return this.childName;
+        }
+
+        public static ModelPartReference byName(String pTargetName) {
+            for (ModelPartReference reference : values()) {
+                if (reference.getSerializedName().equals(pTargetName)) {
+                    return reference;
+                }
+            }
+
+            throw new IllegalArgumentException("Invalid model reference '" + pTargetName + "'");
+        }
     }
 }

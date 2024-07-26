@@ -15,6 +15,7 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
@@ -44,7 +45,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
     public static final String MODEL_LAYER_NBT_KEY = "modelLayer";
     public static final String TEXTURE_LOCATION_NBT_KEY = "texture";
     public static final String OVERLAY_NBT_KEY = "overlays";
-    public static final String SLOT_VISIBILITY_KEY = "slotVisibility";
+    public static final String PART_VISIBILITY_KEY = "partVisibility";
     public static final String DEFAULT_TEXTURE_NBT_KEY = "default";
 
     /**
@@ -52,7 +53,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      * so entries aren't duplicated
      * @param pArmorMaterial the {@link ArmorMaterial} to use
      * @param pSlot the {@link EquipmentSlot} this will be worn on
-     * @param pProperties the {@link net.minecraft.world.item.Item.Properties} for this item
+     * @param pProperties the {@link Properties} for this item
      */
     public GenericClothingItem(ArmorMaterial pArmorMaterial, EquipmentSlot pSlot, Properties pProperties) {
         super(pArmorMaterial, pSlot, pProperties);
@@ -85,7 +86,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
         this.setGenericLayerForRender(toReturn, ModelStrata.forSlot(this.getSlot()));
         this.setTextureLocation(toReturn, DEFAULT_TEXTURE_NBT_KEY);
         this.setOverlays(toReturn, new String[]{});
-        this.setSlotsForVisibility(toReturn, new EquipmentSlot[]{this.slotForModel()});
+        this.setPartsForVisibility(toReturn, this.defaultPartVisibility());
         this.setColor(toReturn, 0xFFFFFF);
 
         return toReturn;
@@ -175,16 +176,15 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
 
     /**
      * @param itemStack the {@code itemStack} representing this.
-     * @return an array of {@link EquipmentSlot} whose elements correspond to what body parts the clothing
-     *         will visibly render on.
-     * @see HumanoidClothingLayer#setPartVisibility(HumanoidModel, EquipmentSlot[])
+     * @return an array of {@link ModelPartReference} whose elements
+     * correspond to what body parts the clothing will visibly render on.
      */
-    public EquipmentSlot[] getSlotsForVisibility(ItemStack itemStack) {
-        ListTag slotList = this.getClothingPropertyTag(itemStack).getList(SLOT_VISIBILITY_KEY, Tag.TAG_STRING);
+    public ModelPartReference[] getPartsForVisibility(ItemStack itemStack) {
+        ListTag partList = this.getClothingPropertyTag(itemStack).getList(PART_VISIBILITY_KEY, Tag.TAG_STRING);
 
-        EquipmentSlot[] toReturn = new EquipmentSlot[slotList.size()];
-        for (int i = 0; i < slotList.size(); i++) {
-            toReturn[i] = EquipmentSlot.byName(slotList.getString(i));
+        ModelPartReference[] toReturn = new ModelPartReference[partList.size()];
+        for (int i = 0; i < partList.size(); i++) {
+            toReturn[i] = ModelPartReference.byName(partList.getString(i));
         }
 
         return toReturn;
@@ -192,32 +192,61 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
 
     /**
      * @param itemStack the {@code itemStack} representing this.
-     * @param slots an array of {@link EquipmentSlot} whose elements correspond to what body parts the clothing
-     *              will visibly render on.
-     * @see HumanoidClothingLayer#setPartVisibility(HumanoidModel, EquipmentSlot[])
+     * @param slots an array of {@link ModelPartReference} whose
+     *              elements correspond to what body parts the clothing will visibly render on.
      */
-    public void setSlotsForVisibility(ItemStack itemStack, EquipmentSlot[] slots) {
-        ListTag slotList = new ListTag();
+    public void setPartsForVisibility(ItemStack itemStack, ModelPartReference[] slots) {
+        ListTag partList = new ListTag();
 
-        for (EquipmentSlot slot : slots) {
-            slotList.add(StringTag.valueOf(slot.getName()));
+        for (ModelPartReference part : slots) {
+            partList.add(StringTag.valueOf(part.getSerializedName()));
         }
 
-        this.getClothingPropertyTag(itemStack).put(SLOT_VISIBILITY_KEY, slotList);
+        this.getClothingPropertyTag(itemStack).put(PART_VISIBILITY_KEY, partList);
     }
 
     /**
-     * To be used by implementations to determine where a piece of clothing should appear according to the slot
-     * it's worn in. This method is used exclusively for setting {@link ModelPart} visibility on the generic model as
+     * This method is used exclusively for setting the default {@link ModelPart} visibility on the generic model as
      * returned by {@link #getGenericLayerForRender(ItemStack)} and
      * {@link HumanoidClothingLayer#modelForLayer(ModelStrata)}.
-     * <br><br>
-     * See {@link HumanoidClothingLayer#setPartVisibility(HumanoidModel, EquipmentSlot)} for further info.
-     * @return the {@link EquipmentSlot} this item will appear to be worn on.
+     * @return the array of {@link ModelPartReference} this item will
+     * appear to be worn on.
+     * @see HumanoidArmorLayer#setPartVisibility(HumanoidModel, EquipmentSlot)
      */
     @NotNull
-    public EquipmentSlot slotForModel() {
-        return this.getSlot();
+    public ModelPartReference[] defaultPartVisibility() {
+        return switch (this.getSlot()) {
+            case HEAD:
+                yield new ModelPartReference[] {
+                        ModelPartReference.HEAD,
+                        ModelPartReference.HAT
+                };
+            case CHEST:
+                yield new ModelPartReference[] {
+                        ModelPartReference.BODY,
+                        ModelPartReference.RIGHT_ARM,
+                        ModelPartReference.LEFT_ARM
+                };
+            case LEGS:
+                yield new ModelPartReference[] {
+                        ModelPartReference.BODY,
+                        ModelPartReference.RIGHT_LEG,
+                        ModelPartReference.LEFT_LEG
+                };
+            case MAINHAND:
+                yield new ModelPartReference[] {
+                        ModelPartReference.RIGHT_ARM
+                };
+            case OFFHAND:
+                yield new ModelPartReference[] {
+                        ModelPartReference.LEFT_ARM
+                };
+            case FEET:
+                yield new ModelPartReference[] {
+                        ModelPartReference.RIGHT_LEG,
+                        ModelPartReference.LEFT_LEG
+                };
+        };
     }
 
     /**
@@ -252,7 +281,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
 
                         pClothingLayer.getParentModel().copyPropertiesTo(clothingModel);
                         pClothingLayer.setPartVisibility(
-                                clothingModel, GenericClothingItem.this.getSlotsForVisibility(pItemStack)
+                                clothingModel, GenericClothingItem.this.getPartsForVisibility(pItemStack)
                         );
 
                         int i = GenericClothingItem.this.getColor(pItemStack);

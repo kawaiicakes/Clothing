@@ -38,11 +38,11 @@ public interface ClientClothingRenderManager {
         }
     };
     static ClientClothingRenderManager of(ItemStack stack) {
-        if (!(stack.getItem() instanceof ClothingItem clothingItem))
+        if (!(stack.getItem() instanceof ClothingItem<?> clothingItem))
             throw new IllegalArgumentException("Passed stack's item is not a ClothingItem instance!");
         return of(clothingItem);
     }
-    static ClientClothingRenderManager of(ClothingItem clothingItem) {
+    static ClientClothingRenderManager of(ClothingItem<?> clothingItem) {
         return clothingItem.getClientClothingRenderManager() instanceof ClientClothingRenderManager m ? m : DEFAULT;
     }
 
