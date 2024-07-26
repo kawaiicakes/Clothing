@@ -208,15 +208,9 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     @Override
     public @NotNull String getDescriptionId(@NotNull ItemStack pStack) {
         final String original = super.getDescriptionId(pStack);
-        try {
-            final String suffix = this.getClothingName(pStack);
-            if (suffix.isEmpty()) throw new RuntimeException();
-            return original + "." + suffix;
-        } catch (RuntimeException e) {
-            LOGGER.error("ItemStack {} does not have a valid clothing name in its NBT!", pStack, e);
-            LOGGER.error("Falling back on default name!");
-            return original;
-        }
+        final String suffix = this.getClothingName(pStack);
+
+        return suffix.isEmpty() ? original : original + "." + suffix;
     }
 
     // TODO: cool tooltip stuff? lol

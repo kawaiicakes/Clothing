@@ -62,7 +62,6 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
     // TODO: final assets, etc.
     // TODO: item icon changes with texture
     // TODO: server-sided texture/overlay picker; data from GenericClothingResourceLoader prevents choosing arbitrarily
-    // TODO: new asset storage format
     public GenericClothingItem(EquipmentSlot pSlot) {
         this(
                 ClothingMaterials.CLOTH,
@@ -131,14 +130,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
     public void setTextureLocation(ItemStack itemStack, String textureLocation) {
         this.getClothingPropertyTag(itemStack).putString(TEXTURE_LOCATION_NBT_KEY, textureLocation);
 
-        String slotString = switch (this.getSlot()) {
-            case FEET -> "_feet";
-            case LEGS -> "_legs";
-            case HEAD -> "_head";
-            default -> "_chest";
-        };
-
-        int texHash = (textureLocation + slotString).hashCode();
+        int texHash = this.getDescriptionId(itemStack).hashCode();
 
         assert itemStack.getTag() != null;
         itemStack.getTag().putInt(
@@ -373,10 +365,9 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
 
         return String.format(
                 Locale.ROOT,
-                "%s:textures/models/clothing/generic/%s/%s.png",
+                "%s:textures/models/clothing/generic/%s.png",
                 MOD_ID,
-                this.getTextureLocation(stack),
-                this.getGenericLayerForRender(stack).getSerializedName()
+                this.getTextureLocation(stack)
         );
     }
 
