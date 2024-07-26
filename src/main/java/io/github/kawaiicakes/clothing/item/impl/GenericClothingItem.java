@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -25,6 +26,8 @@ import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ArmorMaterial;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -44,11 +47,22 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
     public static final String SLOT_VISIBILITY_KEY = "slotVisibility";
     public static final String DEFAULT_TEXTURE_NBT_KEY = "default";
 
+    /**
+     * If you use this constructor, make sure to override {@link #fillItemCategory(CreativeModeTab, NonNullList)}
+     * so entries aren't duplicated
+     * @param pArmorMaterial the {@link ArmorMaterial} to use
+     * @param pSlot the {@link EquipmentSlot} this will be worn on
+     * @param pProperties the {@link net.minecraft.world.item.Item.Properties} for this item
+     */
+    public GenericClothingItem(ArmorMaterial pArmorMaterial, EquipmentSlot pSlot, Properties pProperties) {
+        super(pArmorMaterial, pSlot, pProperties);
+    }
+
     // TODO: final assets, etc.
     // TODO: item icon changes with texture
     // TODO: server-sided texture/overlay picker; data from GenericClothingResourceLoader prevents choosing arbitrarily
     public GenericClothingItem(EquipmentSlot pSlot) {
-        super(
+        this(
                 ClothingMaterials.CLOTH,
                 pSlot,
                 new Properties()
