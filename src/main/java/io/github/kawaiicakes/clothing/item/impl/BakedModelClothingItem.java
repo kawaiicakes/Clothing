@@ -17,6 +17,8 @@ import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.NonNullList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -28,6 +30,7 @@ import net.minecraftforge.client.model.geometry.IGeometryLoader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.*;
 import java.util.function.Consumer;
 
 /**
@@ -37,8 +40,7 @@ import java.util.function.Consumer;
  * of how the model was loaded or what type it was (e.g. OBJ, JSON).
  */
 public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem> {
-    public static final String MODEL_ID_KEY = "modelId";
-    public static final String MODEL_PART_REFERENCE_KEY = "parentPart";
+    public static final String MODEL_PARENTS_KEY = "modelParents";
 
     /**
      * If you use this constructor, make sure to override {@link #fillItemCategory(CreativeModeTab, NonNullList)}
@@ -62,20 +64,60 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
     }
 
     /**
-     * Indicates the {@link ModelPart} this item will be parented to using a {@link ModelPartReference}.
+     * Indicates the {@link ModelPart}s to which the mapped {@link ResourceLocation} will be rendered using a
+     * {@link ModelPartReference} as a key.
      * The {@link ItemStack} is included for the implementer's benefit. This method is used in
      * {@link #getDefaultRenderManager()} to reference model parts without explicit references to them in server/client
      * common classes.
      * @param itemStack the {@link ItemStack} instance of this.
-     * @return          the {@link ModelPartReference} for the body group this item is worn on.
+     * @return          the {@link Map} of key {@link ModelPartReference}s for each {@link ResourceLocation} referencing
+     *                  the body part the baked model will render to.
      */
-    public @NotNull ModelPartReference getModelPartForParent(ItemStack itemStack) {
-        String modelPartReferenceString = this.getClothingPropertyTag(itemStack).getString(MODEL_PART_REFERENCE_KEY);
-        return ModelPartReference.byName(modelPartReferenceString);
+    public @NotNull Map<ModelPartReference, ResourceLocation> getModelPartsForParent(ItemStack itemStack) {
+        CompoundTag modelPartTag = this.getClothingPropertyTag(itemStack).getCompound(MODEL_PARENTS_KEY);
+
+        Map<ModelPartReference, ResourceLocation> toReturn = new HashMap<>(modelPartTag.size());
+
+        for (String part : modelPartTag.getAllKeys()) {
+            if (!(modelPartTag.get(part) instanceof StringTag modelLocation)) throw new IllegalArgumentException();
+            toReturn.put(ModelPartReference.byName(part), new ResourceLocation(modelLocation.toString()));
+        }
+
+        return toReturn;
     }
 
-    public void setModelPartForParent(ItemStack itemStack, ModelPartReference modelPart) {
-        this.getClothingPropertyTag(itemStack).putString(MODEL_PART_REFERENCE_KEY, modelPart.getSerializedName());
+    public void setModelPartsForParent(ItemStack itemStack, Map<ModelPartReference, ResourceLocation> modelParts) {
+        CompoundTag modelPartMap = new CompoundTag();
+
+        for (Map.Entry<ModelPartReference, ResourceLocation> entry : modelParts.entrySet()) {
+            modelPartMap.putString(entry.getKey().getSerializedName(), entry.getValue().toString());
+        }
+
+        this.getClothingPropertyTag(itemStack).put(MODEL_PARENTS_KEY, modelPartMap);
+
+        if (!(this.getClothingPropertyTag(itemStack).get(MODEL_PARENTS_KEY) instanceof CompoundTag modelPartTag))
+            throw new IllegalArgumentException("ItemStack has invalid tag type for model part key!");
+
+        /*
+            this is to ensure that the tag is always iterated through in the same order; setting a consistent hashcode
+            for CustomModelData requires a deterministic understanding of the iteration order
+         */
+        Set<String> keys = modelPartTag.getAllKeys();
+        ArrayList<ResourceLocation> locationList = new ArrayList<>(keys.size());
+        for (ModelPartReference partReference : ModelPartReference.values()) {
+            if (!keys.contains(partReference.getSerializedName())) continue;
+            if (!(modelPartTag.get(partReference.getSerializedName()) instanceof StringTag modelLocation))
+                throw new IllegalArgumentException();
+
+            locationList.add(
+                    new ResourceLocation(modelLocation.toString())
+            );
+        }
+
+        assert itemStack.getTag() != null;
+        itemStack.getTag().putInt(
+                "CustomModelData", locationList.hashCode()
+        );
     }
 
     public ModelPartReference defaultModelPart() {
@@ -96,28 +138,36 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
      * If you want to change the model being rendered, do it through here.
      * @see BakedModelClothingItem#getDefaultRenderManager()
      * @param itemStack the {@link ItemStack} instance of this
+     * @param modelPartReference the {@link io.github.kawaiicakes.clothing.item.ClothingItem.ModelPartReference} upon
+     *                           which a model is parented to.
      * @return the location of the {@link BakedModel} for render.
      */
-    public ResourceLocation bakedModelLocation(ItemStack itemStack) {
-        return new ResourceLocation(this.getClothingPropertyTag(itemStack).getString(MODEL_ID_KEY));
+    @Nullable
+    public ResourceLocation getBakedModelLocation(ItemStack itemStack, ModelPartReference modelPartReference) {
+        String location = this.getClothingPropertyTag(itemStack)
+                .getCompound(MODEL_PARENTS_KEY)
+                .getString(modelPartReference.getSerializedName());
+        return location.isEmpty() ? null : new ResourceLocation(location);
     }
 
-    public void setBakedModelLocation(ItemStack itemStack, ResourceLocation modelLocation) {
-        this.getClothingPropertyTag(itemStack).putString(MODEL_ID_KEY, modelLocation.toString());
-        int texHash = modelLocation.hashCode();
-
-        assert itemStack.getTag() != null;
-        itemStack.getTag().putInt(
-                "CustomModelData", texHash
-        );
+    public void setBakedModelLocation(
+            ItemStack itemStack, ModelPartReference modelPartReference, ResourceLocation modelLocation
+    ) {
+        Map<ModelPartReference, ResourceLocation> existing = this.getModelPartsForParent(itemStack);
+        existing.put(modelPartReference, modelLocation);
+        this.setModelPartsForParent(itemStack, existing);
     }
 
     @Override
     public @NotNull ItemStack getDefaultInstance() {
         ItemStack toReturn = super.getDefaultInstance();
 
-        this.setModelPartForParent(toReturn, this.defaultModelPart());
-        this.setBakedModelLocation(toReturn, new ResourceLocation("clothing:error"));
+        Map<ModelPartReference, ResourceLocation> modelParts = new HashMap<>();
+        modelParts.put(this.defaultModelPart(), new ResourceLocation("clothing:error"));
+        this.setModelPartsForParent(
+                toReturn,
+                modelParts
+        );
 
         return toReturn;
     }
@@ -138,7 +188,8 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
      */
     public ClientClothingRenderManager getDefaultRenderManager() {
         return new ClientClothingRenderManager() {
-            private BakedModel modelForRender = null;
+            private Map<ModelPartReference, BakedModel> modelsForRender = null;
+            private Map<ModelPartReference, ResourceLocation> modelLocations = null;
 
             @Override
             public <T extends LivingEntity, M extends HumanoidModel<T>, A extends HumanoidModel<T>> void render(
@@ -151,40 +202,56 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
                     float pPartialTicks, float pAgeInTicks,
                     float pNetHeadYaw, float pHeadPitch
             ) {
-                if (this.modelForRender == null) {
-                    this.modelForRender = Minecraft.getInstance().getModelManager().getModel(
-                            BakedModelClothingItem.this.bakedModelLocation(pItemStack)
-                    );
+                Map<ModelPartReference, ResourceLocation> newestLocations
+                        = BakedModelClothingItem.this.getModelPartsForParent(pItemStack);
+                if (!newestLocations.equals(this.modelLocations)) {
+                    this.modelLocations = newestLocations;
+                    this.modelsForRender = new HashMap<>();
                 }
 
-                ModelPartReference modelPartReference = BakedModelClothingItem.this.getModelPartForParent(pItemStack);
+                for (Map.Entry<ModelPartReference, ResourceLocation> entry : this.modelLocations.entrySet()) {
+                    ModelPartReference modelPartReference = entry.getKey();
 
-                ModelPart parentModelPart
-                        = pClothingLayer.modelPartByReference(modelPartReference);
+                    BakedModel forRender = this.modelsForRender.get(modelPartReference);
+                    if (forRender == null) {
+                        this.modelsForRender.put(
+                                modelPartReference,
+                                Minecraft.getInstance().getModelManager().getModel(
+                                        Objects.requireNonNull(BakedModelClothingItem.this.getBakedModelLocation(
+                                                pItemStack, modelPartReference
+                                        ))
+                                )
+                        );
+                        forRender = this.modelsForRender.get(modelPartReference);
+                    }
 
-                pMatrixStack.pushPose();
-                parentModelPart.translateAndRotate(pMatrixStack);
-                /*
-                    These values were set according to what would place the "center" of a model made in
-                    Blockbench 4.10.4 at the "center" of the part model; assuming the model's center in Blockbench is
-                    at 0, 4, 0.
-                 */
-                pMatrixStack.translate(-0.50, -0.50, 0.50);
-                pMatrixStack.mulPose(Vector3f.XP.rotationDegrees(180.00F));
-                pMatrixStack.mulPose(Vector3f.YP.rotationDegrees(180.00F));
+                    ModelPart parentModelPart
+                            = pClothingLayer.modelPartByReference(modelPartReference);
 
-                Minecraft.getInstance().getItemRenderer().render(
-                        pItemStack,
-                        ItemTransforms.TransformType.NONE,
-                        false,
-                        pMatrixStack,
-                        pBuffer,
-                        pPackedLight,
-                        OverlayTexture.NO_OVERLAY,
-                        this.modelForRender
-                );
+                    pMatrixStack.pushPose();
+                    parentModelPart.translateAndRotate(pMatrixStack);
+                    /*
+                        These values were set according to what would place the "center" of a model made in
+                        Blockbench 4.10.4 at the "center" of the part model; assuming the model's center in Blockbench is
+                        at 0, 4, 0.
+                     */
+                    pMatrixStack.translate(-0.50, -0.50, 0.50);
+                    pMatrixStack.mulPose(Vector3f.XP.rotationDegrees(180.00F));
+                    pMatrixStack.mulPose(Vector3f.YP.rotationDegrees(180.00F));
 
-               pMatrixStack.popPose();
+                    Minecraft.getInstance().getItemRenderer().render(
+                            pItemStack,
+                            ItemTransforms.TransformType.NONE,
+                            false,
+                            pMatrixStack,
+                            pBuffer,
+                            pPackedLight,
+                            OverlayTexture.NO_OVERLAY,
+                            forRender
+                    );
+
+                   pMatrixStack.popPose();
+                }
             }
         };
     }

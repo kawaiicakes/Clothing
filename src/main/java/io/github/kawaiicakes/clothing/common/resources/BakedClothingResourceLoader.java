@@ -7,6 +7,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class BakedClothingResourceLoader extends ClothingResourceLoader<BakedModelClothingItem> {
     protected static BakedClothingResourceLoader INSTANCE = null;
 
@@ -30,36 +33,44 @@ public class BakedClothingResourceLoader extends ClothingResourceLoader<BakedMod
         return (
                 (bakedClothingItem, clothingStack) ->  {
                     EquipmentSlot slot;
-                    ClothingItem.ModelPartReference modelPart;
-                    ResourceLocation modelLocation;
+                    Map<ClothingItem.ModelPartReference, ResourceLocation> models;
                     int color;
 
                     try {
                         slot = EquipmentSlot.byName(topElement.getAsJsonPrimitive("slot").getAsString());
 
-                        modelPart = topElement.has("parent")
-                                ? ClothingItem.ModelPartReference.byName(
-                                        topElement.getAsJsonPrimitive("parent").getAsString()
-                                    )
-                                : bakedClothingItem.defaultModelPart();
+                        Map<ClothingItem.ModelPartReference, ResourceLocation> errorModel = new HashMap<>();
+                        errorModel.put(
+                                bakedClothingItem.defaultModelPart(), new ResourceLocation("clothing:error")
+                        );
 
-                        modelLocation = topElement.has("model")
-                                ? new ResourceLocation(topElement.getAsJsonPrimitive("model").getAsString())
-                                : new ResourceLocation("clothing:error");
+                        // I want exceptions logged
+                        models = errorModel;
+                        if (topElement.has("models")) {
+                            JsonObject modelObject = topElement.getAsJsonObject("models");
+                            Map<ClothingItem.ModelPartReference, ResourceLocation> deserialized = new HashMap<>();
+                            for (String key : modelObject.keySet()) {
+                                ClothingItem.ModelPartReference byName = ClothingItem.ModelPartReference.byName(key);
+                                ResourceLocation modelLocation
+                                        = new ResourceLocation(modelObject.getAsJsonPrimitive(key).getAsString());
+
+                                deserialized.put(byName, modelLocation);
+                            }
+                            models = deserialized;
+                        }
 
                         color = topElement.has("color")
                                 ? topElement.getAsJsonPrimitive("color").getAsInt()
                                 : 0xFFFFFF;
 
                     } catch (RuntimeException e) {
-                        LOGGER.error("Error deserializing generic clothing data entry!", e);
+                        LOGGER.error("Error deserializing baked clothing data entry!", e);
                         throw e;
                     }
 
                     bakedClothingItem.setClothingName(clothingStack, entryId.getPath());
                     bakedClothingItem.setSlot(clothingStack, slot);
-                    bakedClothingItem.setModelPartForParent(clothingStack, modelPart);
-                    bakedClothingItem.setBakedModelLocation(clothingStack, modelLocation);
+                    bakedClothingItem.setModelPartsForParent(clothingStack, models);
                     bakedClothingItem.setColor(clothingStack, color);
                 }
         );
