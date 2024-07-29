@@ -8,6 +8,7 @@ import io.github.kawaiicakes.clothing.common.resources.BakedClothingResourceLoad
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingResourceLoader;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
 import io.github.kawaiicakes.clothing.item.ClothingRegistry;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.resources.ResourceLocation;
@@ -30,6 +31,8 @@ import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 import top.theillusivec4.curios.api.SlotTypePreset;
+
+import java.util.Collection;
 
 import static io.github.kawaiicakes.clothing.item.ClothingRegistry.CLOTHING_REGISTRY;
 
@@ -119,8 +122,17 @@ public class ClothingMod
 
         @SubscribeEvent
         public static void onModelRegistration(ModelEvent.RegisterAdditional event) {
-            event.register(new ResourceLocation(MOD_ID, "clothing/cuboid"));
-            event.register(new ResourceLocation(MOD_ID, "clothing/riot_helmet"));
+            final Collection<ResourceLocation> list = Minecraft.getInstance().getResourceManager().listResources(
+                    "models/clothing", (location) -> location.getPath().endsWith(".json")
+            ).keySet();
+
+
+            for (ResourceLocation modelLocation : list) {
+                String pathWithoutDuplicate = modelLocation.getPath().replace("models/", "");
+                String pathWithoutSuffix = pathWithoutDuplicate.replace(".json", "");
+                ResourceLocation withoutSuffix = new ResourceLocation(modelLocation.getNamespace(), pathWithoutSuffix);
+                event.register(withoutSuffix);
+            }
         }
 
         @SubscribeEvent
