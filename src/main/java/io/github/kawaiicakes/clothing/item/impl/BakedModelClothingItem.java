@@ -114,10 +114,7 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
             );
         }
 
-        assert itemStack.getTag() != null;
-        itemStack.getTag().putInt(
-                "CustomModelData", locationList.hashCode()
-        );
+        this.setCustomModelData(itemStack, locationList.hashCode());
     }
 
     public ModelPartReference defaultModelPart() {

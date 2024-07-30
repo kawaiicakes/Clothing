@@ -27,6 +27,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
 import java.util.function.Consumer;
 
+// TODO: subclass each impl of this class so there can be more "traditional" registry items, or otherwise some other way to allow changing properties and armor material
 /**
  * Each implementation of this will likely represent an item that renders as one model type (e.g. JSON, OBJ). The
  * {@code ClothingItem} simply subclasses {@link ArmorItem} and is made to flexibly create and render pieces of
@@ -58,6 +59,29 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
                 "Item of passed stack " + itemStack + " is not a ClothingItem instance!"
         );
         return itemStack.getOrCreateTag().getCompound(CLOTHING_PROPERTY_NBT_KEY);
+    }
+
+    /**
+     * Sets the custom model data integer for the passed {@link ItemStack}; used for creating an
+     * {@link net.minecraft.client.renderer.block.model.ItemOverride} for
+     * {@link net.minecraft.client.renderer.item.ItemProperties#TAG_CUSTOM_MODEL_DATA}.
+     * @param itemStack an {@link ItemStack} version of this.
+     * @param modelData the hashcode representing the model file to point to as an {@code int}. How this hashcode is
+     *                  obtained depends on implementation.
+     */
+    public void setCustomModelData(ItemStack itemStack, int modelData) {
+        itemStack.getOrCreateTag().putInt("custom_model_data", modelData);
+    }
+
+    /**
+     * Returns the custom model data integer from the passed {@link ItemStack}; used for creating an
+     * {@link net.minecraft.client.renderer.block.model.ItemOverride} for
+     * {@link net.minecraft.client.renderer.item.ItemProperties#TAG_CUSTOM_MODEL_DATA}.
+     * @param itemStack an {@link ItemStack} version of this.
+     * @return the {@code int} custom model data item property used for model overrides.
+     */
+    public int getCustomModelData(ItemStack itemStack) {
+        return itemStack.getOrCreateTag().getInt("custom_model_data");
     }
 
     /**

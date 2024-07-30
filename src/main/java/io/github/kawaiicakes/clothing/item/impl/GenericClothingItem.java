@@ -132,10 +132,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
 
         int texHash = this.getDescriptionId(itemStack).hashCode();
 
-        assert itemStack.getTag() != null;
-        itemStack.getTag().putInt(
-                "CustomModelData", texHash
-        );
+        this.setCustomModelData(itemStack, texHash);
     }
 
     /**
