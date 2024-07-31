@@ -6,9 +6,11 @@ import io.github.kawaiicakes.clothing.client.model.GenericDefinitions;
 import io.github.kawaiicakes.clothing.common.data.ClothingEntryGenerator;
 import io.github.kawaiicakes.clothing.common.data.ClothingIconGenerator;
 import io.github.kawaiicakes.clothing.common.data.ClothingLangGenerator;
+import io.github.kawaiicakes.clothing.common.data.ClothingOverlayGenerator;
 import io.github.kawaiicakes.clothing.common.network.ClothingPackets;
 import io.github.kawaiicakes.clothing.common.resources.BakedClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
+import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
 import io.github.kawaiicakes.clothing.item.ClothingRegistry;
 import net.minecraft.client.Minecraft;
@@ -75,6 +77,7 @@ public class ClothingMod
 
     @SubscribeEvent
     public void onAddReloadListener(AddReloadListenerEvent event) {
+        event.addListener(OverlayDefinitionLoader.getInstance());
         event.addListener(GenericClothingEntryLoader.getInstance());
         event.addListener(BakedClothingEntryLoader.getInstance());
     }
@@ -119,6 +122,9 @@ public class ClothingMod
         DataGenerator dataGenerator = event.getGenerator();
         ExistingFileHelper fileHelper = event.getExistingFileHelper();
 
+        ClothingOverlayGenerator clothingOverlayGenerator = new ClothingOverlayGenerator(
+                dataGenerator, fileHelper, MOD_ID
+        );
         ClothingEntryGenerator clothingEntryGenerator = new ClothingEntryGenerator(dataGenerator, MOD_ID);
         ClothingLangGenerator clothingLangGenerator
                 = new ClothingLangGenerator(dataGenerator, MOD_ID, "en_us", clothingEntryGenerator);
@@ -138,6 +144,11 @@ public class ClothingMod
         dataGenerator.addProvider(
                 event.includeServer() || event.includeClient(),
                 clothingEntryGenerator
+        );
+
+        dataGenerator.addProvider(
+                event.includeServer() || event.includeClient(),
+                clothingOverlayGenerator
         );
     }
 
