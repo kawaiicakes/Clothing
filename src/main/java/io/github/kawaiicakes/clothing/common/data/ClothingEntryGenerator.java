@@ -57,10 +57,10 @@ public class ClothingEntryGenerator implements DataProvider {
                 (clothingBuilder -> {
                     ResourceLocation clothingId = new ResourceLocation(this.modId, clothingBuilder.getId());
 
-                    if (!locations.add(clothingBuilder.getId()))
-                        throw new IllegalStateException("Duplicate recipe " + clothingId);
-
                     try {
+                        if (!locations.add(clothingBuilder.getId()))
+                            throw new IllegalStateException("Duplicate entry " + clothingId);
+
                         final DataGenerator.PathProvider pathProvider;
                         if (clothingBuilder instanceof GenericClothingBuilder) {
                             pathProvider = this.genericPath;
