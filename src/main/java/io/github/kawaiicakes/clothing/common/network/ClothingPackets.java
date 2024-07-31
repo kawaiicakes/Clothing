@@ -1,9 +1,9 @@
 package io.github.kawaiicakes.clothing.common.network;
 
 import com.google.common.collect.ImmutableList;
-import io.github.kawaiicakes.clothing.common.resources.BakedClothingResourceLoader;
-import io.github.kawaiicakes.clothing.common.resources.ClothingResourceLoader;
-import io.github.kawaiicakes.clothing.common.resources.GenericClothingResourceLoader;
+import io.github.kawaiicakes.clothing.common.resources.BakedClothingEntryLoader;
+import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
+import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -62,9 +62,9 @@ public class ClothingPackets {
         protected final String loaderClass;
         protected final ImmutableList<CompoundTag> clothingEntries;
 
-        public S2CClothingPacket(ClothingResourceLoader<?> clothingResourceLoader) {
-            this.loaderClass = clothingResourceLoader.getName();
-            this.clothingEntries = clothingResourceLoader.getStacks();
+        public S2CClothingPacket(ClothingEntryLoader<?> clothingEntryLoader) {
+            this.loaderClass = clothingEntryLoader.getName();
+            this.clothingEntries = clothingEntryLoader.getStacks();
         }
 
         public S2CClothingPacket(FriendlyByteBuf buf) {
@@ -88,8 +88,8 @@ public class ClothingPackets {
 
             // TODO: redo this, damn this is scuffed lmao
             switch (this.loaderClass) {
-                case "generic": GenericClothingResourceLoader.getInstance().addStacks(this.clothingEntries);
-                case "baked": BakedClothingResourceLoader.getInstance().addStacks(this.clothingEntries);
+                case "generic": GenericClothingEntryLoader.getInstance().addStacks(this.clothingEntries);
+                case "baked": BakedClothingEntryLoader.getInstance().addStacks(this.clothingEntries);
                 default: throw new IllegalArgumentException("Unrecognized loader '" + this.loaderClass + "'!");
             }
         }

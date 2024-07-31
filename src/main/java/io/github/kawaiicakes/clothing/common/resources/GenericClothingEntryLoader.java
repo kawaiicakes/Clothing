@@ -9,17 +9,17 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-public class GenericClothingResourceLoader extends ClothingResourceLoader<GenericClothingItem> {
-    protected static GenericClothingResourceLoader INSTANCE = null;
+public class GenericClothingEntryLoader extends ClothingEntryLoader<GenericClothingItem> {
+    protected static GenericClothingEntryLoader INSTANCE = null;
 
-    protected GenericClothingResourceLoader() {
+    protected GenericClothingEntryLoader() {
         super("generic");
         INSTANCE = this;
     }
 
-    public static GenericClothingResourceLoader getInstance() {
+    public static GenericClothingEntryLoader getInstance() {
         if (INSTANCE == null) {
-            return new GenericClothingResourceLoader();
+            return new GenericClothingEntryLoader();
         }
 
         return INSTANCE;

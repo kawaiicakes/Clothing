@@ -11,7 +11,7 @@ import net.minecraft.world.item.ItemStack;
  * whose item corresponds to type {@link T}. These stacks are then loaded into the client's creative menu tab.
  * @param <T> a {@link io.github.kawaiicakes.clothing.item.ClothingItem} subclass.
  * @see io.github.kawaiicakes.clothing.item.ClothingItem#fillItemCategory(CreativeModeTab, NonNullList)
- * @see ClothingResourceLoader#generateStacks(ClothingItem)
+ * @see ClothingEntryLoader#generateStacks(ClothingItem)
  */
 @FunctionalInterface
 public interface NbtStackInitializer<T> {

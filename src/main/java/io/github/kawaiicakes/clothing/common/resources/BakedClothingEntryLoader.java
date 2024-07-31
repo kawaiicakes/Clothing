@@ -10,16 +10,16 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
-public class BakedClothingResourceLoader extends ClothingResourceLoader<BakedModelClothingItem> {
-    protected static BakedClothingResourceLoader INSTANCE = null;
+public class BakedClothingEntryLoader extends ClothingEntryLoader<BakedModelClothingItem> {
+    protected static BakedClothingEntryLoader INSTANCE = null;
 
-    protected BakedClothingResourceLoader() {
+    protected BakedClothingEntryLoader() {
         super("baked");
     }
 
-    public static BakedClothingResourceLoader getInstance() {
+    public static BakedClothingEntryLoader getInstance() {
         if (INSTANCE == null) {
-            return new BakedClothingResourceLoader();
+            return new BakedClothingEntryLoader();
         }
 
         return INSTANCE;

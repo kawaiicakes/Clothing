@@ -4,8 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
-import io.github.kawaiicakes.clothing.common.resources.ClothingResourceLoader;
-import io.github.kawaiicakes.clothing.common.resources.GenericClothingResourceLoader;
+import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
+import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
 import io.github.kawaiicakes.clothing.item.ClothingMaterials;
 import io.github.kawaiicakes.clothing.item.ClothingTab;
@@ -61,7 +61,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
 
     // TODO: consider allowing multiple layers when rendering generic clothing
     // TODO: final assets, etc.
-    // TODO: server-sided texture/overlay picker; data from GenericClothingResourceLoader prevents choosing arbitrarily
+    // TODO: server-sided texture/overlay picker; data from GenericClothingEntryLoader prevents choosing arbitrarily
     public GenericClothingItem(EquipmentSlot pSlot) {
         this(
                 ClothingMaterials.CLOTH,
@@ -92,8 +92,8 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
     }
 
     @Override
-    public @NotNull ClothingResourceLoader<GenericClothingItem> loaderForType() {
-        return GenericClothingResourceLoader.getInstance();
+    public @NotNull ClothingEntryLoader<GenericClothingItem> loaderForType() {
+        return GenericClothingEntryLoader.getInstance();
     }
 
     /**

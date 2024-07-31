@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
-import io.github.kawaiicakes.clothing.common.resources.ClothingResourceLoader;
+import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
 import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.core.NonNullList;
@@ -107,7 +107,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
 
     /**
      * Used to display the {@link ItemStack}s in {@code pItems} in the creative menu. See super for examples. This is
-     * handled automatically by the {@link io.github.kawaiicakes.clothing.common.resources.ClothingResourceLoader} of
+     * handled automatically by the {@link ClothingEntryLoader} of
      * the implementing class. Clothing data is declared in serverside datapacks, then received on the client for
      * use here.
      * @param pCategory the {@link CreativeModeTab} to place the items in. See {@link Item#allowedIn(CreativeModeTab)}
@@ -119,7 +119,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         if (!this.allowedIn(pCategory)) return;
 
         try {
-            final ClothingResourceLoader<T> loader = this.loaderForType();
+            final ClothingEntryLoader<T> loader = this.loaderForType();
 
             //noinspection unchecked
             pItems.addAll(loader.generateStacks((T) this));
@@ -130,12 +130,12 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
 
     /**
      * Used by {@link #fillItemCategory(CreativeModeTab, NonNullList)}. Implementations return the singleton
-     * {@link ClothingResourceLoader} that loads clothing entries for that implementation. Do not cache the
+     * {@link ClothingEntryLoader} that loads clothing entries for that implementation. Do not cache the
      * return or attempt to mutate it.
-     * @return the singleton {@link ClothingResourceLoader} that loads clothing entries for this.
+     * @return the singleton {@link ClothingEntryLoader} that loads clothing entries for this.
      */
     @NotNull
-    public abstract ClothingResourceLoader<T> loaderForType();
+    public abstract ClothingEntryLoader<T> loaderForType();
 
     /**
      * Implementations essentially provide an instance of {@link ClientClothingRenderManager} to the client-exclusive
@@ -197,7 +197,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
      *                  matches what the clothing data entry says.
      * @param slot the {@link EquipmentSlot} which a clothing data entry indicates it is worn on.
      * @see io.github.kawaiicakes.clothing.common.resources.NbtStackInitializer#writeToStack(Object, ItemStack)
-     * @see ClothingResourceLoader#entryContainsSlotDeclaration(JsonObject)
+     * @see ClothingEntryLoader#entryContainsSlotDeclaration(JsonObject)
      */
     public void setSlot(ItemStack itemStack, EquipmentSlot slot) {
         this.getClothingPropertyTag(itemStack).putString(CLOTHING_SLOT_NBT_KEY, slot.getName());

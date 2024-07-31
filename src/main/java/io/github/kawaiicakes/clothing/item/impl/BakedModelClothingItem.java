@@ -4,8 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Vector3f;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
-import io.github.kawaiicakes.clothing.common.resources.BakedClothingResourceLoader;
-import io.github.kawaiicakes.clothing.common.resources.ClothingResourceLoader;
+import io.github.kawaiicakes.clothing.common.resources.BakedClothingEntryLoader;
+import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
 import io.github.kawaiicakes.clothing.item.ClothingMaterials;
 import io.github.kawaiicakes.clothing.item.ClothingTab;
@@ -170,8 +170,8 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
     }
 
     @Override
-    public @NotNull ClothingResourceLoader<BakedModelClothingItem> loaderForType() {
-        return BakedClothingResourceLoader.getInstance();
+    public @NotNull ClothingEntryLoader<BakedModelClothingItem> loaderForType() {
+        return BakedClothingEntryLoader.getInstance();
     }
 
     @Override

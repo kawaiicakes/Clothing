@@ -33,7 +33,7 @@ import java.util.function.Supplier;
  * {@link ClothingItem#loaderForType()}.
  * @param <T> The {@link ClothingItem} that data entries are being read for.
  */
-public abstract class ClothingResourceLoader<T extends ClothingItem<?>> extends SimpleJsonResourceReloadListener {
+public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends SimpleJsonResourceReloadListener {
     protected static final Logger LOGGER = LogUtils.getLogger();
     protected static final Gson GSON = (new GsonBuilder()).setPrettyPrinting().disableHtmlEscaping().create();
 
@@ -47,7 +47,7 @@ public abstract class ClothingResourceLoader<T extends ClothingItem<?>> extends 
      * if you decide to use mixins.
      * @param pSubDirectory the {@code String} for the folder name the data entries will be found in.
      */
-    protected ClothingResourceLoader(String pSubDirectory) {
+    protected ClothingEntryLoader(String pSubDirectory) {
         super(GSON, "clothing/" + pSubDirectory);
         this.subDirectory = pSubDirectory;
     }

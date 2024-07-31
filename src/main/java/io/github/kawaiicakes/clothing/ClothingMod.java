@@ -7,8 +7,8 @@ import io.github.kawaiicakes.clothing.common.data.ClothingEntryGenerator;
 import io.github.kawaiicakes.clothing.common.data.ClothingIconGenerator;
 import io.github.kawaiicakes.clothing.common.data.ClothingLangGenerator;
 import io.github.kawaiicakes.clothing.common.network.ClothingPackets;
-import io.github.kawaiicakes.clothing.common.resources.BakedClothingResourceLoader;
-import io.github.kawaiicakes.clothing.common.resources.GenericClothingResourceLoader;
+import io.github.kawaiicakes.clothing.common.resources.BakedClothingEntryLoader;
+import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
 import io.github.kawaiicakes.clothing.item.ClothingRegistry;
 import net.minecraft.client.Minecraft;
@@ -45,7 +45,6 @@ import static io.github.kawaiicakes.clothing.item.ClothingRegistry.CLOTHING_REGI
 @Mod(ClothingMod.MOD_ID)
 public class ClothingMod
 {
-    // TODO: new resource loader for overlay declarations; string array with key of available slots
     // TODO: https://docs.minecraftforge.net/en/1.19.x/rendering/modelextensions/visibility/
     // TODO: Subclass CompositeModel for clothing icons (so the overlay system isn't a complete nightmare)
     public static final String MOD_ID = "clothing";
@@ -76,22 +75,22 @@ public class ClothingMod
 
     @SubscribeEvent
     public void onAddReloadListener(AddReloadListenerEvent event) {
-        event.addListener(GenericClothingResourceLoader.getInstance());
-        event.addListener(BakedClothingResourceLoader.getInstance());
+        event.addListener(GenericClothingEntryLoader.getInstance());
+        event.addListener(BakedClothingEntryLoader.getInstance());
     }
 
     @SubscribeEvent
     public void onDatapackSync(OnDatapackSyncEvent event) {
         ClothingPackets.sendToPlayer(
                 new ClothingPackets.S2CClothingPacket(
-                        GenericClothingResourceLoader.getInstance()
+                        GenericClothingEntryLoader.getInstance()
                 ),
                 event.getPlayer()
         );
 
         ClothingPackets.sendToPlayer(
                 new ClothingPackets.S2CClothingPacket(
-                        BakedClothingResourceLoader.getInstance()
+                        BakedClothingEntryLoader.getInstance()
                 ),
                 event.getPlayer()
         );
