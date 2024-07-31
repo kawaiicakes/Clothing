@@ -33,10 +33,16 @@ public class ClothingEntryGenerator implements DataProvider {
 
     protected final DataGenerator dataGenerator;
     protected final String modId;
+    protected final DataGenerator.PathProvider genericPath;
+    protected final DataGenerator.PathProvider bakedPath;
 
     public ClothingEntryGenerator(DataGenerator dataGenerator, String modId) {
         this.dataGenerator = dataGenerator;
         this.modId = modId;
+        this.genericPath = this.dataGenerator.createPathProvider(
+                DataGenerator.Target.DATA_PACK, "clothing/generic"
+        );
+        this.bakedPath = this.dataGenerator.createPathProvider(DataGenerator.Target.DATA_PACK, "clothing/baked");
     }
 
     public void buildEntries(Consumer<ClothingBuilder<?>> clothingBuilderConsumer) {
@@ -49,19 +55,26 @@ public class ClothingEntryGenerator implements DataProvider {
 
         buildEntries(
                 (clothingBuilder -> {
-                    final String clothingId = clothingBuilder.getPath() + ".json";
+                    ResourceLocation clothingId = new ResourceLocation(this.modId, clothingBuilder.getId());
 
-                    if (!locations.add(clothingId))
+                    if (!locations.add(clothingBuilder.getId()))
                         throw new IllegalStateException("Duplicate recipe " + clothingId);
 
-                    Path entryPath = this.dataGenerator.getOutputFolder().resolve(
-                            "data/" + this.modId + "/clothing/" + clothingId
-                    );
-
                     try {
+                        final DataGenerator.PathProvider pathProvider;
+                        if (clothingBuilder instanceof GenericClothingBuilder) {
+                            pathProvider = this.genericPath;
+                        } else if (clothingBuilder instanceof BakedModelClothingBuilder) {
+                            pathProvider = this.bakedPath;
+                        } else {
+                            throw new RuntimeException("Unrecognized builder subclass!");
+                        }
+
+                        final Path entryPath = pathProvider.json(clothingId);
+
                         DataProvider.saveStable(pOutput, clothingBuilder.serializeToJson(), entryPath);
-                    } catch (IOException ioexception) {
-                        LOGGER.error("Couldn't save clothing entry {}!", entryPath, ioexception);
+                    } catch (IOException | RuntimeException ioexception) {
+                        LOGGER.error("Couldn't save clothing entry {}!", clothingId, ioexception);
                     }
                 })
         );
@@ -69,18 +82,13 @@ public class ClothingEntryGenerator implements DataProvider {
 
     @Override
     public @NotNull String getName() {
-        return "Clothing Entries:" + " modid - " + this.modId;
+        return "Clothing Entries:" + " mod id - " + this.modId;
     }
 
     public static class GenericClothingBuilder extends ClothingBuilder<GenericClothingItem> {
         protected GenericClothingBuilder(GenericClothingItem clothingItem, String name) {
             super(clothingItem, name);
             this.setTexture(name);
-        }
-
-        @Override
-        public String getPath() {
-            return "generic/" + this.id;
         }
 
         public GenericClothingBuilder setRenderLayer(GenericClothingItem.ModelStrata renderLayer) {
@@ -128,11 +136,6 @@ public class ClothingEntryGenerator implements DataProvider {
     public static class BakedModelClothingBuilder extends ClothingBuilder<BakedModelClothingItem> {
         protected BakedModelClothingBuilder(BakedModelClothingItem clothingItem, String name) {
             super(clothingItem, name);
-        }
-
-        @Override
-        public String getPath() {
-            return "baked/" + this.id;
         }
 
         public BakedModelClothingBuilder setModelLocations(
@@ -183,11 +186,13 @@ public class ClothingEntryGenerator implements DataProvider {
             this.clothingItem.setClothingName(this.clothingStack, id);
         }
 
+        public String getId() {
+            return this.id;
+        }
+
         public void save(Consumer<ClothingBuilder<?>> clothingBuilderConsumer) {
             clothingBuilderConsumer.accept(this);
         }
-
-        public abstract String getPath();
 
         public ClothingBuilder<T> setColor(int color) {
             this.clothingItem.setColor(this.clothingStack, color);
