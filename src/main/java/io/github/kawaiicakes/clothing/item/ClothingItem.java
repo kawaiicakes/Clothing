@@ -70,7 +70,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
      *                  obtained depends on implementation.
      */
     public void setCustomModelData(ItemStack itemStack, int modelData) {
-        itemStack.getOrCreateTag().putInt("custom_model_data", modelData);
+        itemStack.getOrCreateTag().putInt("CustomModelData", modelData);
     }
 
     /**
@@ -81,7 +81,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
      * @return the {@code int} custom model data item property used for model overrides.
      */
     public int getCustomModelData(ItemStack itemStack) {
-        return itemStack.getOrCreateTag().getInt("custom_model_data");
+        return itemStack.getOrCreateTag().getInt("CustomModelData");
     }
 
     /**

@@ -73,7 +73,7 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
      * @return          the {@link Map} of key {@link ModelPartReference}s for each {@link ResourceLocation} referencing
      *                  the body part the baked model will render to.
      */
-    public @NotNull Map<ModelPartReference, ResourceLocation> getModelPartsForParent(ItemStack itemStack) {
+    public @NotNull Map<ModelPartReference, ResourceLocation> getModelPartLocations(ItemStack itemStack) {
         CompoundTag modelPartTag = this.getClothingPropertyTag(itemStack).getCompound(MODEL_PARENTS_KEY);
 
         Map<ModelPartReference, ResourceLocation> toReturn = new HashMap<>(modelPartTag.size());
@@ -86,7 +86,7 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
         return toReturn;
     }
 
-    public void setModelPartsForParent(ItemStack itemStack, Map<ModelPartReference, ResourceLocation> modelParts) {
+    public void setModelPartLocations(ItemStack itemStack, Map<ModelPartReference, ResourceLocation> modelParts) {
         CompoundTag modelPartMap = new CompoundTag();
 
         for (Map.Entry<ModelPartReference, ResourceLocation> entry : modelParts.entrySet()) {
@@ -140,19 +140,19 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
      * @return the location of the {@link BakedModel} for render.
      */
     @Nullable
-    public ResourceLocation getBakedModelLocation(ItemStack itemStack, ModelPartReference modelPartReference) {
+    public ResourceLocation getModelPartLocation(ItemStack itemStack, ModelPartReference modelPartReference) {
         String location = this.getClothingPropertyTag(itemStack)
                 .getCompound(MODEL_PARENTS_KEY)
                 .getString(modelPartReference.getSerializedName());
         return location.isEmpty() ? null : new ResourceLocation(location);
     }
 
-    public void setBakedModelLocation(
+    public void setModelPartLocation(
             ItemStack itemStack, ModelPartReference modelPartReference, ResourceLocation modelLocation
     ) {
-        Map<ModelPartReference, ResourceLocation> existing = this.getModelPartsForParent(itemStack);
+        Map<ModelPartReference, ResourceLocation> existing = this.getModelPartLocations(itemStack);
         existing.put(modelPartReference, modelLocation);
-        this.setModelPartsForParent(itemStack, existing);
+        this.setModelPartLocations(itemStack, existing);
     }
 
     @Override
@@ -161,7 +161,7 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
 
         Map<ModelPartReference, ResourceLocation> modelParts = new HashMap<>();
         modelParts.put(this.defaultModelPart(), new ResourceLocation("clothing:error"));
-        this.setModelPartsForParent(
+        this.setModelPartLocations(
                 toReturn,
                 modelParts
         );
@@ -200,7 +200,7 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
                     float pNetHeadYaw, float pHeadPitch
             ) {
                 Map<ModelPartReference, ResourceLocation> newestLocations
-                        = BakedModelClothingItem.this.getModelPartsForParent(pItemStack);
+                        = BakedModelClothingItem.this.getModelPartLocations(pItemStack);
                 if (!newestLocations.equals(this.modelLocations)) {
                     this.modelLocations = newestLocations;
                     this.modelsForRender = new HashMap<>();
@@ -214,7 +214,7 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
                         this.modelsForRender.put(
                                 modelPartReference,
                                 Minecraft.getInstance().getModelManager().getModel(
-                                        Objects.requireNonNull(BakedModelClothingItem.this.getBakedModelLocation(
+                                        Objects.requireNonNull(BakedModelClothingItem.this.getModelPartLocation(
                                                 pItemStack, modelPartReference
                                         ))
                                 )

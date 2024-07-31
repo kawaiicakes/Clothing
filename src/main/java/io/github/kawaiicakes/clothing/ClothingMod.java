@@ -3,6 +3,9 @@ package io.github.kawaiicakes.clothing;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.client.model.GenericDefinitions;
+import io.github.kawaiicakes.clothing.common.data.ClothingEntryGenerator;
+import io.github.kawaiicakes.clothing.common.data.ClothingIconGenerator;
+import io.github.kawaiicakes.clothing.common.data.ClothingLangGenerator;
 import io.github.kawaiicakes.clothing.common.network.ClothingPackets;
 import io.github.kawaiicakes.clothing.common.resources.BakedClothingResourceLoader;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingResourceLoader;
@@ -11,6 +14,7 @@ import io.github.kawaiicakes.clothing.item.ClothingRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
+import net.minecraft.data.DataGenerator;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
@@ -18,6 +22,8 @@ import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.ModelEvent;
 import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.data.ExistingFileHelper;
+import net.minecraftforge.data.event.GatherDataEvent;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.OnDatapackSyncEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -39,6 +45,7 @@ import static io.github.kawaiicakes.clothing.item.ClothingRegistry.CLOTHING_REGI
 @Mod(ClothingMod.MOD_ID)
 public class ClothingMod
 {
+    // TODO: new resource loader for overlay declarations; string array with key of available slots
     // TODO: https://docs.minecraftforge.net/en/1.19.x/rendering/modelextensions/visibility/
     // TODO: Subclass CompositeModel for clothing icons (so the overlay system isn't a complete nightmare)
     public static final String MOD_ID = "clothing";
@@ -56,6 +63,7 @@ public class ClothingMod
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::onInterModEnqueue);
+        modEventBus.addListener(this::onGatherData);
 
         forgeEventBus.addListener(this::onAddReloadListener);
         forgeEventBus.addListener(this::onDatapackSync);
@@ -105,6 +113,33 @@ public class ClothingMod
 
             LOGGER.info(msg);
         }
+    }
+
+    @SubscribeEvent
+    public void onGatherData(GatherDataEvent event) {
+        DataGenerator dataGenerator = event.getGenerator();
+        ExistingFileHelper fileHelper = event.getExistingFileHelper();
+
+        ClothingEntryGenerator clothingEntryGenerator = new ClothingEntryGenerator(dataGenerator, MOD_ID);
+        ClothingLangGenerator clothingLangGenerator
+                = new ClothingLangGenerator(dataGenerator, MOD_ID, "en_us", clothingEntryGenerator);
+        ClothingIconGenerator clothingIconGenerator
+                = new ClothingIconGenerator(dataGenerator, MOD_ID, fileHelper, clothingEntryGenerator);
+
+        dataGenerator.addProvider(
+                event.includeClient(),
+                clothingIconGenerator
+        );
+
+        dataGenerator.addProvider(
+                event.includeClient(),
+                clothingLangGenerator
+        );
+
+        dataGenerator.addProvider(
+                event.includeServer() || event.includeClient(),
+                clothingEntryGenerator
+        );
     }
 
     @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)

@@ -1,7 +1,0 @@
-{
-  "loader": "forge:obj",
-  "flip_v": true,
-  "model": "clothing:models/clothing/cuboid.obj",
-  "textures": {
-  }
-}

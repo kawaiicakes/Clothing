@@ -59,8 +59,8 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
         super(pArmorMaterial, pSlot, pProperties);
     }
 
+    // TODO: consider allowing multiple layers when rendering generic clothing
     // TODO: final assets, etc.
-    // TODO: item icon changes with texture
     // TODO: server-sided texture/overlay picker; data from GenericClothingResourceLoader prevents choosing arbitrarily
     public GenericClothingItem(EquipmentSlot pSlot) {
         this(

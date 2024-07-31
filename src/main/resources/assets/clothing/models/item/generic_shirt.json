@@ -4,6 +4,6 @@
     "layer0": "clothing:item/generic_shirt"
   },
   "overrides": [
-    {"predicate": {"custom_model_data": 1750745899}, "model": "clothing:item/ouch_chest"}
+    {"predicate": {"custom_model_data": 1750745899}, "model": "clothing:item/tank_top"}
   ]
 }

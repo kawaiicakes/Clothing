@@ -70,7 +70,7 @@ public class BakedClothingResourceLoader extends ClothingResourceLoader<BakedMod
 
                     bakedClothingItem.setClothingName(clothingStack, entryId.getPath());
                     bakedClothingItem.setSlot(clothingStack, slot);
-                    bakedClothingItem.setModelPartsForParent(clothingStack, models);
+                    bakedClothingItem.setModelPartLocations(clothingStack, models);
                     bakedClothingItem.setColor(clothingStack, color);
                 }
         );
