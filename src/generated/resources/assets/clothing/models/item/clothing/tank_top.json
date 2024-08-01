@@ -1,0 +1,27 @@
+{
+  "children": {
+    "main_model": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "clothing:item/tank_top"
+      }
+    },
+    "oppai": {
+      "parent": "clothing:item/clothing/overlays/oppai"
+    },
+    "ouch": {
+      "parent": "clothing:item/clothing/overlays/ouch"
+    }
+  },
+  "item_render_order": [
+    "main_model",
+    "ouch",
+    "oppai"
+  ],
+  "loader": "forge:composite",
+  "visibility": {
+    "main_model": true,
+    "oppai": false,
+    "ouch": false
+  }
+}

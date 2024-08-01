@@ -1,0 +1,10 @@
+{
+  "parent": "clothing:item/clothing/tank_top",
+  "children": {},
+  "item_render_order": [],
+  "loader": "forge:composite",
+  "visibility": {
+    "oppai": false,
+    "ouch": true
+  }
+}

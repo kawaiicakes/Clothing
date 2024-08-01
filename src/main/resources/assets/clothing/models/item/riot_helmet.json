@@ -1,7 +1,0 @@
-{
-  "parent": "item/generated",
-  "textures": {
-    "layer0": "clothing:item/riot_helmet_base",
-    "layer1": "clothing:item/riot_helmet_visor"
-  }
-}

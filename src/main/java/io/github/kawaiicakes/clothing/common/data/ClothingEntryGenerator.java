@@ -14,6 +14,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -177,6 +178,7 @@ public class ClothingEntryGenerator implements DataProvider {
     public static abstract class ClothingBuilder<T extends ClothingItem<T>> {
         protected final T clothingItem;
         protected final ItemStack clothingStack;
+        protected final EquipmentSlot slotForItem;
         protected final String id;
 
         protected ClothingBuilder(T clothingItem, String id) {
@@ -184,6 +186,11 @@ public class ClothingEntryGenerator implements DataProvider {
             this.clothingStack = this.clothingItem.getDefaultInstance();
             this.id = id;
             this.clothingItem.setClothingName(this.clothingStack, id);
+            this.slotForItem = this.clothingItem.getSlot();
+        }
+
+        public EquipmentSlot getSlotForItem() {
+            return this.slotForItem;
         }
 
         public String getId() {
@@ -237,6 +244,15 @@ public class ClothingEntryGenerator implements DataProvider {
                 LOGGER.error("Error serializing NBT tag to JSON in entry generator!", e);
                 return null;
             }
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof ClothingBuilder<?> builder)) return false;
+            return this.clothingItem.equals(builder.clothingItem)
+                    && this.clothingStack.equals(builder.clothingStack, false)
+                    && this.slotForItem.equals(builder.slotForItem)
+                    && this.id.equals(builder.id);
         }
     }
 }

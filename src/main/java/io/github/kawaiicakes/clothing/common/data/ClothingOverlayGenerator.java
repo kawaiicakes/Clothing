@@ -44,18 +44,16 @@ public class ClothingOverlayGenerator implements DataProvider {
         this.addOverlays(
                 OverlayDefinitionLoader.OverlayDefinitionBuilder.of("ouch")
                         .addSlot(EquipmentSlot.CHEST)
+                        .build(),
+                OverlayDefinitionLoader.OverlayDefinitionBuilder.of("oppai")
+                        .addSlot(EquipmentSlot.CHEST)
                         .build()
         );
     }
 
     @Override
     public void run(@NotNull CachedOutput pOutput) {
-        this.registerOverlays();
-
-        if (this.overlays == null || this.overlays.isEmpty()) {
-            LOGGER.info("[Clothing] No overlays registered!");
-            return;
-        }
+        if (this.overlays == null || this.overlays.isEmpty()) this.registerOverlays();
 
         Set<String> overlayIdSet = new HashSet<>();
 
