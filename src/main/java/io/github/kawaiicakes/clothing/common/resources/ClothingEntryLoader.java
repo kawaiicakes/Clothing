@@ -138,6 +138,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
         for(Map.Entry<ResourceLocation, JsonElement> entry : pObject.entrySet()) {
             ResourceLocation entryId = entry.getKey();
             if (entryId.getPath().startsWith("_")) continue;
+            if (entryId.getPath().contains("overlays/")) continue;
 
             try {
                 final JsonObject jsonEntry

@@ -238,8 +238,7 @@ public class ClothingItemModelGenerator extends ItemModelProvider {
             ResourceLocation outputLocation = new ResourceLocation(this.modid, outputString);
 
             CompositeModelBuilder<ItemModelBuilder> compositeModelBuilder
-                    = this.getBuilder(outputString)
-                    .parent(new ModelFile.ExistingModelFile(entryLocation, this.existingFileHelper))
+                    = this.withExistingParent(outputString, entryLocation)
                     .customLoader(CompositeModelBuilder::begin);
 
             for (List<Serializable> childVisibility : overlayPermutation) {
