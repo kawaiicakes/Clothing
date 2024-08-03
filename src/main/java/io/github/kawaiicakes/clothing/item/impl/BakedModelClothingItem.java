@@ -114,7 +114,7 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
             );
         }
 
-        this.setCustomModelData(itemStack, locationList.hashCode());
+        this.setBaseModelData(itemStack, locationList.hashCode());
     }
 
     public ModelPartReference defaultModelPart() {

@@ -13,12 +13,15 @@ import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoade
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
 import io.github.kawaiicakes.clothing.item.ClothingRegistry;
+import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
+import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.ModelEvent;
@@ -37,12 +40,17 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
 import top.theillusivec4.curios.api.SlotTypePreset;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
+import static io.github.kawaiicakes.clothing.item.ClothingItem.BASE_MODEL_DATA;
 import static io.github.kawaiicakes.clothing.item.ClothingRegistry.CLOTHING_REGISTRY;
+import static io.github.kawaiicakes.clothing.item.impl.GenericClothingItem.GENERIC_OVERLAY_DATA;
 
 @Mod(ClothingMod.MOD_ID)
 public class ClothingMod
@@ -233,6 +241,44 @@ public class ClothingMod
                 }
             } catch (RuntimeException e) {
                 LOGGER.error("Error adding layer to player!", e);
+            }
+        }
+
+        @SubscribeEvent
+        public static void onBakingCompleted(ModelEvent.BakingCompleted event) {
+            List<RegistryObject<Item>> items = ClothingRegistry.getGeneric();
+            ClothingItem<?>[] clothingItems = ClothingRegistry.getAll();
+            if (clothingItems == null || items == null) {
+                LOGGER.error("Clothing has not been registered yet!");
+                clothingItems = new ClothingItem<?>[0];
+                items = new ArrayList<>();
+            }
+
+            for (ClothingItem<?> clothingItem : clothingItems) {
+                ItemProperties.register(
+                        clothingItem,
+                        BASE_MODEL_DATA,
+                        (pStack, pLevel, pEntity, pSeed) -> {
+                            if (!clothingItem.hasClothingPropertyTag(pStack)) return 0;
+                            return clothingItem.getBaseModelData(pStack);
+                        }
+                );
+            }
+
+            for (RegistryObject<Item> item : items) {
+                if (!item.isPresent() || !(item.get() instanceof GenericClothingItem genericClothingItem)) {
+                    LOGGER.error("Clothing has not been registered yet!");
+                    break;
+                }
+
+                ItemProperties.register(
+                        genericClothingItem,
+                        GENERIC_OVERLAY_DATA,
+                        (pStack, pLevel, pEntity, pSeed) -> {
+                            if (!genericClothingItem.hasClothingPropertyTag(pStack)) return 0;
+                            return genericClothingItem.getOverlayModelData(pStack);
+                        }
+                );
             }
         }
     }

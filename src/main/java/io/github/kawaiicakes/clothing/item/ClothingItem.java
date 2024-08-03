@@ -10,6 +10,7 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -27,6 +28,8 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
+
 // TODO: subclass each impl of this class so there can be more "traditional" registry items, or otherwise some other way to allow changing properties and armor material
 /**
  * Each implementation of this will likely represent an item that renders as one model type (e.g. JSON, OBJ). The
@@ -40,6 +43,9 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     public static final String CLOTHING_PROPERTY_NBT_KEY = "ClothingProperties";
     public static final String CLOTHING_NAME_KEY = "name";
     public static final String CLOTHING_SLOT_NBT_KEY = "slot";
+    public static final String BASE_MODEL_DATA_NBT_KEY = "BaseModelData";
+
+    public static final ResourceLocation BASE_MODEL_DATA = new ResourceLocation(MOD_ID, "base_model_data");
 
     private Object clientClothingRenderManager;
 
@@ -61,16 +67,24 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         return itemStack.getOrCreateTag().getCompound(CLOTHING_PROPERTY_NBT_KEY);
     }
 
+    public boolean hasClothingPropertyTag(ItemStack itemStack) {
+        if (!(itemStack.getItem() instanceof ClothingItem<?>)) return false;
+        if (itemStack.getTag() == null) return false;
+        CompoundTag stackTag = itemStack.getTag();
+        return stackTag.contains(CLOTHING_PROPERTY_NBT_KEY)
+                && stackTag.get(CLOTHING_PROPERTY_NBT_KEY) instanceof CompoundTag;
+    }
+
     /**
-     * Sets the custom model data integer for the passed {@link ItemStack}; used for creating an
-     * {@link net.minecraft.client.renderer.block.model.ItemOverride} for
-     * {@link net.minecraft.client.renderer.item.ItemProperties#TAG_CUSTOM_MODEL_DATA}.
+     * Sets the custom model data integer for the passed {@link ItemStack}; used by an
+     * {@link net.minecraft.client.renderer.block.model.ItemOverride} to determine what base texture to use for the
+     * item model.
      * @param itemStack an {@link ItemStack} version of this.
      * @param modelData the hashcode representing the model file to point to as an {@code int}. How this hashcode is
      *                  obtained depends on implementation.
      */
-    public void setCustomModelData(ItemStack itemStack, int modelData) {
-        itemStack.getOrCreateTag().putInt("CustomModelData", modelData);
+    public void setBaseModelData(ItemStack itemStack, int modelData) {
+        this.getClothingPropertyTag(itemStack).putInt(BASE_MODEL_DATA_NBT_KEY, modelData);
     }
 
     /**
@@ -80,8 +94,8 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
      * @param itemStack an {@link ItemStack} version of this.
      * @return the {@code int} custom model data item property used for model overrides.
      */
-    public int getCustomModelData(ItemStack itemStack) {
-        return itemStack.getOrCreateTag().getInt("CustomModelData");
+    public int getBaseModelData(ItemStack itemStack) {
+        return this.getClothingPropertyTag(itemStack).getInt(BASE_MODEL_DATA_NBT_KEY);
     }
 
     /**

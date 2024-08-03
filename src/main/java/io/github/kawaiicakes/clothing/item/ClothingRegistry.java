@@ -60,13 +60,13 @@ public class ClothingRegistry {
     }
 
     @Nullable
-    public static Item[] getAll() {
+    public static ClothingItem<?>[] getAll() {
         try {
-            Item[] toReturn = new Item[CLOTHING_REGISTRY.getEntries().size()];
+            ClothingItem<?>[] toReturn = new ClothingItem<?>[CLOTHING_REGISTRY.getEntries().size()];
 
             int arbitraryIndexNumber = 0;
             for (RegistryObject<Item> registryObject : CLOTHING_REGISTRY.getEntries()) {
-                toReturn[arbitraryIndexNumber++] = registryObject.get();
+                toReturn[arbitraryIndexNumber++] = (ClothingItem<?>) registryObject.get();
             }
 
             return toReturn;

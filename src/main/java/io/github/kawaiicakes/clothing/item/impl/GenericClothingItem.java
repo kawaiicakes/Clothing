@@ -47,6 +47,10 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
     public static final String OVERLAY_NBT_KEY = "overlays";
     public static final String PART_VISIBILITY_KEY = "partVisibility";
     public static final String DEFAULT_TEXTURE_NBT_KEY = "default";
+    public static final String OVERLAY_DATA_NBT_KEY = "GenericOverlayData";
+
+    public static final ResourceLocation GENERIC_OVERLAY_DATA
+            = new ResourceLocation(MOD_ID, "generic_overlay_data");
 
     /**
      * If you use this constructor, make sure to override {@link #fillItemCategory(CreativeModeTab, NonNullList)}
@@ -132,7 +136,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
 
         int texHash = this.getDescriptionId(itemStack).hashCode();
 
-        this.setCustomModelData(itemStack, texHash);
+        this.setBaseModelData(itemStack, texHash);
     }
 
     /**
@@ -161,6 +165,17 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
         }
 
         this.getClothingPropertyTag(itemStack).put(OVERLAY_NBT_KEY, overlayTag);
+        this.getClothingPropertyTag(itemStack).putInt(OVERLAY_DATA_NBT_KEY, 0);
+    }
+
+    /**
+     * Returns the hashcode of the overlay model data for the model's item override.
+     * @param itemStack
+     * @return
+     * @see #setOverlays(ItemStack, String[])
+     */
+    public int getOverlayModelData(ItemStack itemStack) {
+        return this.getClothingPropertyTag(itemStack).getInt(OVERLAY_DATA_NBT_KEY);
     }
 
     /**
