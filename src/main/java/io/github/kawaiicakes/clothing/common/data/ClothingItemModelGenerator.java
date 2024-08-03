@@ -127,20 +127,29 @@ public class ClothingItemModelGenerator extends ItemModelProvider {
                 clothingEntry -> {
                     ResourceLocation mainModelLocation
                             = new ResourceLocation(
-                                    this.modid, "item/clothing/" + clothingEntry.getId() + "_main"
+                                    this.modid, "item/clothing/" + clothingEntry.getId()
                     );
 
-                    ItemModelBuilder mainModelBuilder
-                            = new ItemModelBuilder(mainModelLocation, this.existingFileHelper)
+                    this.getBuilder(mainModelLocation.getPath())
                             .parent(GENERATED)
                             .texture("layer0", this.modid + ":item/" + clothingEntry.getId());
 
+                    ModelFile.ExistingModelFile mainModelFile = new ModelFile.ExistingModelFile(
+                            mainModelLocation,
+                            this.existingFileHelper
+                    );
+
+                    ItemModelBuilder mainModelBuilderReference
+                            = new ItemModelBuilder(mainModelLocation, this.existingFileHelper);
+
+                    mainModelBuilderReference.parent(mainModelFile);
+
                     final CompositeModelBuilder<ItemModelBuilder> entryModelBuilder
                             = (CompositeModelBuilder<ItemModelBuilder>)
-                            this.getBuilder("item/clothing/" + clothingEntry.getId())
+                            this.getBuilder("item/clothing/" + clothingEntry.getId() + "_composite")
                             .customLoader(CompositeModelBuilder::begin)
-                            .child("main_model", mainModelBuilder)
-                            .visibility("main_model", true);
+                            .child("base_model", mainModelBuilderReference)
+                            .visibility("base_model", true);
 
                     Set<OverlayDefinitionLoader.OverlayDefinition> overlaysForEntry
                             = overlaysForEntries.get(clothingEntry);
@@ -185,7 +194,7 @@ public class ClothingItemModelGenerator extends ItemModelProvider {
         entry.getValue().toJson(entryValueJson);
 
         Set<String> children = entryValueJson.getAsJsonObject("children").keySet();
-        children.remove("main_model");
+        children.remove("base_model");
         List<String> childList = children.stream().toList();
 
         List<Boolean> possibleStates = new ArrayList<>(2);
@@ -231,7 +240,7 @@ public class ClothingItemModelGenerator extends ItemModelProvider {
                 continue;
 
             ResourceLocation entryLocation = new ResourceLocation(
-                    this.modid, "item/clothing/" + entry.getKey().getId()
+                    this.modid, "item/clothing/" + entry.getKey().getId() + "_composite"
             );
 
             String outputString = "item/clothing/" + entry.getKey().getId() + "_" + overlayPermutation.hashCode();

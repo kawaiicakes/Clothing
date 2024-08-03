@@ -1,5 +1,5 @@
 {
-  "parent": "clothing:item/clothing/tank_top",
+  "parent": "clothing:item/clothing/tank_top_composite",
   "visibility": {
     "oppai": true,
     "ouch": false
