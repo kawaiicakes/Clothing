@@ -216,7 +216,7 @@ public class ClothingEntryGenerator implements DataProvider {
             final CompoundTag tagForSerialization = new CompoundTag();
 
             for (String key : clothingStackTag.getAllKeys()) {
-                if (key.equals("name")) continue;
+                if (key.equals("name") || key.equals("BaseModelData") || key.equals("GenericOverlayData")) continue;
 
                 Tag clothingTag = clothingStackTag.get(key);
                 Tag defaultTag = defaultStackTag.get(key);

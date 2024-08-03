@@ -239,7 +239,7 @@ public class ClothingItemModelGenerator extends ItemModelProvider {
 
             CompositeModelBuilder<ItemModelBuilder> compositeModelBuilder
                     = this.withExistingParent(outputString, entryLocation)
-                    .customLoader(CompositeModelBuilder::begin);
+                    .customLoader(ClothingEntryParentModelBuilder::begin);
 
             for (List<Serializable> childVisibility : overlayPermutation) {
                 compositeModelBuilder.visibility((String) childVisibility.get(0), (Boolean) childVisibility.get(1));
