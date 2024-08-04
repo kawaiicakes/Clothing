@@ -254,5 +254,9 @@ public class ClothingEntryGenerator implements DataProvider {
                     && this.slotForItem.equals(builder.slotForItem)
                     && this.id.equals(builder.id);
         }
+
+        public int hashCodeForBaseModelData() {
+            return this.clothingItem.getBaseModelData(this.clothingStack);
+        }
     }
 }

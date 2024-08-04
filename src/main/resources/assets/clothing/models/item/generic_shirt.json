@@ -1,9 +1,0 @@
-{
-  "parent": "item/generated",
-  "textures": {
-    "layer0": "clothing:item/generic_shirt"
-  },
-  "overrides": [
-    {"predicate": {"clothing:base_model_data": 1750745899}, "model": "clothing:item/clothing/tank_top"}
-  ]
-}

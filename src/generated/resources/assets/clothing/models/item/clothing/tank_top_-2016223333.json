@@ -1,7 +1,0 @@
-{
-  "parent": "clothing:item/clothing/tank_top_composite",
-  "visibility": {
-    "oppai": false,
-    "ouch": true
-  }
-}

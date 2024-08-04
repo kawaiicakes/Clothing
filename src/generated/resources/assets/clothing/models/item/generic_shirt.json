@@ -1,0 +1,14 @@
+{
+  "parent": "minecraft:item/generated",
+  "overrides": [
+    {
+      "model": "clothing:item/clothing/tank_top",
+      "predicate": {
+        "clothing:base_model_data": 1.75074586E9
+      }
+    }
+  ],
+  "textures": {
+    "layer0": "clothing:item/generic_shirt"
+  }
+}

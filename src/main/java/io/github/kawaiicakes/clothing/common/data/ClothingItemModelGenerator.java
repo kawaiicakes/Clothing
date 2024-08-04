@@ -1,27 +1,27 @@
 package io.github.kawaiicakes.clothing.common.data;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.gson.JsonObject;
-import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
+import com.mojang.logging.LogUtils;
+import io.github.kawaiicakes.clothing.item.ClothingItem;
+import io.github.kawaiicakes.clothing.item.ClothingRegistry;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.client.model.generators.ItemModelBuilder;
 import net.minecraftforge.client.model.generators.ItemModelProvider;
 import net.minecraftforge.client.model.generators.ModelFile;
-import net.minecraftforge.client.model.generators.loaders.CompositeModelBuilder;
 import net.minecraftforge.common.data.ExistingFileHelper;
+import net.minecraftforge.registries.ForgeRegistries;
+import org.slf4j.Logger;
 
-import java.io.Serializable;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
+
+import static io.github.kawaiicakes.clothing.item.ClothingItem.BASE_MODEL_DATA;
 
 public class ClothingItemModelGenerator extends ItemModelProvider {
+    protected static final Logger LOGGER = LogUtils.getLogger();
+
     public static final ModelFile GENERATED = new ModelFile.UncheckedModelFile("item/generated");
-    public static ResourceLocation predicateLocation() {
-            return new ResourceLocation("custom_model_data");
-    }
+    public static final String ITEM_CLOTHING_MODEL_PATH = "item/clothing/";
 
     protected final ClothingEntryGenerator clothingEntryGenerator;
     protected final ClothingOverlayGenerator clothingOverlayGenerator;
@@ -42,21 +42,15 @@ public class ClothingItemModelGenerator extends ItemModelProvider {
         if (this.clothingOverlayGenerator.overlays == null || this.clothingOverlayGenerator.overlays.isEmpty())
             this.clothingOverlayGenerator.registerOverlays();
 
-        final Map<ClothingEntryGenerator.ClothingBuilder<?>, Set<OverlayDefinitionLoader.OverlayDefinition>>
-                overlaysForEntries = this.generateOverlaysForEntries();
+        Set<ClothingEntryGenerator.ClothingBuilder<?>> clothingEntrySet = new HashSet<>();
+        this.clothingEntryGenerator.buildEntries(
+                entry -> {
+                    clothingEntrySet.add(entry);
+                    this.generateEntryModel(entry);
+                }
+        );
 
-        final Map<OverlayDefinitionLoader.OverlayDefinition, ItemModelBuilder>
-                modelsForOverlays = this.generateModelsForOverlays();
-
-        final Map<ClothingEntryGenerator.ClothingBuilder<?>, CompositeModelBuilder<ItemModelBuilder>>
-                compositeModelsForEntries = this.generateCompositeModelsForEntries(overlaysForEntries);
-
-        for (
-                Map.Entry<ClothingEntryGenerator.ClothingBuilder<?>, CompositeModelBuilder<ItemModelBuilder>> entry
-                : compositeModelsForEntries.entrySet()
-        ) {
-            this.modelsForAllVisibilityPermutationsForEntry(entry);
-        }
+        this.generateItemModel(clothingEntrySet);
 
         // TODO:
         // for each registered generic item, set custom model data overrides to the hashcode for every
@@ -66,224 +60,48 @@ public class ClothingItemModelGenerator extends ItemModelProvider {
         // see other mods for ways to write files in a way that won't break
     }
 
-    public Map<ClothingEntryGenerator.ClothingBuilder<?>, Set<OverlayDefinitionLoader.OverlayDefinition>>
-    generateOverlaysForEntries() {
-        ImmutableMap.Builder<ClothingEntryGenerator.ClothingBuilder<?>, Set<OverlayDefinitionLoader.OverlayDefinition>>
-                builder = ImmutableMap.builder();
-
-        ImmutableList.Builder<ClothingEntryGenerator.ClothingBuilder<?>> entryList = ImmutableList.builder();
-        this.clothingEntryGenerator.buildEntries(entryList::add);
-
-        for (ClothingEntryGenerator.ClothingBuilder<?> entry : entryList.build()) {
-            ImmutableSet.Builder<OverlayDefinitionLoader.OverlayDefinition> overlayDefinitions = ImmutableSet.builder();
-
-            for (OverlayDefinitionLoader.OverlayDefinition overlay : this.clothingOverlayGenerator.getOverlays()) {
-                ResourceLocation entryLocation = new ResourceLocation(
-                        this.clothingOverlayGenerator.modId,
-                        entry.getId()
-                );
-
-                if (Arrays.asList(overlay.blacklist()).contains(entryLocation)) continue;
-                if (
-                        Arrays.asList(overlay.slotsFor()).contains(entry.getSlotForItem())
-                                || Arrays.asList(overlay.whitelist()).contains(entryLocation)
-                ) overlayDefinitions.add(overlay);
-            }
-
-            builder.put(entry, overlayDefinitions.build());
-        }
-
-        return builder.build();
+    protected void generateEntryModel(ClothingEntryGenerator.ClothingBuilder<?> entry) {
+        this.getBuilder(ITEM_CLOTHING_MODEL_PATH + entry.getId())
+                .parent(GENERATED)
+                .texture("layer0", ITEM_CLOTHING_MODEL_PATH + entry.getId());
     }
 
-    public Map<OverlayDefinitionLoader.OverlayDefinition, ItemModelBuilder> generateModelsForOverlays() {
-        final ImmutableMap.Builder<OverlayDefinitionLoader.OverlayDefinition, ItemModelBuilder> overlayModelMapBuilder
-                = ImmutableMap.builder();
-
-        for (
-                OverlayDefinitionLoader.OverlayDefinition overlayDefinition : this.clothingOverlayGenerator.getOverlays()
-        ) {
-            final ItemModelBuilder modelForOverlay = this.getBuilder(
-                    "item/clothing/overlays/" + overlayDefinition.name()
-            )
-                    .parent(GENERATED)
-                    .texture("layer0", this.modid + ":item/overlays/" + overlayDefinition.name());
-
-            overlayModelMapBuilder.put(overlayDefinition, modelForOverlay);
+    protected void generateItemModel(Set<ClothingEntryGenerator.ClothingBuilder<?>> clothingEntries) {
+        ClothingItem<?>[] clothingItems = ClothingRegistry.getAll();
+        if (clothingItems == null || clothingItems.length == 0) {
+            LOGGER.error("No clothing items exist! Is this being called before item registration?");
+            return;
         }
 
-        return overlayModelMapBuilder.build();
-    }
+        for (ClothingItem<?> clothingItem : clothingItems) {
+            try {
+                ResourceLocation clothingLocation = ForgeRegistries.ITEMS.getKey(clothingItem);
+                assert clothingLocation != null;
+                String clothingPath = clothingLocation.getPath();
 
-    public Map<ClothingEntryGenerator.ClothingBuilder<?>, CompositeModelBuilder<ItemModelBuilder>>
-    generateCompositeModelsForEntries(
-            Map<ClothingEntryGenerator.ClothingBuilder<?>, Set<OverlayDefinitionLoader.OverlayDefinition>>
-                    overlaysForEntries
-    ) {
-        ImmutableMap.Builder<ClothingEntryGenerator.ClothingBuilder<?>, CompositeModelBuilder<ItemModelBuilder>>
-                builder = ImmutableMap.builder();
+                ItemModelBuilder modelBuilder = this.getBuilder("item/" + clothingPath)
+                        .parent(GENERATED)
+                        .texture("layer0", "item/" + clothingPath);
 
-        this.clothingEntryGenerator.buildEntries(
-                clothingEntry -> {
-                    ResourceLocation mainModelLocation
-                            = new ResourceLocation(
-                                    this.modid, "item/clothing/" + clothingEntry.getId()
+                for (ClothingEntryGenerator.ClothingBuilder<?> clothingEntry : clothingEntries) {
+                    if (!clothingItem.getSlot().equals(clothingEntry.clothingItem.getSlot())) continue;
+                    ResourceLocation entryLocation = new ResourceLocation(
+                            this.modid, ITEM_CLOTHING_MODEL_PATH + clothingEntry.getId()
                     );
 
-                    this.getBuilder(mainModelLocation.getPath())
-                            .parent(GENERATED)
-                            .texture("layer0", this.modid + ":item/" + clothingEntry.getId());
+                    ModelFile entryModel = new ModelFile.ExistingModelFile(entryLocation, this.existingFileHelper);
 
-                    ModelFile.ExistingModelFile mainModelFile = new ModelFile.ExistingModelFile(
-                            mainModelLocation,
-                            this.existingFileHelper
-                    );
+                    String hashValueString = String.valueOf(clothingEntry.hashCodeForBaseModelData());
 
-                    ItemModelBuilder mainModelBuilderReference
-                            = new ItemModelBuilder(mainModelLocation, this.existingFileHelper);
-
-                    mainModelBuilderReference.parent(mainModelFile);
-
-                    final CompositeModelBuilder<ItemModelBuilder> entryModelBuilder
-                            = (CompositeModelBuilder<ItemModelBuilder>)
-                            this.getBuilder("item/clothing/" + clothingEntry.getId() + "_composite")
-                            .customLoader(CompositeModelBuilder::begin)
-                            .child("base_model", mainModelBuilderReference)
-                            .visibility("base_model", true);
-
-                    Set<OverlayDefinitionLoader.OverlayDefinition> overlaysForEntry
-                            = overlaysForEntries.get(clothingEntry);
-                    assert overlaysForEntry != null;
-                    for (OverlayDefinitionLoader.OverlayDefinition overlay : overlaysForEntry) {
-                        ResourceLocation overlayLocation
-                                = new ResourceLocation(this.modid, "item/clothing/overlays/" + overlay.name());
-
-                        ModelFile.ExistingModelFile overlayModelFile = new ModelFile.ExistingModelFile(
-                                overlayLocation,
-                                this.existingFileHelper
-                        );
-
-                        ItemModelBuilder overlayModelBuilder
-                                = new ItemModelBuilder(overlayLocation, this.existingFileHelper);
-
-                        overlayModelBuilder.parent(overlayModelFile);
-
-                        entryModelBuilder
-                                .child(
-                                        overlay.name(),
-                                        overlayModelBuilder
-                                )
-                                .visibility(overlay.name(), false);
-                    }
-
-                    builder.put(clothingEntry, entryModelBuilder);
+                    // FIXME: float is serialized in scientific notation
+                    modelBuilder.override()
+                            .model(entryModel)
+                            .predicate(BASE_MODEL_DATA, Float.parseFloat(hashValueString))
+                            .end();
                 }
-        );
-
-        return builder.build();
-    }
-
-    public Map<ClothingEntryGenerator.ClothingBuilder<?>, List<ResourceLocation>>
-    modelsForAllVisibilityPermutationsForEntry(
-            Map.Entry<ClothingEntryGenerator.ClothingBuilder<?>, CompositeModelBuilder<ItemModelBuilder>> entry
-    ) {
-        Map<ClothingEntryGenerator.ClothingBuilder<?>, List<ResourceLocation>> toReturn
-                = new HashMap<>();
-
-        JsonObject entryValueJson = new JsonObject();
-        entry.getValue().toJson(entryValueJson);
-
-        Set<String> children = entryValueJson.getAsJsonObject("children").keySet();
-        children.remove("base_model");
-        List<String> childList = children.stream().toList();
-
-        List<Boolean> possibleStates = new ArrayList<>(2);
-        possibleStates.add(true);
-        possibleStates.add(false);
-
-        List<List<Serializable>> stateValues = Lists.cartesianProduct(
-                ImmutableList.of(
-                        childList,
-                        possibleStates
-                )
-        );
-
-        int stateValueSize = stateValues.size();
-        if ((stateValueSize & 1) != 0) throw new IllegalStateException("Cartesian product has odd number of elements!");
-
-
-        List<List<List<Serializable>>> permutationList = new ArrayList<>(stateValueSize / 2);
-        for (int i = 0; i < (stateValueSize / 2); i++) {
-            List<List<Serializable>> listOfLists = new ArrayList<>(2);
-
-            for (int j = 0; j < 2; j++) {
-                listOfLists.add(j, new ArrayList<>(2));
+            } catch (RuntimeException e) {
+                LOGGER.error("Error while generating clothing item model for {}!", clothingItem, e);
             }
-
-            permutationList.add(i, listOfLists);
         }
-
-        for (int i = 0; i < stateValueSize; i++) {
-            int permutationListIndex = i / 2;
-            List<List<Serializable>> listAt = permutationList.get(permutationListIndex);
-
-            int pairingIndex = (i & 1) == 0 ? 0 : 1;
-            listAt.get(pairingIndex).add(0, stateValues.get(i).get(0));
-            listAt.get(pairingIndex).add(1, stateValues.get(i).get(1));
-        }
-
-        final List<List<List<Serializable>>> finalPermutationList = Lists.cartesianProduct(permutationList);
-
-        List<ResourceLocation> outputList = new ArrayList<>();
-        for (List<List<Serializable>> overlayPermutation : finalPermutationList) {
-            if (overlayPermutation.stream().noneMatch(streamList -> (Boolean) streamList.get(1)))
-                continue;
-
-            ResourceLocation entryLocation = new ResourceLocation(
-                    this.modid, "item/clothing/" + entry.getKey().getId() + "_composite"
-            );
-
-            String outputString = "item/clothing/" + entry.getKey().getId() + "_" + overlayPermutation.hashCode();
-            ResourceLocation outputLocation = new ResourceLocation(this.modid, outputString);
-
-            CompositeModelBuilder<ItemModelBuilder> compositeModelBuilder
-                    = this.withExistingParent(outputString, entryLocation)
-                    .customLoader(ClothingEntryParentModelBuilder::begin);
-
-            for (List<Serializable> childVisibility : overlayPermutation) {
-                compositeModelBuilder.visibility((String) childVisibility.get(0), (Boolean) childVisibility.get(1));
-            }
-
-            outputList.add(outputLocation);
-        }
-
-        toReturn.put(entry.getKey(), outputList);
-
-        return toReturn;
-    }
-
-    public void generateGenericModels() {
-        /*
-            GenericClothingItem[] items = new GenericClothingItem[]{
-                    GENERIC_HAT.get(),
-                    GENERIC_SHIRT.get(),
-                    GENERIC_PANTS.get(),
-                    GENERIC_SHOES.get()
-            };
-
-            for (GenericClothingItem item : items) {
-                ItemModelBuilder forItem = this.basicItem(item)
-                        .texture("layer0", Objects.requireNonNull(ForgeRegistries.ITEMS.getKey(item)).toString());
-
-                for () {
-                    ModelFile modelFile;
-
-                    forItem
-                            .override()
-                            .predicate(predicateLocation, )
-                            .model(modelFile);
-                }
-            }
-         */
     }
 }

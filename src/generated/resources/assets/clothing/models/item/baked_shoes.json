@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "clothing:item/clothing/tank_top"
+    "layer0": "clothing:item/baked_shoes"
   }
 }
