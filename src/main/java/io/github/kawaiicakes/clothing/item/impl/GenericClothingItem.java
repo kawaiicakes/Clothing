@@ -7,8 +7,6 @@ import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
-import io.github.kawaiicakes.clothing.item.ClothingMaterials;
-import io.github.kawaiicakes.clothing.item.ClothingTab;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.Model;
 import net.minecraft.client.model.geom.ModelPart;
@@ -17,7 +15,6 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -27,8 +24,6 @@ import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.ArmorMaterial;
-import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -47,33 +42,12 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
     public static final String OVERLAY_NBT_KEY = "overlays";
     public static final String PART_VISIBILITY_KEY = "partVisibility";
     public static final String DEFAULT_TEXTURE_NBT_KEY = "default";
-    public static final String OVERLAY_DATA_NBT_KEY = "GenericOverlayData";
-
-    public static final ResourceLocation GENERIC_OVERLAY_DATA
-            = new ResourceLocation(MOD_ID, "generic_overlay_data");
-
-    /**
-     * If you use this constructor, make sure to override {@link #fillItemCategory(CreativeModeTab, NonNullList)}
-     * so entries aren't duplicated
-     * @param pArmorMaterial the {@link ArmorMaterial} to use
-     * @param pSlot the {@link EquipmentSlot} this will be worn on
-     * @param pProperties the {@link Properties} for this item
-     */
-    public GenericClothingItem(ArmorMaterial pArmorMaterial, EquipmentSlot pSlot, Properties pProperties) {
-        super(pArmorMaterial, pSlot, pProperties);
-    }
 
     // TODO: consider allowing multiple layers when rendering generic clothing
     // TODO: final assets, etc.
     // TODO: server-sided texture/overlay picker; data from GenericClothingEntryLoader prevents choosing arbitrarily
     public GenericClothingItem(EquipmentSlot pSlot) {
-        this(
-                ClothingMaterials.CLOTH,
-                pSlot,
-                new Properties()
-                        .tab(ClothingTab.CLOTHING_TAB)
-                        .stacksTo(1)
-        );
+        super(pSlot);
     }
 
     /**
@@ -165,17 +139,6 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
         }
 
         this.getClothingPropertyTag(itemStack).put(OVERLAY_NBT_KEY, overlayTag);
-        this.getClothingPropertyTag(itemStack).putInt(OVERLAY_DATA_NBT_KEY, 0);
-    }
-
-    /**
-     * Returns the hashcode of the overlay model data for the model's item override.
-     * @param itemStack
-     * @return
-     * @see #setOverlays(ItemStack, String[])
-     */
-    public int getOverlayModelData(ItemStack itemStack) {
-        return this.getClothingPropertyTag(itemStack).getInt(OVERLAY_DATA_NBT_KEY);
     }
 
     /**

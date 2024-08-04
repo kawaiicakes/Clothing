@@ -1,5 +1,7 @@
 package io.github.kawaiicakes.clothing.item;
 
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
@@ -11,14 +13,21 @@ import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLLoader;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -26,11 +35,13 @@ import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
+import static net.minecraft.world.entity.ai.attributes.Attributes.*;
 
-// TODO: subclass each impl of this class so there can be more "traditional" registry items, or otherwise some other way to allow changing properties and armor material
+// TODO: add data loading and generation for new dynamic attributes + equip sound
 /**
  * Each implementation of this will likely represent an item that renders as one model type (e.g. JSON, OBJ). The
  * {@code ClothingItem} simply subclasses {@link ArmorItem} and is made to flexibly create and render pieces of
@@ -44,13 +55,21 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     public static final String CLOTHING_NAME_KEY = "name";
     public static final String CLOTHING_SLOT_NBT_KEY = "slot";
     public static final String BASE_MODEL_DATA_NBT_KEY = "BaseModelData";
+    public static final String ATTRIBUTES_KEY = "Attributes";
+    public static final String EQUIP_SOUND_KEY = "EquipSound";
 
     public static final ResourceLocation BASE_MODEL_DATA = new ResourceLocation(MOD_ID, "base_model_data");
 
     private Object clientClothingRenderManager;
 
-    public ClothingItem(ArmorMaterial pMaterial, EquipmentSlot pSlot, Properties pProperties) {
-        super(pMaterial, pSlot, pProperties);
+    public ClothingItem(EquipmentSlot pSlot) {
+        super(
+                ArmorMaterials.LEATHER,
+                pSlot,
+                new Properties()
+                        .tab(ClothingTab.CLOTHING_TAB)
+                        .stacksTo(1)
+        );
         this.initializeClientClothingRenderManager();
     }
 
@@ -115,6 +134,13 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
 
         this.setSlot(toReturn, this.getSlot());
         this.setColor(toReturn, 0xFFFFFF);
+
+        this.setAttributeModifiers(
+                this.getDefaultAttributeModifiers(this.getSlot()),
+                toReturn
+        );
+
+        this.setEquipSound(this.material.getEquipSound().getLocation(), toReturn);
 
         return toReturn;
     }
@@ -250,11 +276,116 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         return suffix.isEmpty() ? original : original + "." + suffix;
     }
 
-    // TODO: cool tooltip stuff? lol
+    // TODO: cool tooltip stuff? lol (add overlay names in order they are applied)
     @Override
     @ParametersAreNonnullByDefault
     public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
         super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
+    }
+
+    public void setAttributeModifiers(Multimap<Attribute, AttributeModifier> modifiers, ItemStack stack) {
+        if (!this.getClothingPropertyTag(stack).contains(ATTRIBUTES_KEY, CompoundTag.TAG_COMPOUND))
+            this.getClothingPropertyTag(stack).put(ATTRIBUTES_KEY, new CompoundTag());
+
+        CompoundTag clothingAttributesTag = this.getClothingPropertyTag(stack).getCompound(ATTRIBUTES_KEY);
+
+        for (Map.Entry<Attribute, AttributeModifier> entry : modifiers.entries()) {
+            clothingAttributesTag.put(entry.getKey().getDescriptionId(), entry.getValue().save());
+        }
+    }
+
+    @Override
+    @NotNull
+    @ParametersAreNonnullByDefault
+    public InteractionResultHolder<ItemStack> use(Level pLevel, Player pPlayer, InteractionHand pHand) {
+        InteractionResultHolder<ItemStack> resultHolder = super.use(pLevel, pPlayer, pHand);
+
+        ItemStack itemstack = pPlayer.getItemInHand(pHand);
+
+        if (resultHolder.equals(InteractionResultHolder.sidedSuccess(itemstack, pLevel.isClientSide()))) {
+            pLevel.playSound(
+                    pPlayer,
+                    pPlayer.getX(),
+                    pPlayer.getY(),
+                    pPlayer.getZ(),
+                    this.getEquipSound(itemstack),
+                    pPlayer.getSoundSource(),
+                    1.0F,
+                    1.0F
+            );
+        }
+
+        return resultHolder;
+    }
+
+    @Override
+    public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot slot, ItemStack stack) {
+        if (!this.getSlot().equals(slot)) return super.getAttributeModifiers(slot, stack);
+
+        ImmutableMultimap.Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
+
+        CompoundTag clothingAttributesTag = this.getClothingPropertyTag(stack).getCompound(ATTRIBUTES_KEY);
+
+        // TODO: more, new attributes?
+        Attribute[] attributes = new Attribute[] {
+                ARMOR,
+                ARMOR_TOUGHNESS,
+                ATTACK_DAMAGE,
+                ATTACK_KNOCKBACK,
+                ATTACK_SPEED,
+                KNOCKBACK_RESISTANCE,
+                LUCK,
+                MAX_HEALTH,
+                MOVEMENT_SPEED
+        };
+
+        for (Attribute attribute : attributes) {
+            if (!clothingAttributesTag.contains(attribute.getDescriptionId())) continue;
+
+            AttributeModifier modifier = AttributeModifier.load(
+                    clothingAttributesTag.getCompound(
+                            attribute.getDescriptionId()
+                    )
+            );
+
+            if (modifier == null) continue;
+
+            builder.put(
+                    attribute,
+                    modifier
+            );
+        }
+
+        return builder.build();
+    }
+
+    public void setEquipSound(ResourceLocation location, ItemStack stack) {
+        this.getClothingPropertyTag(stack).putString(EQUIP_SOUND_KEY, location.toString());
+    }
+
+    public SoundEvent getEquipSound(ItemStack stack) {
+        ResourceLocation equipSoundLocation = new ResourceLocation(
+                this.getClothingPropertyTag(stack).getString(EQUIP_SOUND_KEY)
+        );
+
+        SoundEvent equipSound = ForgeRegistries.SOUND_EVENTS.getValue(equipSoundLocation);
+
+        if (equipSound == null) {
+            equipSound = this.material.getEquipSound();
+            LOGGER.error("No such SoundEvent {}! Falling back on default!", equipSoundLocation);
+        }
+
+        return equipSound;
+    }
+
+    /**
+     * Use {@link ItemStack} sensitive version instead
+     * @return null
+     */
+    @Nullable
+    @Override
+    public SoundEvent getEquipSound() {
+        return null;
     }
 
     @ApiStatus.Internal
