@@ -1,5 +1,7 @@
 package io.github.kawaiicakes.clothing.common.data;
 
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
@@ -15,6 +17,8 @@ import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -206,6 +210,38 @@ public class ClothingEntryGenerator implements DataProvider {
             return this;
         }
 
+        public ClothingBuilder<T> setModifier(
+                Attribute attribute, double amount, AttributeModifier.Operation operation
+        ) {
+            Multimap<Attribute, AttributeModifier> modifiers
+                    = this.clothingItem.getAttributeModifiers(this.slotForItem, this.clothingStack);
+
+            ImmutableMultimap.Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
+            builder.putAll(modifiers);
+
+            // TODO: see L134, ClothingEntryLoader
+            AttributeModifier attributeModifier = new AttributeModifier(
+                    ClothingItem.ARMOR_MODIFIER_UUID_PER_SLOT[this.clothingItem.getSlot().getIndex()],
+                    modifiers.get(attribute).stream().findFirst().orElseThrow().getName(),
+                    amount,
+                    operation
+            );
+            builder.put(attribute, attributeModifier);
+
+            this.clothingItem.setAttributeModifiers(this.clothingStack, builder.build());
+            return this;
+        }
+
+        public ClothingBuilder<T> setModifiers(Multimap<Attribute, AttributeModifier> modifiers) {
+            this.clothingItem.setAttributeModifiers(this.clothingStack, modifiers);
+            return this;
+        }
+
+        public ClothingBuilder<T> setEquipSound(ResourceLocation soundLocation) {
+            this.clothingItem.setEquipSound(this.clothingStack, soundLocation);
+            return this;
+        }
+
         @Nullable
         public JsonObject serializeToJson() {
             final ItemStack defaultStack = this.clothingItem.getDefaultInstance();
@@ -216,7 +252,7 @@ public class ClothingEntryGenerator implements DataProvider {
             final CompoundTag tagForSerialization = new CompoundTag();
 
             for (String key : clothingStackTag.getAllKeys()) {
-                if (key.equals("name") || key.equals("BaseModelData") || key.equals("GenericOverlayData")) continue;
+                if (key.equals("name") || key.equals("BaseModelData")) continue;
 
                 Tag clothingTag = clothingStackTag.get(key);
                 Tag defaultTag = defaultStackTag.get(key);

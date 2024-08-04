@@ -6,6 +6,8 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.Objects;
+
 /**
  * This is a functional interface whose purpose is to store "directions" for putting NBT data into an {@link ItemStack}
  * whose item corresponds to type {@link T}. These stacks are then loaded into the client's creative menu tab.
@@ -25,4 +27,14 @@ public interface NbtStackInitializer<T> {
      *                      Operate on this argument to manipulate the stack that will be returned later down the line.
      */
     void writeToStack(T clothingItem, ItemStack clothingStack);
+
+    default NbtStackInitializer<T> and(NbtStackInitializer<? super T> other) {
+        Objects.requireNonNull(other);
+        return (
+                (clothingItem, clothingStack) -> {
+                    this.writeToStack(clothingItem, clothingStack);
+                    other.writeToStack(clothingItem, clothingStack);
+                }
+        );
+    }
 }

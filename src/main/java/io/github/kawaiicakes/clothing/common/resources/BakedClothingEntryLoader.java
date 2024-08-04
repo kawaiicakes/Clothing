@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
 import io.github.kawaiicakes.clothing.item.impl.BakedModelClothingItem;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.EquipmentSlot;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -32,13 +31,9 @@ public class BakedClothingEntryLoader extends ClothingEntryLoader<BakedModelClot
     ) {
         return (
                 (bakedClothingItem, clothingStack) ->  {
-                    EquipmentSlot slot;
                     Map<ClothingItem.ModelPartReference, ResourceLocation> models;
-                    int color;
 
                     try {
-                        slot = EquipmentSlot.byName(topElement.getAsJsonPrimitive("slot").getAsString());
-
                         Map<ClothingItem.ModelPartReference, ResourceLocation> errorModel = new HashMap<>();
                         errorModel.put(
                                 bakedClothingItem.defaultModelPart(), new ResourceLocation("clothing:error")
@@ -58,20 +53,12 @@ public class BakedClothingEntryLoader extends ClothingEntryLoader<BakedModelClot
                             }
                             models = deserialized;
                         }
-
-                        color = topElement.has("color")
-                                ? topElement.getAsJsonPrimitive("color").getAsInt()
-                                : 0xFFFFFF;
-
                     } catch (RuntimeException e) {
                         LOGGER.error("Error deserializing baked clothing data entry!", e);
                         throw e;
                     }
 
-                    bakedClothingItem.setClothingName(clothingStack, entryId.getPath());
-                    bakedClothingItem.setSlot(clothingStack, slot);
                     bakedClothingItem.setModelPartLocations(clothingStack, models);
-                    bakedClothingItem.setColor(clothingStack, color);
                 }
         );
     }

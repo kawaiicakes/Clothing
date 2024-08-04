@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
 import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.EquipmentSlot;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -32,16 +31,12 @@ public class GenericClothingEntryLoader extends ClothingEntryLoader<GenericCloth
     ) {
         return (
                 (genericClothingItem, clothingStack) ->  {
-                    EquipmentSlot slot;
                     GenericClothingItem.ModelStrata layer;
                     String textureLocation;
                     String[] overlays;
                     ClothingItem.ModelPartReference[] parts;
-                    int color;
 
                     try {
-                        slot = EquipmentSlot.byName(topElement.getAsJsonPrimitive("slot").getAsString());
-
                         layer = topElement.has("render_layer")
                                 ? GenericClothingItem.ModelStrata.byName(
                                         topElement.getAsJsonPrimitive("render_layer").getAsString()
@@ -66,23 +61,15 @@ public class GenericClothingEntryLoader extends ClothingEntryLoader<GenericCloth
                                     .map(ClothingItem.ModelPartReference::byName)
                                     .toArray(ClothingItem.ModelPartReference[]::new)
                                 : genericClothingItem.defaultPartVisibility();
-
-                        color = topElement.has("color")
-                                ? topElement.getAsJsonPrimitive("color").getAsInt()
-                                : 0xFFFFFF;
-
                     } catch (RuntimeException e) {
                         LOGGER.error("Error deserializing generic clothing data entry!", e);
                         throw e;
                     }
 
-                    genericClothingItem.setClothingName(clothingStack, entryId.getPath());
-                    genericClothingItem.setSlot(clothingStack, slot);
                     genericClothingItem.setGenericLayerForRender(clothingStack, layer);
                     genericClothingItem.setTextureLocation(clothingStack, textureLocation);
                     genericClothingItem.setOverlays(clothingStack, overlays);
                     genericClothingItem.setPartsForVisibility(clothingStack, parts);
-                    genericClothingItem.setColor(clothingStack, color);
                 }
         );
     }

@@ -11,17 +11,16 @@ import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.StringRepresentable;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
@@ -34,6 +33,8 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -41,7 +42,6 @@ import java.util.function.Consumer;
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 import static net.minecraft.world.entity.ai.attributes.Attributes.*;
 
-// TODO: add data loading and generation for new dynamic attributes + equip sound
 /**
  * Each implementation of this will likely represent an item that renders as one model type (e.g. JSON, OBJ). The
  * {@code ClothingItem} simply subclasses {@link ArmorItem} and is made to flexibly create and render pieces of
@@ -81,7 +81,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     @NotNull
     public CompoundTag getClothingPropertyTag(ItemStack itemStack) {
         if (!(itemStack.getItem() instanceof ClothingItem)) throw new IllegalArgumentException(
-                "Item of passed stack " + itemStack + " is not a ClothingItem instance!"
+                "Item of passed stack '" + itemStack + "' is not a ClothingItem instance!"
         );
         return itemStack.getOrCreateTag().getCompound(CLOTHING_PROPERTY_NBT_KEY);
     }
@@ -136,11 +136,11 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         this.setColor(toReturn, 0xFFFFFF);
 
         this.setAttributeModifiers(
-                this.getDefaultAttributeModifiers(this.getSlot()),
-                toReturn
+                toReturn,
+                this.getDefaultAttributeModifiers(this.getSlot())
         );
 
-        this.setEquipSound(this.material.getEquipSound().getLocation(), toReturn);
+        this.setEquipSound(toReturn, this.material.getEquipSound().getLocation());
 
         return toReturn;
     }
@@ -283,39 +283,21 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
     }
 
-    public void setAttributeModifiers(Multimap<Attribute, AttributeModifier> modifiers, ItemStack stack) {
+    public void setAttributeModifiers(ItemStack stack, Multimap<Attribute, AttributeModifier> modifiers) {
         if (!this.getClothingPropertyTag(stack).contains(ATTRIBUTES_KEY, CompoundTag.TAG_COMPOUND))
             this.getClothingPropertyTag(stack).put(ATTRIBUTES_KEY, new CompoundTag());
 
         CompoundTag clothingAttributesTag = this.getClothingPropertyTag(stack).getCompound(ATTRIBUTES_KEY);
 
-        for (Map.Entry<Attribute, AttributeModifier> entry : modifiers.entries()) {
-            clothingAttributesTag.put(entry.getKey().getDescriptionId(), entry.getValue().save());
+        for (Map.Entry<Attribute, Collection<AttributeModifier>> entry : modifiers.asMap().entrySet()) {
+            ListTag modifierEntries = new ListTag();
+
+            for (AttributeModifier modifier : entry.getValue()) {
+                modifierEntries.add(modifier.save());
+            }
+
+            clothingAttributesTag.put(entry.getKey().getDescriptionId(), modifierEntries);
         }
-    }
-
-    @Override
-    @NotNull
-    @ParametersAreNonnullByDefault
-    public InteractionResultHolder<ItemStack> use(Level pLevel, Player pPlayer, InteractionHand pHand) {
-        InteractionResultHolder<ItemStack> resultHolder = super.use(pLevel, pPlayer, pHand);
-
-        ItemStack itemstack = pPlayer.getItemInHand(pHand);
-
-        if (resultHolder.equals(InteractionResultHolder.sidedSuccess(itemstack, pLevel.isClientSide()))) {
-            pLevel.playSound(
-                    pPlayer,
-                    pPlayer.getX(),
-                    pPlayer.getY(),
-                    pPlayer.getZ(),
-                    this.getEquipSound(itemstack),
-                    pPlayer.getSoundSource(),
-                    1.0F,
-                    1.0F
-            );
-        }
-
-        return resultHolder;
     }
 
     @Override
@@ -326,7 +308,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
 
         CompoundTag clothingAttributesTag = this.getClothingPropertyTag(stack).getCompound(ATTRIBUTES_KEY);
 
-        // TODO: more, new attributes?
+        // TODO: more, new attributes? mirror changes in entry loader/generator
         Attribute[] attributes = new Attribute[] {
                 ARMOR,
                 ARMOR_TOUGHNESS,
@@ -342,24 +324,32 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         for (Attribute attribute : attributes) {
             if (!clothingAttributesTag.contains(attribute.getDescriptionId())) continue;
 
-            AttributeModifier modifier = AttributeModifier.load(
-                    clothingAttributesTag.getCompound(
-                            attribute.getDescriptionId()
-                    )
+            ListTag modifierList = clothingAttributesTag.getList(
+                    attribute.getDescriptionId(),
+                    Tag.TAG_COMPOUND
             );
 
-            if (modifier == null) continue;
+            List<AttributeModifier> attributeModifiers = new ArrayList<>(modifierList.size());
+            for (Tag tag : modifierList) {
+                if (!(tag instanceof CompoundTag compoundTag)) continue;
 
-            builder.put(
+                AttributeModifier modifier = AttributeModifier.load(compoundTag);
+
+                if (modifier == null) continue;
+
+                attributeModifiers.add(modifier);
+            }
+
+            builder.putAll(
                     attribute,
-                    modifier
+                    attributeModifiers.toArray(AttributeModifier[]::new)
             );
         }
 
         return builder.build();
     }
 
-    public void setEquipSound(ResourceLocation location, ItemStack stack) {
+    public void setEquipSound(ItemStack stack, ResourceLocation location) {
         this.getClothingPropertyTag(stack).putString(EQUIP_SOUND_KEY, location.toString());
     }
 
