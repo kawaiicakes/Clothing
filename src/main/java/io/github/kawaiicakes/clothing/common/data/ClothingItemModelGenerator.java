@@ -52,10 +52,6 @@ public class ClothingItemModelGenerator extends ItemModelProvider {
 
         this.generateItemModel(clothingEntrySet);
 
-        // TODO:
-        // for each registered generic item, set custom model data overrides to the hashcode for every
-        // overlay model whose entry model parent belongs to that slot
-
         // TODO: pseudo datagen using command from in-game; takes client assets and generates models, lang, entries, overlays...
         // see other mods for ways to write files in a way that won't break
     }
