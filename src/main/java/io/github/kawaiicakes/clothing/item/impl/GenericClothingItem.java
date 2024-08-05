@@ -7,6 +7,7 @@ import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
 import io.github.kawaiicakes.clothing.item.ClothingItem;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.Model;
 import net.minecraft.client.model.geom.ModelPart;
@@ -19,15 +20,20 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 
@@ -66,6 +72,30 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
         this.setPartsForVisibility(toReturn, this.defaultPartVisibility());
 
         return toReturn;
+    }
+
+    @Override
+    @ParametersAreNonnullByDefault
+    public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
+        super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
+        String[] overlayNames = this.getOverlays(pStack);
+
+        if (overlayNames.length == 0) return;
+
+        pTooltipComponents.add(Component.empty());
+        pTooltipComponents.add(
+                Component.translatable("item.modifiers.clothing.overlays")
+                        .withStyle(ChatFormatting.UNDERLINE)
+                        .withStyle(ChatFormatting.BOLD)
+                        .withStyle(ChatFormatting.DARK_AQUA)
+        );
+        for (String overlayName : overlayNames) {
+            pTooltipComponents.add(
+                    Component.literal(overlayName)
+                            .withStyle(ChatFormatting.ITALIC)
+                            .withStyle(ChatFormatting.AQUA)
+            );
+        }
     }
 
     @Override
