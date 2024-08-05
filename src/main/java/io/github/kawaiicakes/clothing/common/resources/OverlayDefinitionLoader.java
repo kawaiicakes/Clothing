@@ -13,8 +13,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.Arrays;
-import java.util.Map;
+import java.util.*;
 
 import static io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader.GSON;
 
@@ -46,15 +45,17 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
     protected void apply(
             Map<ResourceLocation, JsonElement> pObject, ResourceManager pResourceManager, ProfilerFiller pProfiler
     ) {
-        ImmutableList.Builder<OverlayDefinition> builder
-                = ImmutableList.builder();
+        Map<String, OverlayDefinition> overlays = new HashMap<>();
 
         for(Map.Entry<ResourceLocation, JsonElement> entry : pObject.entrySet()) {
             ResourceLocation entryId = entry.getKey();
-            if (entryId.getPath().startsWith("_")) continue;
+            String overlayName = entryId.getPath();
+
+            if (overlayName.startsWith("_")) continue;
 
             try {
-                OverlayDefinitionBuilder entryBuilder = OverlayDefinitionBuilder.of(entryId.getPath());
+                boolean overlayIsUnique = overlays.containsKey(overlayName);
+                OverlayDefinitionBuilder entryBuilder = OverlayDefinitionBuilder.of(overlayName);
 
                 JsonObject jsonBuilder = entry.getValue().getAsJsonObject();
 
@@ -93,20 +94,26 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
                     }
                 }
 
-                builder.add(
-                        entryBuilder.build()
-                );
+                if (
+                        jsonBuilder.has("override")
+                                && jsonBuilder.getAsJsonPrimitive("override").getAsBoolean()
+                ) {
+                    overlays.put(overlayName, entryBuilder.build());
+                } else if (overlayIsUnique) {
+                    overlays.put(overlayName, entryBuilder.build());
+                } else {
+                    overlays.put(overlayName, overlays.get(overlayName).merge(entryBuilder.build()));
+                }
             } catch (Exception jsonParseException) {
                 LOGGER.error("Parsing error loading overlay entry {}!", entryId, jsonParseException);
             }
         }
 
-        ImmutableList<OverlayDefinition> overlays = builder.build();
+        ImmutableList<OverlayDefinition> finalOverlays = ImmutableList.copyOf(overlays.values());
 
-        // TODO: multiple overlay files that share the same name don't fully overwrite each other by default
-        this.addOverlays(overlays);
+        this.addOverlays(finalOverlays);
 
-        LOGGER.info("Loaded {} clothing overlays!", overlays.size());
+        LOGGER.info("Loaded {} clothing overlays!", finalOverlays.size());
     }
 
     public void addOverlays(ImmutableList<OverlayDefinition> overlays) {
@@ -189,6 +196,26 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
     public record OverlayDefinition(
             String name, EquipmentSlot[] slotsFor, ResourceLocation[] whitelist, ResourceLocation[] blacklist
     ) {
+        public OverlayDefinition merge(OverlayDefinition other) {
+            if (!this.name.equals(other.name))
+                throw new IllegalArgumentException("Cannot merge overlays with different names!");
+
+            Set<EquipmentSlot> slotsFor = new HashSet<>(List.of(this.slotsFor));
+            Set<ResourceLocation> whitelist = new HashSet<>(List.of(this.whitelist));
+            Set<ResourceLocation> blacklist = new HashSet<>(List.of(this.blacklist));
+
+            slotsFor.addAll(List.of(other.slotsFor));
+            whitelist.addAll(List.of(other.whitelist));
+            blacklist.addAll(List.of(other.blacklist));
+
+            return new OverlayDefinition(
+                    this.name,
+                    slotsFor.toArray(EquipmentSlot[]::new),
+                    whitelist.toArray(ResourceLocation[]::new),
+                    blacklist.toArray(ResourceLocation[]::new)
+            );
+        }
+
         public JsonObject serializeToJson() {
             final JsonObject toReturn = new JsonObject();
 
