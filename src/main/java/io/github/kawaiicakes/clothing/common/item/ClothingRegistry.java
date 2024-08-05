@@ -1,8 +1,8 @@
-package io.github.kawaiicakes.clothing.item;
+package io.github.kawaiicakes.clothing.common.item;
 
 import com.mojang.logging.LogUtils;
-import io.github.kawaiicakes.clothing.item.impl.BakedModelClothingItem;
-import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
+import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
+import io.github.kawaiicakes.clothing.common.item.impl.BakedModelClothingItem;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.registries.DeferredRegister;

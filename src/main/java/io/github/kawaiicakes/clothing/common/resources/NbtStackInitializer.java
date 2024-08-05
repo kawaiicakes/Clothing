@@ -1,6 +1,6 @@
 package io.github.kawaiicakes.clothing.common.resources;
 
-import io.github.kawaiicakes.clothing.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.CreativeModeTab;
@@ -11,8 +11,8 @@ import java.util.Objects;
 /**
  * This is a functional interface whose purpose is to store "directions" for putting NBT data into an {@link ItemStack}
  * whose item corresponds to type {@link T}. These stacks are then loaded into the client's creative menu tab.
- * @param <T> a {@link io.github.kawaiicakes.clothing.item.ClothingItem} subclass.
- * @see io.github.kawaiicakes.clothing.item.ClothingItem#fillItemCategory(CreativeModeTab, NonNullList)
+ * @param <T> a {@link ClothingItem} subclass.
+ * @see ClothingItem#fillItemCategory(CreativeModeTab, NonNullList)
  * @see ClothingEntryLoader#generateStacks(ClothingItem)
  */
 @FunctionalInterface

@@ -6,9 +6,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.JsonOps;
-import io.github.kawaiicakes.clothing.item.ClothingItem;
-import io.github.kawaiicakes.clothing.item.impl.BakedModelClothingItem;
-import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.impl.BakedModelClothingItem;
+import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import net.minecraft.data.CachedOutput;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.DataProvider;
@@ -36,8 +36,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import static io.github.kawaiicakes.clothing.item.ClothingItem.*;
-import static io.github.kawaiicakes.clothing.item.ClothingRegistry.*;
+import static io.github.kawaiicakes.clothing.common.item.ClothingItem.*;
+import static io.github.kawaiicakes.clothing.common.item.ClothingRegistry.*;
 
 public class ClothingEntryGenerator implements DataProvider {
     protected static final Logger LOGGER = LogUtils.getLogger();

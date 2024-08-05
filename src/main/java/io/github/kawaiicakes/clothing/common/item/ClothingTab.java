@@ -1,4 +1,4 @@
-package io.github.kawaiicakes.clothing.item;
+package io.github.kawaiicakes.clothing.common.item;
 
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.DyeableArmorItem;

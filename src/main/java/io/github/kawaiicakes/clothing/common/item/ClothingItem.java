@@ -1,4 +1,4 @@
-package io.github.kawaiicakes.clothing.item;
+package io.github.kawaiicakes.clothing.common.item;
 
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
@@ -7,7 +7,7 @@ import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
-import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
+import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;

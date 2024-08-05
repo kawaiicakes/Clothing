@@ -1,7 +1,7 @@
 package io.github.kawaiicakes.clothing.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import io.github.kawaiicakes.clothing.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;

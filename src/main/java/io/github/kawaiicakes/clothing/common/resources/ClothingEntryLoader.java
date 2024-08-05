@@ -8,7 +8,7 @@ import com.google.gson.*;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.JsonOps;
 import io.github.kawaiicakes.clothing.common.network.ClothingPackets;
-import io.github.kawaiicakes.clothing.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
@@ -33,8 +33,8 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.*;
 import java.util.function.Supplier;
 
-import static io.github.kawaiicakes.clothing.item.ClothingItem.ATTRIBUTES_KEY;
-import static io.github.kawaiicakes.clothing.item.ClothingItem.CLOTHING_SLOT_NBT_KEY;
+import static io.github.kawaiicakes.clothing.common.item.ClothingItem.ATTRIBUTES_KEY;
+import static io.github.kawaiicakes.clothing.common.item.ClothingItem.CLOTHING_SLOT_NBT_KEY;
 import static net.minecraft.world.item.DyeableLeatherItem.TAG_COLOR;
 
 /**

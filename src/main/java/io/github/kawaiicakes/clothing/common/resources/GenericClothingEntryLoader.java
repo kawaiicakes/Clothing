@@ -1,8 +1,8 @@
 package io.github.kawaiicakes.clothing.common.resources;
 
 import com.google.gson.JsonObject;
-import io.github.kawaiicakes.clothing.item.ClothingItem;
-import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 

@@ -1,6 +1,6 @@
 package io.github.kawaiicakes.clothing.mixin;
 
-import io.github.kawaiicakes.clothing.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;

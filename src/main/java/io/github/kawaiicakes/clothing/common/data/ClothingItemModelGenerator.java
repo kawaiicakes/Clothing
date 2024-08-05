@@ -1,8 +1,8 @@
 package io.github.kawaiicakes.clothing.common.data;
 
 import com.mojang.logging.LogUtils;
-import io.github.kawaiicakes.clothing.item.ClothingItem;
-import io.github.kawaiicakes.clothing.item.ClothingRegistry;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.ClothingRegistry;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.client.model.generators.ItemModelBuilder;
@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import java.util.HashSet;
 import java.util.Set;
 
-import static io.github.kawaiicakes.clothing.item.ClothingItem.BASE_MODEL_DATA;
+import static io.github.kawaiicakes.clothing.common.item.ClothingItem.BASE_MODEL_DATA;
 
 public class ClothingItemModelGenerator extends ItemModelProvider {
     protected static final Logger LOGGER = LogUtils.getLogger();

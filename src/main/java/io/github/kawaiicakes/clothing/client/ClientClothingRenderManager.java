@@ -2,7 +2,7 @@ package io.github.kawaiicakes.clothing.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.logging.LogUtils;
-import io.github.kawaiicakes.clothing.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.entity.EquipmentSlot;

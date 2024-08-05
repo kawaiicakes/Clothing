@@ -1,8 +1,8 @@
 package io.github.kawaiicakes.clothing.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import io.github.kawaiicakes.clothing.item.ClothingItem;
-import io.github.kawaiicakes.clothing.item.impl.GenericClothingItem;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -120,7 +120,7 @@ public class HumanoidClothingLayer<
      * Overload of {@link #setPartVisibility(HumanoidModel, EquipmentSlot)} unique to this class.
      * Allows for greater control of setting part visibility.
      * @param pModel the {@link A} to set part visibility on.
-     * @param pParts the array of {@link io.github.kawaiicakes.clothing.item.ClothingItem.ModelPartReference}s to toggle
+     * @param pParts the array of {@link ClothingItem.ModelPartReference}s to toggle
      *               visibility for.
      */
     public void setPartVisibility(@NotNull A pModel, @NotNull ClothingItem.ModelPartReference[] pParts) {
@@ -152,10 +152,10 @@ public class HumanoidClothingLayer<
 
     /**
      * Simply returns the appropriate model part from the corresponding
-     * {@link io.github.kawaiicakes.clothing.item.ClothingItem.ModelPartReference}. Exists to avoid
+     * {@link ClothingItem.ModelPartReference}. Exists to avoid
      * directly referencing client-only classes in common classes.
      * @param model the {@link A} model to return a part from
-     * @param reference the {@link io.github.kawaiicakes.clothing.item.ClothingItem.ModelPartReference}
+     * @param reference the {@link ClothingItem.ModelPartReference}
      *                  corresponding to the desired {@link ModelPart}
      * @return the desired {@link ModelPart}
      */
@@ -173,7 +173,7 @@ public class HumanoidClothingLayer<
 
     /**
      * Overload that returns model parts from the parent model according to {@link #getParentModel()}.
-     * @param reference the {@link io.github.kawaiicakes.clothing.item.ClothingItem.ModelPartReference}
+     * @param reference the {@link ClothingItem.ModelPartReference}
      *                  corresponding to the desired {@link ModelPart}
      * @return the desired {@link ModelPart}
      */

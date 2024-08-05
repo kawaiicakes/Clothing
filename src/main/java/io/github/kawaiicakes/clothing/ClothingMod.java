@@ -11,8 +11,8 @@ import io.github.kawaiicakes.clothing.common.network.ClothingPackets;
 import io.github.kawaiicakes.clothing.common.resources.BakedClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
-import io.github.kawaiicakes.clothing.item.ClothingItem;
-import io.github.kawaiicakes.clothing.item.ClothingRegistry;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.ClothingRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
@@ -43,8 +43,8 @@ import top.theillusivec4.curios.api.SlotTypePreset;
 
 import java.util.Collection;
 
-import static io.github.kawaiicakes.clothing.item.ClothingItem.BASE_MODEL_DATA;
-import static io.github.kawaiicakes.clothing.item.ClothingRegistry.CLOTHING_REGISTRY;
+import static io.github.kawaiicakes.clothing.common.item.ClothingItem.BASE_MODEL_DATA;
+import static io.github.kawaiicakes.clothing.common.item.ClothingRegistry.CLOTHING_REGISTRY;
 
 @Mod(ClothingMod.MOD_ID)
 public class ClothingMod

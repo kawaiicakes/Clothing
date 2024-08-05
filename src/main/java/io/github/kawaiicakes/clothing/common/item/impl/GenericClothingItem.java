@@ -1,12 +1,12 @@
-package io.github.kawaiicakes.clothing.item.impl;
+package io.github.kawaiicakes.clothing.common.item.impl;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
-import io.github.kawaiicakes.clothing.item.ClothingItem;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.Model;

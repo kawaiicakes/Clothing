@@ -1,12 +1,12 @@
-package io.github.kawaiicakes.clothing.item.impl;
+package io.github.kawaiicakes.clothing.common.item.impl;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Vector3f;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.BakedClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
-import io.github.kawaiicakes.clothing.item.ClothingItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
@@ -113,7 +113,7 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
      * If you want to change the model being rendered, do it through here.
      * @see BakedModelClothingItem#getDefaultRenderManager()
      * @param itemStack the {@link ItemStack} instance of this
-     * @param modelPartReference the {@link io.github.kawaiicakes.clothing.item.ClothingItem.ModelPartReference} upon
+     * @param modelPartReference the {@link ModelPartReference} upon
      *                           which a model is parented to.
      * @return the location of the {@link BakedModel} for render.
      */

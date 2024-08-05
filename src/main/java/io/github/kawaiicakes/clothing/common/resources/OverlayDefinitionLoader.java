@@ -54,7 +54,7 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
             if (overlayName.startsWith("_")) continue;
 
             try {
-                boolean overlayIsUnique = overlays.containsKey(overlayName);
+                boolean overlayIsUnique = !overlays.containsKey(overlayName);
                 OverlayDefinitionBuilder entryBuilder = OverlayDefinitionBuilder.of(overlayName);
 
                 JsonObject jsonBuilder = entry.getValue().getAsJsonObject();
