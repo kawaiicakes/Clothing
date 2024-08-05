@@ -30,10 +30,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Supplier;
 
 import static io.github.kawaiicakes.clothing.item.ClothingItem.ATTRIBUTES_KEY;
@@ -54,6 +51,8 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
     protected static final Logger LOGGER = LogUtils.getLogger();
     protected static final Gson GSON = (new GsonBuilder()).setPrettyPrinting().disableHtmlEscaping().create();
 
+    private static final Map<String, ClothingEntryLoader<?>> LOADERS = new HashMap<>();
+
     protected ImmutableMap<ResourceLocation, NbtStackInitializer<T>> stackEntries = ImmutableMap.of();
     protected ImmutableList<CompoundTag> stacks = ImmutableList.of();
     protected final String subDirectory;
@@ -67,6 +66,12 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
     protected ClothingEntryLoader(String pSubDirectory) {
         super(GSON, "clothing/" + pSubDirectory);
         this.subDirectory = pSubDirectory;
+        LOADERS.put(pSubDirectory, this);
+    }
+
+    @Nullable
+    public static ClothingEntryLoader<?> getLoader(String pSubDirectory) {
+        return LOADERS.get(pSubDirectory);
     }
 
     /**

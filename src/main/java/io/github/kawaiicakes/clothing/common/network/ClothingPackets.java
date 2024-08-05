@@ -1,9 +1,7 @@
 package io.github.kawaiicakes.clothing.common.network;
 
 import com.google.common.collect.ImmutableList;
-import io.github.kawaiicakes.clothing.common.resources.BakedClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
-import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -86,12 +84,10 @@ public class ClothingPackets {
         public void handle(Supplier<NetworkEvent.Context> contextSupplier) {
             if (!contextSupplier.get().getDirection().equals(NetworkDirection.PLAY_TO_CLIENT)) return;
 
-            // TODO: redo this, damn this is scuffed lmao
-            switch (this.loaderClass) {
-                case "generic": GenericClothingEntryLoader.getInstance().addStacks(this.clothingEntries);
-                case "baked": BakedClothingEntryLoader.getInstance().addStacks(this.clothingEntries);
-                default: throw new IllegalArgumentException("Unrecognized loader '" + this.loaderClass + "'!");
-            }
+            ClothingEntryLoader<?> clothingEntryLoader = ClothingEntryLoader.getLoader(this.loaderClass);
+            if (clothingEntryLoader == null) return;
+
+            clothingEntryLoader.addStacks(this.clothingEntries);
         }
     }
 }
