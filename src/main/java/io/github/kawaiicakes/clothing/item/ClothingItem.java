@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
-import static net.minecraft.world.entity.ai.attributes.Attributes.*;
 
 /**
  * Each implementation of this will likely represent an item that renders as one model type (e.g. JSON, OBJ). The
@@ -55,7 +54,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     public static final String CLOTHING_NAME_KEY = "name";
     public static final String CLOTHING_SLOT_NBT_KEY = "slot";
     public static final String BASE_MODEL_DATA_NBT_KEY = "BaseModelData";
-    public static final String ATTRIBUTES_KEY = "Attributes";
+    public static final String ATTRIBUTES_KEY = "attributes";
     public static final String EQUIP_SOUND_KEY = "EquipSound";
 
     public static final ResourceLocation BASE_MODEL_DATA = new ResourceLocation(MOD_ID, "base_model_data");
@@ -283,11 +282,13 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
     }
 
+    /**
+     * This overwrites the attributes completely
+     * @param stack
+     * @param modifiers
+     */
     public void setAttributeModifiers(ItemStack stack, Multimap<Attribute, AttributeModifier> modifiers) {
-        if (!this.getClothingPropertyTag(stack).contains(ATTRIBUTES_KEY, CompoundTag.TAG_COMPOUND))
-            this.getClothingPropertyTag(stack).put(ATTRIBUTES_KEY, new CompoundTag());
-
-        CompoundTag clothingAttributesTag = this.getClothingPropertyTag(stack).getCompound(ATTRIBUTES_KEY);
+        CompoundTag clothingAttributesTag = new CompoundTag();
 
         for (Map.Entry<Attribute, Collection<AttributeModifier>> entry : modifiers.asMap().entrySet()) {
             ListTag modifierEntries = new ListTag();
@@ -296,8 +297,17 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
                 modifierEntries.add(modifier.save());
             }
 
-            clothingAttributesTag.put(entry.getKey().getDescriptionId(), modifierEntries);
+            ResourceLocation attributeLocation = ForgeRegistries.ATTRIBUTES.getKey(entry.getKey());
+
+            if (attributeLocation == null) {
+                LOGGER.error("Unable to obtain ResourceLocation of Attribute {}!", entry.getKey());
+                continue;
+            }
+
+            clothingAttributesTag.put(attributeLocation.toString(), modifierEntries);
         }
+
+        this.getClothingPropertyTag(stack).put(ATTRIBUTES_KEY, clothingAttributesTag);
     }
 
     @Override
@@ -308,24 +318,16 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
 
         CompoundTag clothingAttributesTag = this.getClothingPropertyTag(stack).getCompound(ATTRIBUTES_KEY);
 
-        // TODO: more, new attributes? mirror changes in entry loader/generator
-        Attribute[] attributes = new Attribute[] {
-                ARMOR,
-                ARMOR_TOUGHNESS,
-                ATTACK_DAMAGE,
-                ATTACK_KNOCKBACK,
-                ATTACK_SPEED,
-                KNOCKBACK_RESISTANCE,
-                LUCK,
-                MAX_HEALTH,
-                MOVEMENT_SPEED
-        };
-
-        for (Attribute attribute : attributes) {
-            if (!clothingAttributesTag.contains(attribute.getDescriptionId())) continue;
+        for (Attribute attribute : ForgeRegistries.ATTRIBUTES.getValues()) {
+            ResourceLocation attributeLocation = ForgeRegistries.ATTRIBUTES.getKey(attribute);
+            if (attributeLocation == null) {
+                LOGGER.error("Unable to obtain ResourceLocation of Attribute {}!", attribute);
+                continue;
+            }
+            if (!clothingAttributesTag.contains(attributeLocation.toString())) continue;
 
             ListTag modifierList = clothingAttributesTag.getList(
-                    attribute.getDescriptionId(),
+                    attributeLocation.toString(),
                     Tag.TAG_COMPOUND
             );
 

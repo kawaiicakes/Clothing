@@ -1,4 +1,12 @@
 {
+  "attributes": {
+    "minecraft:generic.armor": [
+      {
+        "Amount": 40.0,
+        "Operation": 0
+      }
+    ]
+  },
   "slot": "chest",
   "texture": "tank_top"
 }

@@ -13,13 +13,18 @@ import net.minecraft.data.CachedOutput;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.DataProvider;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -31,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import static io.github.kawaiicakes.clothing.item.ClothingItem.*;
 import static io.github.kawaiicakes.clothing.item.ClothingRegistry.*;
 
 public class ClothingEntryGenerator implements DataProvider {
@@ -51,7 +57,9 @@ public class ClothingEntryGenerator implements DataProvider {
     }
 
     public void buildEntries(Consumer<ClothingBuilder<?>> clothingBuilderConsumer) {
-        GenericClothingBuilder.shirt("tank_top").save(clothingBuilderConsumer);
+        GenericClothingBuilder.shirt("tank_top")
+                .addModifier(Attributes.ARMOR, 40.00, AttributeModifier.Operation.ADDITION)
+                .save(clothingBuilderConsumer);
     }
 
     @Override
@@ -184,6 +192,7 @@ public class ClothingEntryGenerator implements DataProvider {
         protected final ItemStack clothingStack;
         protected final EquipmentSlot slotForItem;
         protected final String id;
+        protected boolean defaultAttributes = true;
 
         protected ClothingBuilder(T clothingItem, String id) {
             this.clothingItem = clothingItem;
@@ -210,19 +219,38 @@ public class ClothingEntryGenerator implements DataProvider {
             return this;
         }
 
-        public ClothingBuilder<T> setModifier(
+        /**
+         * The first call to this method will wipe the default attributes on the entry.
+         * @param attribute
+         * @param amount
+         * @param operation
+         * @return
+         */
+        public ClothingBuilder<T> addModifier(
                 Attribute attribute, double amount, AttributeModifier.Operation operation
         ) {
+            if (this.defaultAttributes) {
+                this.clothingItem.setAttributeModifiers(this.clothingStack, ImmutableMultimap.of());
+                this.defaultAttributes = false;
+            }
+
             Multimap<Attribute, AttributeModifier> modifiers
                     = this.clothingItem.getAttributeModifiers(this.slotForItem, this.clothingStack);
 
             ImmutableMultimap.Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
             builder.putAll(modifiers);
 
-            // TODO: see L134, ClothingEntryLoader
+            ResourceLocation attributeLocation = ForgeRegistries.ATTRIBUTES.getKey(attribute);
+            if (attributeLocation == null) {
+                LOGGER.error("Unable to obtain ResourceLocation of Attribute {}!", attribute);
+                return this;
+            }
+
+            String modifierName = attributeLocation + "." + modifiers.get(attribute).size();
+
             AttributeModifier attributeModifier = new AttributeModifier(
-                    ClothingItem.ARMOR_MODIFIER_UUID_PER_SLOT[this.clothingItem.getSlot().getIndex()],
-                    modifiers.get(attribute).stream().findFirst().orElseThrow().getName(),
+                    Mth.createInsecureUUID(RandomSource.createNewThreadLocalInstance()),
+                    modifierName,
                     amount,
                     operation
             );
@@ -232,6 +260,12 @@ public class ClothingEntryGenerator implements DataProvider {
             return this;
         }
 
+        /**
+         * This overwrites the attributes completely; use
+         * {@link #addModifier(Attribute, double, AttributeModifier.Operation)} if this isn't desired
+         * @param modifiers
+         * @return
+         */
         public ClothingBuilder<T> setModifiers(Multimap<Attribute, AttributeModifier> modifiers) {
             this.clothingItem.setAttributeModifiers(this.clothingStack, modifiers);
             return this;
@@ -252,19 +286,48 @@ public class ClothingEntryGenerator implements DataProvider {
             final CompoundTag tagForSerialization = new CompoundTag();
 
             for (String key : clothingStackTag.getAllKeys()) {
-                if (key.equals("name") || key.equals("BaseModelData")) continue;
+                if (key.equals(CLOTHING_NAME_KEY) || key.equals(BASE_MODEL_DATA_NBT_KEY)) continue;
 
                 Tag clothingTag = clothingStackTag.get(key);
                 Tag defaultTag = defaultStackTag.get(key);
 
                 assert clothingTag != null;
 
-                if (key.equals("slot")) {
+                if (key.equals(CLOTHING_SLOT_NBT_KEY)) {
                     tagForSerialization.put(key, clothingTag);
                     continue;
                 }
 
                 if (clothingTag.equals(defaultTag)) continue;
+
+                if (key.equals(ATTRIBUTES_KEY)) {
+                    CompoundTag attributeTag = clothingStackTag.getCompound(ATTRIBUTES_KEY).copy();
+
+                    Set<String> emptyModifierListKeys = new HashSet<>();
+                    for (String attributeKey : attributeTag.getAllKeys()) {
+                        ListTag modifierList = attributeTag.getList(attributeKey, Tag.TAG_COMPOUND);
+
+                        if (modifierList.isEmpty()) {
+                            emptyModifierListKeys.add(attributeKey);
+                            continue;
+                        }
+
+                        for (Tag tagInList : modifierList) {
+                            if (!(tagInList instanceof CompoundTag modifierTag)) continue;
+
+                            modifierTag.remove("Name");
+                            modifierTag.remove("UUID");
+                        }
+
+                        attributeTag.put(attributeKey, modifierList);
+                    }
+                    // this is to avoid ConcurrentModificationExceptions
+                    emptyModifierListKeys.forEach(attributeTag::remove);
+
+                    tagForSerialization.put(key, attributeTag);
+
+                    continue;
+                }
 
                 tagForSerialization.put(key, clothingTag);
             }

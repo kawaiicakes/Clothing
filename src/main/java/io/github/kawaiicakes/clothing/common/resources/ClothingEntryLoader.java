@@ -17,6 +17,8 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.GsonHelper;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -33,6 +35,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
+
+import static io.github.kawaiicakes.clothing.item.ClothingItem.ATTRIBUTES_KEY;
+import static io.github.kawaiicakes.clothing.item.ClothingItem.CLOTHING_SLOT_NBT_KEY;
+import static net.minecraft.world.item.DyeableLeatherItem.TAG_COLOR;
 
 /**
  * This class is a {@link SimpleJsonResourceReloadListener} that pretty heavily abstracts stuff related to Minecraft
@@ -83,14 +89,14 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
             ResourceLocation equipSoundLocation;
 
             try {
-                slot = EquipmentSlot.byName(topElement.getAsJsonPrimitive("slot").getAsString());
+                slot = EquipmentSlot.byName(topElement.getAsJsonPrimitive(CLOTHING_SLOT_NBT_KEY).getAsString());
 
-                color = topElement.has("color")
-                        ? topElement.getAsJsonPrimitive("color").getAsInt()
+                color = topElement.has(TAG_COLOR)
+                        ? topElement.getAsJsonPrimitive(TAG_COLOR).getAsInt()
                         : 0xFFFFFF;
 
-                modifiers = topElement.has("attributes")
-                        ? this.deserializeAttributes(clothingStack, topElement.getAsJsonObject("attributes"))
+                modifiers = topElement.has(ATTRIBUTES_KEY)
+                        ? this.deserializeAttributes(clothingStack, topElement.getAsJsonObject(ATTRIBUTES_KEY))
                         : clothingItem.getDefaultAttributeModifiers(slot);
 
                 equipSoundLocation = topElement.has("equip_sound")
@@ -121,7 +127,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
                         "Passed JSON contains unknown attribute '" + key + "'!"
                 );
 
-                if (!(clothingStack.getItem() instanceof ClothingItem<?> clothingItem))
+                if (!(clothingStack.getItem() instanceof ClothingItem<?>))
                     throw new IllegalArgumentException("Passed ItemStack is not a clothing item!");
                 
                 if (!(jsonData.get(key) instanceof JsonArray jsonArray))
@@ -131,26 +137,18 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
 
                 List<AttributeModifier> forKey = new ArrayList<>(jsonArray.size());
 
-                // TODO: explore if name (but not UUID) should be allowed to be declared in data
-                // issues with AttributeModifiers sharing names and/or UUIDs may arise. handle as needed
-                // only the first modifier for an attribute that lacks a name will get to take the default
-                // clothing item UUID and name. the rest will have automatically made names
-                UUID slotUUID = ClothingItem.ARMOR_MODIFIER_UUID_PER_SLOT[clothingItem.getSlot().getIndex()];
-
-                String attributeName = clothingItem.getDefaultAttributeModifiers(clothingItem.getSlot())
-                        .get(attribute)
-                        .stream()
-                        .findFirst()
-                        .orElseThrow()
-                        .getName();
-                
+                int i = 0;
                 for (JsonElement element : jsonArray) {
                     if (!element.isJsonObject()) throw new IllegalArgumentException(
                             "Passed JSON has non-object in attribute array for '" + key + "'!"
                     );
                     
                     CompoundTag attributeModifierTag
-                            = (CompoundTag) JsonOps.INSTANCE.convertTo(NbtOps.INSTANCE, jsonData.get(key));
+                            = (CompoundTag) JsonOps.INSTANCE.convertTo(NbtOps.INSTANCE, element);
+
+                    String attributeName = key + "." + i;
+
+                    UUID slotUUID = Mth.createInsecureUUID(RandomSource.createNewThreadLocalInstance());
 
                     attributeModifierTag.putUUID(
                             "UUID",
@@ -166,6 +164,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
                     );
                     
                     forKey.add(modifier);
+                    i++;
                 }
 
                 builder.putAll(attribute, forKey.toArray(AttributeModifier[]::new));
@@ -264,9 +263,8 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
 
                 builder.put(
                         entryId,
-                        this.defaultDeserialization(entryId, jsonEntry).and(
-                                this.deserializeFromJson(entryId, jsonEntry)
-                        )
+                        this.defaultDeserialization(entryId, jsonEntry)
+                                .and(this.deserializeFromJson(entryId, jsonEntry))
                 );
 
             } catch (IllegalArgumentException | JsonParseException jsonParseException) {
