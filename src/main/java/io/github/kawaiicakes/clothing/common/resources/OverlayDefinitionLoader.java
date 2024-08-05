@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
 import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -19,7 +18,6 @@ import java.util.Map;
 
 import static io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader.GSON;
 
-// TODO: multiple overlay files that share the same name don't fully overwrite each other by default
 public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
     protected static final Logger LOGGER = LogUtils.getLogger();
 
@@ -58,18 +56,54 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
             try {
                 OverlayDefinitionBuilder entryBuilder = OverlayDefinitionBuilder.of(entryId.getPath());
 
-                // TODO
+                JsonObject jsonBuilder = entry.getValue().getAsJsonObject();
+
+                if (
+                                        !jsonBuilder.has("slots")
+                                                && !jsonBuilder.has("whitelist")
+                                                && !jsonBuilder.has("blacklist")
+                ) {
+                    throw new IllegalArgumentException("Overlay '" + entry.getKey() + "' is empty!");
+                }
+
+                if (jsonBuilder.has("slots")) {
+                    JsonArray slots = jsonBuilder.getAsJsonArray("slots");
+                    for (JsonElement listElement : slots) {
+                        entryBuilder.addSlot(
+                                EquipmentSlot.byName(listElement.getAsJsonPrimitive().getAsString())
+                        );
+                    }
+                }
+
+                if (jsonBuilder.has("whitelist")) {
+                    JsonArray whitelist = jsonBuilder.getAsJsonArray("whitelist");
+                    for (JsonElement listElement : whitelist) {
+                        entryBuilder.addToWhitelist(
+                                new ResourceLocation(listElement.getAsJsonPrimitive().getAsString())
+                        );
+                    }
+                }
+
+                if (jsonBuilder.has("blacklist")) {
+                    JsonArray blacklist = jsonBuilder.getAsJsonArray("blacklist");
+                    for (JsonElement listElement : blacklist) {
+                        entryBuilder.addToBlacklist(
+                                new ResourceLocation(listElement.getAsJsonPrimitive().getAsString())
+                        );
+                    }
+                }
 
                 builder.add(
                         entryBuilder.build()
                 );
-            } catch (IllegalArgumentException | JsonParseException jsonParseException) {
+            } catch (Exception jsonParseException) {
                 LOGGER.error("Parsing error loading overlay entry {}!", entryId, jsonParseException);
             }
         }
 
         ImmutableList<OverlayDefinition> overlays = builder.build();
 
+        // TODO: multiple overlay files that share the same name don't fully overwrite each other by default
         this.addOverlays(overlays);
 
         LOGGER.info("Loaded {} clothing overlays!", overlays.size());
