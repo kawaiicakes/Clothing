@@ -1,5 +1,7 @@
 {
   "itemGroup.clothing": "Clothing!",
 
+  "block.clothing.textile_loom": "Textile Loom",
+
   "item.modifiers.clothing.overlays": "Applied overlays:"
 }

@@ -3,17 +3,19 @@ package io.github.kawaiicakes.clothing;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.client.model.GenericDefinitions;
+import io.github.kawaiicakes.clothing.client.screen.TextileLoomScreen;
 import io.github.kawaiicakes.clothing.common.data.ClothingEntryGenerator;
 import io.github.kawaiicakes.clothing.common.data.ClothingItemModelGenerator;
 import io.github.kawaiicakes.clothing.common.data.ClothingLangGenerator;
 import io.github.kawaiicakes.clothing.common.data.ClothingOverlayGenerator;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.ClothingItemRegistry;
 import io.github.kawaiicakes.clothing.common.network.ClothingPackets;
 import io.github.kawaiicakes.clothing.common.resources.BakedClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
-import io.github.kawaiicakes.clothing.common.item.ClothingItem;
-import io.github.kawaiicakes.clothing.common.item.ClothingRegistry;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.item.ItemProperties;
@@ -43,8 +45,12 @@ import top.theillusivec4.curios.api.SlotTypePreset;
 
 import java.util.Collection;
 
+import static io.github.kawaiicakes.clothing.common.block.ClothingBlockRegistry.CLOTHING_BLOCK_REGISTRY;
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.BASE_MODEL_DATA;
-import static io.github.kawaiicakes.clothing.common.item.ClothingRegistry.CLOTHING_REGISTRY;
+import static io.github.kawaiicakes.clothing.common.item.ClothingItemRegistry.CLOTHING_ITEM_REGISTRY;
+import static io.github.kawaiicakes.clothing.common.item.ClothingItemRegistry.ITEM_REGISTRY;
+import static io.github.kawaiicakes.clothing.common.menu.ClothingMenuRegistry.CLOTHING_MENU_REGISTRY;
+import static io.github.kawaiicakes.clothing.common.menu.ClothingMenuRegistry.TEXTILE_LOOM_MENU;
 
 @Mod(ClothingMod.MOD_ID)
 public class ClothingMod
@@ -60,7 +66,10 @@ public class ClothingMod
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         IEventBus forgeEventBus = MinecraftForge.EVENT_BUS;
 
-        CLOTHING_REGISTRY.register(modEventBus);
+        CLOTHING_ITEM_REGISTRY.register(modEventBus);
+        ITEM_REGISTRY.register(modEventBus);
+        CLOTHING_BLOCK_REGISTRY.register(modEventBus);
+        CLOTHING_MENU_REGISTRY.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::onInterModEnqueue);
@@ -163,7 +172,7 @@ public class ClothingMod
                             if (pTintIndex == 1) return 0xFFFFFF;
                             return pTintIndex > 0 ? pTintIndex : ((ClothingItem<?>) pStack.getItem()).getColor(pStack);
                         },
-                    ClothingRegistry.getAll()
+                    ClothingItemRegistry.getAll()
             );
         }
 
@@ -184,6 +193,8 @@ public class ClothingMod
 
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
+            event.enqueueWork(() -> MenuScreens.register(TEXTILE_LOOM_MENU.get(), TextileLoomScreen::new));
+
             CURIOS_LOADED = ModList.get().isLoaded("curios");
             LOGGER.info(
                     CURIOS_LOADED ? "[Clothing] Curios successfully detected during client setup."
@@ -238,7 +249,7 @@ public class ClothingMod
 
         @SubscribeEvent
         public static void onBakingCompleted(ModelEvent.BakingCompleted event) {
-            ClothingItem<?>[] clothingItems = ClothingRegistry.getAll();
+            ClothingItem<?>[] clothingItems = ClothingItemRegistry.getAll();
             if (clothingItems == null) {
                 LOGGER.error("Clothing has not been registered yet!");
                 clothingItems = new ClothingItem<?>[0];

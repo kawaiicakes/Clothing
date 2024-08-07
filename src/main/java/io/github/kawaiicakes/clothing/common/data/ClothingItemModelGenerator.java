@@ -2,7 +2,7 @@ package io.github.kawaiicakes.clothing.common.data;
 
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
-import io.github.kawaiicakes.clothing.common.item.ClothingRegistry;
+import io.github.kawaiicakes.clothing.common.item.ClothingItemRegistry;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.client.model.generators.ItemModelBuilder;
@@ -63,7 +63,7 @@ public class ClothingItemModelGenerator extends ItemModelProvider {
     }
 
     protected void generateItemModel(Set<ClothingEntryGenerator.ClothingBuilder<?>> clothingEntries) {
-        ClothingItem<?>[] clothingItems = ClothingRegistry.getAll();
+        ClothingItem<?>[] clothingItems = ClothingItemRegistry.getAll();
         if (clothingItems == null || clothingItems.length == 0) {
             LOGGER.error("No clothing items exist! Is this being called before item registration?");
             return;
