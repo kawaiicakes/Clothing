@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
@@ -16,6 +17,7 @@ import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader.GSON;
 
@@ -28,6 +30,8 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
 
     public OverlayDefinitionLoader() {
         super(GSON, "clothing/generic/overlays");
+
+        INSTANCE = this;
     }
 
     public static OverlayDefinitionLoader getInstance() {
@@ -255,6 +259,30 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
                 toReturn.add("blacklist", whitelistJson);
 
             return toReturn;
+        }
+
+        public static void serializeToNetwork(FriendlyByteBuf buf, OverlayDefinition overlay) {
+            buf.writeUtf(overlay.name);
+            buf.writeCollection(
+                    Arrays.stream(overlay.slotsFor)
+                            .map(EquipmentSlot::getName)
+                            .collect(Collectors.toList()),
+                    FriendlyByteBuf::writeUtf)
+            ;
+            buf.writeCollection(Arrays.asList(overlay.whitelist), FriendlyByteBuf::writeResourceLocation);
+            buf.writeCollection(Arrays.asList(overlay.blacklist), FriendlyByteBuf::writeResourceLocation);
+        }
+
+        public static OverlayDefinition deserializeFromNetwork(FriendlyByteBuf buf) {
+            return new OverlayDefinition(
+                    buf.readUtf(),
+                    buf.readList(FriendlyByteBuf::readUtf)
+                            .stream()
+                            .map(EquipmentSlot::byName)
+                            .toArray(EquipmentSlot[]::new),
+                    buf.readList(FriendlyByteBuf::readResourceLocation).toArray(ResourceLocation[]::new),
+                    buf.readList(FriendlyByteBuf::readResourceLocation).toArray(ResourceLocation[]::new)
+            );
         }
     }
 }

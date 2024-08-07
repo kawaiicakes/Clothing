@@ -2,6 +2,7 @@ package io.github.kawaiicakes.clothing.common.network;
 
 import com.google.common.collect.ImmutableList;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
+import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -36,16 +37,17 @@ public class ClothingPackets {
 
         INSTANCE = net;
 
-        net.messageBuilder(S2CClothingPacket.class, id(), NetworkDirection.PLAY_TO_CLIENT)
-                .decoder(S2CClothingPacket::new)
-                .encoder(S2CClothingPacket::toBytes)
-                .consumerMainThread(ClothingPackets::handleOnClient)
+        net.messageBuilder(S2CClothingEntryPacket.class, id(), NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(S2CClothingEntryPacket::new)
+                .encoder(S2CClothingEntryPacket::toBytes)
+                .consumerMainThread(S2CClothingEntryPacket::handle)
                 .add();
-    }
 
-    protected static void handleOnClient(S2CClothingPacket msg, Supplier<NetworkEvent.Context> event) {
-        event.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> msg.handle(event)));
-        event.get().setPacketHandled(true);
+        net.messageBuilder(S2COverlayPacket.class, id(), NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(S2COverlayPacket::new)
+                .encoder(S2COverlayPacket::toBytes)
+                .consumerMainThread(S2COverlayPacket::handle)
+                .add();
     }
 
     public static <MSG> void sendToPlayer(MSG msg, @Nullable ServerPlayer player) {
@@ -56,16 +58,16 @@ public class ClothingPackets {
         INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), msg);
     }
 
-    public static class S2CClothingPacket {
+    public static class S2CClothingEntryPacket {
         protected final String loaderClass;
         protected final ImmutableList<CompoundTag> clothingEntries;
 
-        public S2CClothingPacket(ClothingEntryLoader<?> clothingEntryLoader) {
+        public S2CClothingEntryPacket(ClothingEntryLoader<?> clothingEntryLoader) {
             this.loaderClass = clothingEntryLoader.getName();
             this.clothingEntries = clothingEntryLoader.getStacks();
         }
 
-        public S2CClothingPacket(FriendlyByteBuf buf) {
+        public S2CClothingEntryPacket(FriendlyByteBuf buf) {
             this.loaderClass = buf.readUtf();
             this.clothingEntries = ImmutableList.copyOf(
                     buf.readList(FriendlyByteBuf::readAnySizeNbt)
@@ -80,14 +82,54 @@ public class ClothingPackets {
             );
         }
 
-        @SuppressWarnings("unused")
         public void handle(Supplier<NetworkEvent.Context> contextSupplier) {
             if (!contextSupplier.get().getDirection().equals(NetworkDirection.PLAY_TO_CLIENT)) return;
 
-            ClothingEntryLoader<?> clothingEntryLoader = ClothingEntryLoader.getLoader(this.loaderClass);
-            if (clothingEntryLoader == null) return;
+            contextSupplier.get().enqueueWork(
+                    () -> DistExecutor.unsafeRunWhenOn(
+                            Dist.CLIENT,
+                            () -> () -> {
+                                ClothingEntryLoader<?> clothingEntryLoader
+                                        = ClothingEntryLoader.getLoader(this.loaderClass);
+                                if (clothingEntryLoader == null) return;
 
-            clothingEntryLoader.addStacks(this.clothingEntries);
+                                clothingEntryLoader.addStacks(this.clothingEntries);
+                            }
+                    )
+            );
+
+            contextSupplier.get().setPacketHandled(true);
+        }
+    }
+
+    public static class S2COverlayPacket {
+        protected final ImmutableList<OverlayDefinitionLoader.OverlayDefinition> overlayDefinitions;
+
+        public S2COverlayPacket(OverlayDefinitionLoader loader) {
+            this.overlayDefinitions = loader.getOverlays();
+        }
+
+        public S2COverlayPacket(FriendlyByteBuf buf) {
+            this.overlayDefinitions = ImmutableList.copyOf(
+                    buf.readList(OverlayDefinitionLoader.OverlayDefinition::deserializeFromNetwork)
+            );
+        }
+
+        public void toBytes(FriendlyByteBuf buf) {
+            buf.writeCollection(this.overlayDefinitions, OverlayDefinitionLoader.OverlayDefinition::serializeToNetwork);
+        }
+
+        public void handle(Supplier<NetworkEvent.Context> contextSupplier) {
+            if (!contextSupplier.get().getDirection().equals(NetworkDirection.PLAY_TO_CLIENT)) return;
+
+            contextSupplier.get().enqueueWork(
+                    () -> DistExecutor.unsafeRunWhenOn(
+                            Dist.CLIENT,
+                            () -> () -> OverlayDefinitionLoader.getInstance().addOverlays(this.overlayDefinitions)
+                    )
+            );
+
+            contextSupplier.get().setPacketHandled(true);
         }
     }
 }

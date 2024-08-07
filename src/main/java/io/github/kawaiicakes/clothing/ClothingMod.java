@@ -85,15 +85,22 @@ public class ClothingMod
     @SubscribeEvent
     public void onDatapackSync(OnDatapackSyncEvent event) {
         ClothingPackets.sendToPlayer(
-                new ClothingPackets.S2CClothingPacket(
+                new ClothingPackets.S2CClothingEntryPacket(
                         GenericClothingEntryLoader.getInstance()
                 ),
                 event.getPlayer()
         );
 
         ClothingPackets.sendToPlayer(
-                new ClothingPackets.S2CClothingPacket(
+                new ClothingPackets.S2CClothingEntryPacket(
                         BakedClothingEntryLoader.getInstance()
+                ),
+                event.getPlayer()
+        );
+
+        ClothingPackets.sendToPlayer(
+                new ClothingPackets.S2COverlayPacket(
+                        OverlayDefinitionLoader.getInstance()
                 ),
                 event.getPlayer()
         );

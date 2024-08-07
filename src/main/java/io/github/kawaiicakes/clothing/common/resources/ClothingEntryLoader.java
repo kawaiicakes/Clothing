@@ -7,7 +7,6 @@ import com.google.common.collect.Multimap;
 import com.google.gson.*;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.JsonOps;
-import io.github.kawaiicakes.clothing.common.network.ClothingPackets;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
@@ -31,7 +30,6 @@ import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.*;
-import java.util.function.Supplier;
 
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.ATTRIBUTES_KEY;
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.CLOTHING_SLOT_NBT_KEY;
@@ -58,9 +56,6 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
     protected final String subDirectory;
 
     /**
-     * Whatever {@link String} is passed here is what needs to be added to the {@code switch} block in
-     * {@link io.github.kawaiicakes.clothing.common.network.ClothingPackets#handleOnClient(ClothingPackets.S2CClothingPacket, Supplier)}
-     * if you decide to use mixins.
      * @param pSubDirectory the {@code String} for the folder name the data entries will be found in.
      */
     protected ClothingEntryLoader(String pSubDirectory) {
