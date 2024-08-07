@@ -5,11 +5,13 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
 import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -214,6 +216,16 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
                     whitelist.toArray(ResourceLocation[]::new),
                     blacklist.toArray(ResourceLocation[]::new)
             );
+        }
+
+        public boolean isValidEntry(ItemStack stack) {
+            if (!(stack.getItem() instanceof ClothingItem<?> clothingItem)) return false;
+
+            ResourceLocation clothingName = new ResourceLocation(clothingItem.getClothingName(stack));
+
+            return (Arrays.asList(this.slotsFor).contains(clothingItem.getSlot())
+                    || Arrays.asList(this.whitelist).contains(clothingName))
+                    && !Arrays.asList(this.blacklist).contains(clothingName);
         }
 
         public JsonObject serializeToJson() {
