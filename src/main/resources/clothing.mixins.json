@@ -4,7 +4,8 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "clothing.refmap.json",
   "mixins": [
-    "LivingEntityMixin"
+    "LivingEntityMixin",
+    "LoomMenuMixin"
   ],
   "client": [
     "HumanoidArmorLayerMixin"
