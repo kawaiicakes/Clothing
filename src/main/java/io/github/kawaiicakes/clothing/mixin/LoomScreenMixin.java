@@ -5,16 +5,16 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.common.LoomMenuOverlayGetter;
-import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.inventory.LoomScreen;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.Holder;
-import net.minecraft.core.NonNullList;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -30,6 +30,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -38,13 +39,7 @@ import java.util.List;
 public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> {
     /*
         TODO
-
         Fix banners no longer working if a clothing item has previously been inside
-
-        #mouseClicked
-        #mouseDragged
-        #mouseScrolled
-
         More changes as the need for them arises
      */
 
@@ -53,10 +48,14 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
     @Shadow @Nullable private List<Pair<Holder<BannerPattern>, DyeColor>> resultBannerPatterns;
     @Shadow private int startRow;
     @Shadow private float scrollOffs;
+    @Shadow private boolean scrolling;
     @Shadow private ItemStack bannerStack;
     @Shadow private ItemStack dyeStack;
     @Shadow private ItemStack patternStack;
     @Shadow private boolean displayPatterns;
+
+    @Shadow protected abstract int totalRowCount();
+
     @Unique private boolean clothing$displayOverlays;
     @Unique private float clothing$xMouse;
     @Unique private float clothing$yMouse;
@@ -75,12 +74,109 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
         ResourceLocation overlayLocation = new ResourceLocation("clothing", overlayFullPath);
         RenderSystem.setShaderTexture(0, overlayLocation);
 
+        // FIXME: display is slightly off
         poseStack.pushPose();
-        poseStack.scale(0.25F, 0.25F, 1.0F);
-        blit(poseStack, x, y, 0, 0, 64, 64, 64, 64);
+        poseStack.translate((float) x + 0.5F, y, 0.0D);
+        poseStack.scale(0.20F, 0.20F, 1.0F);
+        blit(poseStack, 0, 0, 0, 0, 64, 64, 64, 64);
         poseStack.popPose();
 
         RenderSystem.setShaderTexture(0, BG_LOCATION);
+    }
+
+    @Inject(
+            method = "mouseClicked",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;mouseClicked(DDI)Z",
+                    shift = At.Shift.BEFORE
+            ),
+            cancellable = true
+    )
+    private void mouseClicked(double pMouseX, double pMouseY, int pButton, CallbackInfoReturnable<Boolean> cir) {
+        if (this.displayPatterns) return;
+        if (!this.clothing$displayOverlays) return;
+
+        int i = this.leftPos + 60;
+        int j = this.topPos + 13;
+
+        for(int k = 0; k < 4; ++k) {
+            for(int l = 0; l < 4; ++l) {
+                double d0 = pMouseX - (double)(i + l * 14);
+                double d1 = pMouseY - (double)(j + k * 14);
+                int i1 = k + this.startRow;
+                int j1 = i1 * 4 + l;
+                if (d0 >= 0.0D && d1 >= 0.0D && d0 < 14.0D && d1 < 14.0D) {
+                    assert this.minecraft != null;
+                    assert this.minecraft.player != null;
+                    if (this.menu.clickMenuButton(this.minecraft.player, j1)) {
+                        Minecraft.getInstance()
+                                .getSoundManager()
+                                .play(SimpleSoundInstance.forUI(SoundEvents.UI_LOOM_SELECT_PATTERN, 1.0F));
+
+                        assert this.minecraft.gameMode != null;
+                        this.minecraft.gameMode.handleInventoryButtonClick((this.menu).containerId, j1);
+
+                        cir.setReturnValue(true);
+                        cir.cancel();
+                    }
+                }
+            }
+        }
+
+        i = this.leftPos + 119;
+        j = this.topPos + 9;
+        if (pMouseX >= (double)i && pMouseX < (double)(i + 12) && pMouseY >= (double)j && pMouseY < (double)(j + 56)) {
+            this.scrolling = true;
+        }
+    }
+
+    @Inject(
+            method = "mouseDragged",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/screens/inventory/LoomScreen;totalRowCount()I",
+                    shift = At.Shift.AFTER
+            ),
+            cancellable = true
+    )
+    private void mouseDragged(
+            double pMouseX, double pMouseY,
+            int pButton,
+            double pDragX, double pDragY,
+            CallbackInfoReturnable<Boolean> cir
+    ) {
+        int patternRows = this.totalRowCount() - 4;
+        if (this.scrolling && this.displayPatterns && patternRows > 0) return;
+        int overlayRowCount = this.clothing$totalOverlayRowCount() - 4;
+        if (!this.scrolling || !this.clothing$displayOverlays || overlayRowCount <= 0) return;
+
+        int j = this.topPos + 13;
+        int k = j + 56;
+        this.scrollOffs = ((float)pMouseY - (float)j - 7.5F) / ((float)(k - j) - 15.0F);
+        this.scrollOffs = Mth.clamp(this.scrollOffs, 0.0F, 1.0F);
+        this.startRow = Math.max((int)((double)(this.scrollOffs * (float) overlayRowCount) + 0.5D), 0);
+        cir.setReturnValue(true);
+        cir.cancel();
+    }
+
+    @Inject(
+            method = "mouseScrolled",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/screens/inventory/LoomScreen;totalRowCount()I",
+                    shift = At.Shift.AFTER
+            )
+    )
+    private void mouseScrolled(double pMouseX, double pMouseY, double pDelta, CallbackInfoReturnable<Boolean> cir) {
+        int patternRows = this.totalRowCount() - 4;
+        if (this.displayPatterns && patternRows > 0) return;
+        int overlayRowCount = this.clothing$totalOverlayRowCount() - 4;
+        if (!this.clothing$displayOverlays || overlayRowCount <= 0) return;
+
+        float f = (float) pDelta / (float) overlayRowCount;
+        this.scrollOffs = Mth.clamp(this.scrollOffs - f, 0.0F, 1.0F);
+        this.startRow = Math.max((int)(this.scrollOffs * (float) overlayRowCount + 0.5F), 0);
     }
 
     @Inject(
@@ -117,31 +213,12 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
         Player previewPlayer = Minecraft.getInstance().player;
         assert previewPlayer != null;
 
-        ItemStack resultStack = this.menu.getResultSlot().getItem();
-
-        if (!resultStack.isEmpty() && resultStack.getItem() instanceof ClothingItem<?>) {
-            // FIXME: this isn't ideal
-            NonNullList<ItemStack> ogArmor = previewPlayer.getInventory().armor;
-
-            int slotIndexForPreview = ((ClothingItem<?>) resultStack.getItem())
-                    .getSlot()
-                    .getIndex();
-            previewPlayer.getInventory().armor.set(slotIndexForPreview, resultStack);
-
-            InventoryScreen.renderEntityInInventory(
-                    this.leftPos, this.topPos,
-                    20,
-                    this.leftPos - this.clothing$xMouse, this.topPos - this.clothing$yMouse,
-                    previewPlayer
-            );
-
-            previewPlayer.getInventory().armor.set(slotIndexForPreview, ogArmor.get(slotIndexForPreview));
-        }
+        // TODO: add new piece of clothing with applied overlay to preview player
 
         InventoryScreen.renderEntityInInventory(
-                this.leftPos, this.topPos,
-                10,
-                this.leftPos - this.clothing$xMouse, this.topPos - this.clothing$yMouse,
+                this.leftPos + 151, this.topPos + 46,
+                20,
+                this.leftPos - this.clothing$xMouse + 151, this.topPos - this.clothing$yMouse + 46,
                 previewPlayer
         );
     }
@@ -159,16 +236,10 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
             )
     )
     private void renderBgInject1(PoseStack pPoseStack, float pPartialTick, int pX, int pY, CallbackInfo ci) {
+        if (this.displayPatterns) return;
         if (!this.clothing$displayOverlays) return;
-        if (this.displayPatterns) {
-            clothing$LOGGER.error(
-                    "Overlays are to be displayed but so are the banner patterns! If you are seeing" +
-                            " this, contact the mod author!"
-            );
-            return;
-        }
 
-        int k2 = ((int) (41.0F * this.scrollOffs)) + 60;
+        int k2 = this.leftPos + 60;
         int l2 = this.topPos + 13;
         List<OverlayDefinitionLoader.OverlayDefinition> overlayList
                 = ((LoomMenuOverlayGetter) this.menu).getClothing$selectableOverlays();

@@ -11,7 +11,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.*;
-import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -112,8 +111,31 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
 
             if (clothingItem instanceof GenericClothingItem genericClothingItem) {
                 String[] existingOverlays = genericClothingItem.getOverlays(outputStack);
-                if (Arrays.asList(existingOverlays).contains(overlay.name())) {
-                    genericClothingItem.setOverlays(outputStack, ArrayUtils.add(existingOverlays, overlay.name()));
+                List<String> overlayList = Arrays.asList(existingOverlays);
+
+                if (overlayList.isEmpty()) {
+                    genericClothingItem.setOverlays(outputStack, new String[]{overlay.name()});
+                } else if (!overlayList.get(0).equals(overlay.name())) {
+                    String[] newOverlays;
+
+                    if (overlayList.contains(overlay.name())) {
+                        int existingIndex = overlayList.indexOf(overlay.name());
+                        newOverlays = new String[existingOverlays.length];
+                        for (int i = 1; i < existingOverlays.length; i++) {
+                            if (i <= existingIndex) {
+                                newOverlays[i] = existingOverlays[i - 1];
+                            } else {
+                                newOverlays[i] = existingOverlays[i];
+                            }
+                        }
+                    } else {
+                        newOverlays = new String[existingOverlays.length + 1];
+                        System.arraycopy(existingOverlays, 0, newOverlays, 1, existingOverlays.length);
+                    }
+
+                    newOverlays[0] = overlay.name();
+
+                    genericClothingItem.setOverlays(outputStack, newOverlays);
                 }
             }
         }
