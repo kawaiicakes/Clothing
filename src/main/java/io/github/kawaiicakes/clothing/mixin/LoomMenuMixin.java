@@ -72,7 +72,7 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
     }
 
     @Unique
-    private List<OverlayDefinitionLoader.OverlayDefinition> getClothing$selectableOverlays(ItemStack stack) {
+    public List<OverlayDefinitionLoader.OverlayDefinition> getClothing$selectableOverlays(ItemStack stack) {
         try {
             if (!(stack.getItem() instanceof ClothingItem<?> clothingItem))
                 throw new IllegalArgumentException("Passed stack '" + stack + "' is not a clothing item!");
@@ -100,15 +100,15 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
 
         if (
                 !clothingStack.isEmpty()
-                        && !dyeStack.isEmpty()
                         && clothingStack.getItem() instanceof ClothingItem<?> clothingItem
         ) {
             outputStack = clothingStack.copy();
             outputStack.setCount(1);
 
-            DyeColor dyecolor = ((DyeItem) dyeStack.getItem()).getDyeColor();
-
-            clothingItem.setColor(outputStack, dyecolor.getId());
+            if (!dyeStack.isEmpty()) {
+                DyeColor dyecolor = ((DyeItem) dyeStack.getItem()).getDyeColor();
+                clothingItem.setColor(outputStack, dyecolor.getId());
+            }
 
             if (clothingItem instanceof GenericClothingItem genericClothingItem) {
                 String[] existingOverlays = genericClothingItem.getOverlays(outputStack);
@@ -181,8 +181,6 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
         if (
                 !this.bannerSlot.getItem().isEmpty()
                         && this.bannerSlot.getItem().getItem() instanceof ClothingItem<?>
-                        && !this.dyeSlot.getItem().isEmpty()
-                        && this.dyeSlot.getItem().getItem() instanceof DyeItem
         ) {
             ItemStack clothingStack = this.bannerSlot.getItem();
 

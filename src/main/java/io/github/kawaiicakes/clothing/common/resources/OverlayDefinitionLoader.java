@@ -122,6 +122,7 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
         LOGGER.info("Loaded {} clothing overlays!", finalOverlays.size());
     }
 
+    // FIXME: duplicated overlays on listen server
     public void addOverlays(ImmutableList<OverlayDefinition> overlays) {
         ImmutableList.Builder<OverlayDefinition> builder
                 = ImmutableList.builder();
@@ -203,6 +204,7 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
             String name, EquipmentSlot[] slotsFor, ResourceLocation[] whitelist, ResourceLocation[] blacklist
     ) {
         public OverlayDefinition merge(OverlayDefinition other) {
+            // TODO: replace record field "name"'s type with ResourceLocation
             if (!this.name.equals(other.name))
                 throw new IllegalArgumentException("Cannot merge overlays with different names!");
 
