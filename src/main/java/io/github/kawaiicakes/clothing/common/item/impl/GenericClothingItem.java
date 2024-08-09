@@ -296,7 +296,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
                         String[] overlays = GenericClothingItem.this.getOverlays(pItemStack);
                         if (overlays.length < 1) return;
 
-                        for (String overlay : overlays) {
+                        for (int j = overlays.length - 1; j >= 0; j--) {
                             this.renderModel(
                                     pMatrixStack,
                                     pBuffer, pPackedLight,
@@ -312,7 +312,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
                                     ),
                                     pClothingLayer.getArmorResource(
                                             pLivingEntity, pItemStack,
-                                            GenericClothingItem.this.getSlot(), overlay
+                                            GenericClothingItem.this.getSlot(), overlays[j]
                                     )
                             );
                         }
