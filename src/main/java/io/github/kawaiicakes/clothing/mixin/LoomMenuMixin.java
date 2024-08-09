@@ -23,6 +23,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.Arrays;
 import java.util.List;
 
+// TODO: overlay pattern: banner pattern but allows access to otherwise unobtainable overlays (also allows op'd/creative players to force overlays onto clothing that normally shouldn't work)
 @Mixin(LoomMenu.class)
 public abstract class LoomMenuMixin extends AbstractContainerMenu implements LoomMenuOverlayGetter {
     @Unique
@@ -240,6 +241,10 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
 
             this.broadcastChanges();
             ci.cancel();
+        } else {
+            this.resultSlot.set(ItemStack.EMPTY);
+            this.clothing$selectableOverlays = List.of();
+            this.selectedBannerPatternIndex.set(-1);
         }
     }
 

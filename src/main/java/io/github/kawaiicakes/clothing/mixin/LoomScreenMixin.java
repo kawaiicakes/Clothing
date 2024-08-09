@@ -37,12 +37,6 @@ import java.util.List;
 
 @Mixin(LoomScreen.class)
 public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> {
-    /*
-        TODO
-        Fix banners no longer working if a clothing item has previously been inside
-        More changes as the need for them arises
-     */
-
     @Shadow @Final private static ResourceLocation BG_LOCATION;
     @Unique private static final Logger clothing$LOGGER = LogUtils.getLogger();
     @Shadow @Nullable private List<Pair<Holder<BannerPattern>, DyeColor>> resultBannerPatterns;
@@ -74,7 +68,6 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
         ResourceLocation overlayLocation = new ResourceLocation("clothing", overlayFullPath);
         RenderSystem.setShaderTexture(0, overlayLocation);
 
-        // FIXME: display is slightly off
         poseStack.pushPose();
         poseStack.translate((float) x + 0.5F, y, 0.0D);
         poseStack.scale(0.20F, 0.20F, 1.0F);
@@ -216,9 +209,11 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
         // TODO: add new piece of clothing with applied overlay to preview player
 
         InventoryScreen.renderEntityInInventory(
-                this.leftPos + 151, this.topPos + 46,
+                this.leftPos + 151,
+                this.topPos + 46,
                 20,
-                this.leftPos - this.clothing$xMouse + 151, this.topPos - this.clothing$yMouse + 46,
+                this.leftPos - this.clothing$xMouse + 151,
+                this.topPos - this.clothing$yMouse + 46 - 33,
                 previewPlayer
         );
     }
