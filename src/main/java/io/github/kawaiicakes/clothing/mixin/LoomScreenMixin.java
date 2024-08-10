@@ -352,53 +352,54 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
 
     @Inject(
             method = "containerChanged",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/world/inventory/Slot;getItem()Lnet/minecraft/world/item/ItemStack;",
-                    shift = At.Shift.AFTER
-            ),
+            at = @At(value = "HEAD"),
             cancellable = true
     )
     private void containerChanged(CallbackInfo ci) {
         ItemStack clothingStack = this.menu.getBannerSlot().getItem();
-        ItemStack dyeStack = this.menu.getDyeSlot().getItem();
-        ItemStack patternStack = this.menu.getPatternSlot().getItem();
+        this.clothing$previewClothing = null;
 
-        final int totalOverlayRows = this.clothing$totalOverlayRowCount();
+        if (!clothingStack.isEmpty() && clothingStack.getItem() instanceof ClothingItem<?>) {
 
-        if (
-                !ItemStack.matches(clothingStack, this.bannerStack)
-                        || !ItemStack.matches(dyeStack, this.dyeStack)
-                        || !ItemStack.matches(patternStack, this.patternStack)
-        ) {
-            this.clothing$displayOverlays = !clothingStack.isEmpty()
-                    && totalOverlayRows != 0;
+            ItemStack dyeStack = this.menu.getDyeSlot().getItem();
+            ItemStack patternStack = this.menu.getPatternSlot().getItem();
 
-            this.displayPatterns = !this.clothing$displayOverlays;
+            final int totalOverlayRows = this.clothing$totalOverlayRowCount();
+
+            if (
+                    !ItemStack.matches(clothingStack, this.bannerStack)
+                            || !ItemStack.matches(dyeStack, this.dyeStack)
+                            || !ItemStack.matches(patternStack, this.patternStack)
+            ) {
+                this.clothing$displayOverlays = !clothingStack.isEmpty()
+                        && totalOverlayRows != 0;
+
+                this.displayPatterns = !this.clothing$displayOverlays;
+            }
+
+            if (!this.displayPatterns) this.resultBannerPatterns = null;
+
+            if (this.startRow >= totalOverlayRows) {
+                this.startRow = 0;
+                this.scrollOffs = 0.0F;
+            }
+
+            if (
+                    this.clothing$displayOverlays
+                            && !this.menu.getResultSlot().getItem().isEmpty()
+                            && this.menu.getResultSlot().getItem().getItem() instanceof ClothingItem<?>
+            ) {
+                this.clothing$previewClothing = this.menu.getResultSlot().getItem().copy();
+            } else {
+                this.clothing$previewClothing = null;
+            }
+
+            this.bannerStack = clothingStack.copy();
+            this.dyeStack = dyeStack.copy();
+            this.patternStack = patternStack.copy();
+
+            ci.cancel();
         }
-
-        if (!this.displayPatterns) this.resultBannerPatterns = null;
-
-        if (this.startRow >= totalOverlayRows) {
-            this.startRow = 0;
-            this.scrollOffs = 0.0F;
-        }
-
-        if (
-                this.clothing$displayOverlays
-                        && !this.menu.getResultSlot().getItem().isEmpty()
-                        && this.menu.getResultSlot().getItem().getItem() instanceof ClothingItem<?>
-        ) {
-            this.clothing$previewClothing = this.menu.getResultSlot().getItem().copy();
-        } else {
-            this.clothing$previewClothing = null;
-        }
-
-        this.bannerStack = clothingStack.copy();
-        this.dyeStack = dyeStack.copy();
-        this.patternStack = patternStack.copy();
-
-        ci.cancel();
     }
 
     private LoomScreenMixin(LoomMenu pMenu, Inventory pPlayerInventory, Component pTitle) {
