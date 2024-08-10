@@ -47,7 +47,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
     public static final String TEXTURE_LOCATION_NBT_KEY = "texture";
     public static final String OVERLAY_NBT_KEY = "overlays";
     public static final String PART_VISIBILITY_KEY = "partVisibility";
-    public static final String DEFAULT_TEXTURE_NBT_KEY = "default";
+    public static final ResourceLocation DEFAULT_TEXTURE_NBT_KEY = new ResourceLocation(MOD_ID, "default");
 
     // TODO: consider allowing multiple layers when rendering generic clothing
     public GenericClothingItem(EquipmentSlot pSlot) {
@@ -67,7 +67,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
 
         this.setGenericLayerForRender(toReturn, ModelStrata.forSlot(this.getSlot()));
         this.setTextureLocation(toReturn, DEFAULT_TEXTURE_NBT_KEY);
-        this.setOverlays(toReturn, new String[]{});
+        this.setOverlays(toReturn, new ResourceLocation[]{});
         this.setPartsForVisibility(toReturn, this.defaultPartVisibility());
 
         return toReturn;
@@ -77,7 +77,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
     @ParametersAreNonnullByDefault
     public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
         super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
-        String[] overlayNames = this.getOverlays(pStack);
+        ResourceLocation[] overlayNames = this.getOverlays(pStack);
 
         if (overlayNames.length == 0) return;
 
@@ -88,9 +88,9 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
                         .withStyle(ChatFormatting.BOLD)
                         .withStyle(ChatFormatting.DARK_AQUA)
         );
-        for (String overlayName : overlayNames) {
+        for (ResourceLocation overlayName : overlayNames) {
             pTooltipComponents.add(
-                    Component.literal(overlayName)
+                    Component.literal(overlayName.toString())
                             .withStyle(ChatFormatting.ITALIC)
                             .withStyle(ChatFormatting.AQUA)
             );
@@ -125,16 +125,16 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      * @param itemStack the {@code itemStack} representing this.
      * @return the {@link String} pointing to the location of the texture folder.
      */
-    public String getTextureLocation(ItemStack itemStack) {
-        return this.getClothingPropertyTag(itemStack).getString(TEXTURE_LOCATION_NBT_KEY);
+    public ResourceLocation getTextureLocation(ItemStack itemStack) {
+        return new ResourceLocation(this.getClothingPropertyTag(itemStack).getString(TEXTURE_LOCATION_NBT_KEY));
     }
 
     /**
      * @param itemStack the {@code itemStack} representing this.
      * @param textureLocation the {@link String} pointing to the location of the texture folder.
      */
-    public void setTextureLocation(ItemStack itemStack, String textureLocation) {
-        this.getClothingPropertyTag(itemStack).putString(TEXTURE_LOCATION_NBT_KEY, textureLocation);
+    public void setTextureLocation(ItemStack itemStack, ResourceLocation textureLocation) {
+        this.getClothingPropertyTag(itemStack).putString(TEXTURE_LOCATION_NBT_KEY, textureLocation.toString());
 
         int texHash = this.getDescriptionId(itemStack).hashCode();
 
@@ -145,12 +145,12 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      * @param itemStack the {@code itemStack} representing this.
      * @return the array of {@link String}s whose values point to the overlay textures.
      */
-    public String[] getOverlays(ItemStack itemStack) {
+    public ResourceLocation[] getOverlays(ItemStack itemStack) {
         ListTag listTag = this.getClothingPropertyTag(itemStack).getList(OVERLAY_NBT_KEY, Tag.TAG_STRING);
-        String[] toReturn = new String[listTag.size()];
+        ResourceLocation[] toReturn = new ResourceLocation[listTag.size()];
         for (int i = 0; i < listTag.size(); i++) {
             if (!(listTag.get(i) instanceof StringTag stringTag)) throw new RuntimeException();
-            toReturn[i] = stringTag.getAsString();
+            toReturn[i] = new ResourceLocation(stringTag.getAsString());
         }
         return toReturn;
     }
@@ -159,11 +159,11 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      * @param itemStack the {@code itemStack} representing this.
      * @param overlays the array of {@link String}s whose values point to the overlay textures.
      */
-    public void setOverlays(ItemStack itemStack, String[] overlays) {
+    public void setOverlays(ItemStack itemStack, ResourceLocation[] overlays) {
         ListTag overlayTag = new ListTag();
 
-        for (String overlay : overlays) {
-            overlayTag.add(StringTag.valueOf(overlay));
+        for (ResourceLocation overlay : overlays) {
+            overlayTag.add(StringTag.valueOf(overlay.toString()));
         }
 
         this.getClothingPropertyTag(itemStack).put(OVERLAY_NBT_KEY, overlayTag);
@@ -292,7 +292,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
                                 )
                         );
 
-                        String[] overlays = GenericClothingItem.this.getOverlays(pItemStack);
+                        ResourceLocation[] overlays = GenericClothingItem.this.getOverlays(pItemStack);
                         if (overlays.length < 1) return;
 
                         for (int j = overlays.length - 1; j >= 0; j--) {
@@ -310,8 +310,10 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
                                             pNetHeadYaw, pHeadPitch
                                     ),
                                     pClothingLayer.getArmorResource(
-                                            pLivingEntity, pItemStack,
-                                            GenericClothingItem.this.getSlot(), overlays[j]
+                                            pLivingEntity,
+                                            pItemStack,
+                                            GenericClothingItem.this.getSlot(),
+                                            overlays[j].toString()
                                     )
                             );
                         }
@@ -359,18 +361,24 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      */
     @Override
     public @NotNull String getArmorTexture(ItemStack stack, Entity entity, @Nullable EquipmentSlot slot, String type) {
-        if (type != null) return String.format(
-                Locale.ROOT,
-                "%s:textures/models/clothing/generic/overlays/%s.png",
-                MOD_ID,
-                type
-        );
+        if (type != null) {
+            ResourceLocation overlayLocation = new ResourceLocation(type);
+
+            return String.format(
+                    Locale.ROOT,
+                    "%s:textures/models/clothing/generic/overlays/%s.png",
+                    overlayLocation.getNamespace(),
+                    overlayLocation.getPath()
+            );
+        }
+
+        ResourceLocation textureLocation = this.getTextureLocation(stack);
 
         return String.format(
                 Locale.ROOT,
                 "%s:textures/models/clothing/generic/%s.png",
-                MOD_ID,
-                this.getTextureLocation(stack)
+                textureLocation.getNamespace(),
+                textureLocation.getPath()
         );
     }
 
@@ -379,6 +387,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
         return false;
     }
 
+    // TODO: override this in ClothingItem. default impl like the attributes
     @Override
     public boolean isDamageable(ItemStack stack) {
         return false;

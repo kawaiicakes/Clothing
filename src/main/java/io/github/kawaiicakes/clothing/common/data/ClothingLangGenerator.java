@@ -18,7 +18,7 @@ public class ClothingLangGenerator extends LanguageProvider {
     protected void addTranslations() {
         this.clothingEntryGenerator.buildEntries(
                 (clothingBuilder -> {
-                    String withoutUnderscores = clothingBuilder.id.replace("_", " ");
+                    String withoutUnderscores = clothingBuilder.id.getPath().replace("_", " ");
                     // Yes, this is deprecated. No, I don't care too much.
                     //noinspection deprecation
                     String capitalized = WordUtils.capitalize(withoutUnderscores);

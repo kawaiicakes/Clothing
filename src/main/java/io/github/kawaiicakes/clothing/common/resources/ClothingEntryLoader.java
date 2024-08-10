@@ -116,7 +116,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
                 throw e;
             }
 
-            clothingItem.setClothingName(clothingStack, entryId.getPath());
+            clothingItem.setClothingName(clothingStack, entryId);
             clothingItem.setSlot(clothingStack, slot);
             clothingItem.setColor(clothingStack, color);
             clothingItem.setAttributeModifiers(clothingStack, modifiers);

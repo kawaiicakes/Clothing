@@ -51,17 +51,16 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
     protected void apply(
             Map<ResourceLocation, JsonElement> pObject, ResourceManager pResourceManager, ProfilerFiller pProfiler
     ) {
-        Map<String, OverlayDefinition> overlays = new HashMap<>();
+        Map<ResourceLocation, OverlayDefinition> overlays = new HashMap<>();
 
         for(Map.Entry<ResourceLocation, JsonElement> entry : pObject.entrySet()) {
             ResourceLocation entryId = entry.getKey();
-            String overlayName = entryId.getPath();
 
-            if (overlayName.startsWith("_")) continue;
+            if (entryId.getPath().startsWith("_")) continue;
 
             try {
-                boolean overlayIsUnique = !overlays.containsKey(overlayName);
-                OverlayDefinitionBuilder entryBuilder = OverlayDefinitionBuilder.of(overlayName);
+                boolean overlayIsUnique = !overlays.containsKey(entryId);
+                OverlayDefinitionBuilder entryBuilder = OverlayDefinitionBuilder.of(entryId);
 
                 JsonObject jsonBuilder = entry.getValue().getAsJsonObject();
 
@@ -104,11 +103,11 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
                         jsonBuilder.has("override")
                                 && jsonBuilder.getAsJsonPrimitive("override").getAsBoolean()
                 ) {
-                    overlays.put(overlayName, entryBuilder.build());
+                    overlays.put(entryId, entryBuilder.build());
                 } else if (overlayIsUnique) {
-                    overlays.put(overlayName, entryBuilder.build());
+                    overlays.put(entryId, entryBuilder.build());
                 } else {
-                    overlays.put(overlayName, overlays.get(overlayName).merge(entryBuilder.build()));
+                    overlays.put(entryId, overlays.get(entryId).merge(entryBuilder.build()));
                 }
             } catch (Exception jsonParseException) {
                 LOGGER.error("Parsing error loading overlay entry {}!", entryId, jsonParseException);
@@ -138,16 +137,16 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
     }
 
     public static class OverlayDefinitionBuilder {
-        protected final String name;
+        protected final ResourceLocation name;
         protected EquipmentSlot[] slotsFor = new EquipmentSlot[0];
         protected ResourceLocation[] whitelist = new ResourceLocation[0];
         protected ResourceLocation[] blacklist = new ResourceLocation[0];
 
-        protected OverlayDefinitionBuilder(String name) {
+        protected OverlayDefinitionBuilder(ResourceLocation name) {
             this.name = name;
         }
 
-        public static OverlayDefinitionBuilder of(String name) {
+        public static OverlayDefinitionBuilder of(ResourceLocation name) {
             return new OverlayDefinitionBuilder(name);
         }
 
@@ -201,10 +200,9 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
     }
 
     public record OverlayDefinition(
-            String name, EquipmentSlot[] slotsFor, ResourceLocation[] whitelist, ResourceLocation[] blacklist
+            ResourceLocation name, EquipmentSlot[] slotsFor, ResourceLocation[] whitelist, ResourceLocation[] blacklist
     ) {
         public OverlayDefinition merge(OverlayDefinition other) {
-            // TODO: replace record field "name"'s type with ResourceLocation
             if (!this.name.equals(other.name))
                 throw new IllegalArgumentException("Cannot merge overlays with different names!");
 
@@ -227,7 +225,7 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
         public boolean isValidEntry(ItemStack stack) {
             if (!(stack.getItem() instanceof ClothingItem<?> clothingItem)) return false;
 
-            ResourceLocation clothingName = new ResourceLocation(clothingItem.getClothingName(stack));
+            ResourceLocation clothingName = clothingItem.getClothingName(stack);
 
             return (Arrays.asList(this.slotsFor).contains(clothingItem.getSlot())
                     || Arrays.asList(this.whitelist).contains(clothingName))
@@ -264,7 +262,7 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
         }
 
         public static void serializeToNetwork(FriendlyByteBuf buf, OverlayDefinition overlay) {
-            buf.writeUtf(overlay.name);
+            buf.writeResourceLocation(overlay.name);
             buf.writeCollection(
                     Arrays.stream(overlay.slotsFor)
                             .map(EquipmentSlot::getName)
@@ -277,7 +275,7 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
 
         public static OverlayDefinition deserializeFromNetwork(FriendlyByteBuf buf) {
             return new OverlayDefinition(
-                    buf.readUtf(),
+                    buf.readResourceLocation(),
                     buf.readList(FriendlyByteBuf::readUtf)
                             .stream()
                             .map(EquipmentSlot::byName)

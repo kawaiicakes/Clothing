@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.*;
 import static io.github.kawaiicakes.clothing.common.item.ClothingRegistry.*;
 
@@ -57,21 +58,21 @@ public class ClothingEntryGenerator implements DataProvider {
     }
 
     public void buildEntries(Consumer<ClothingBuilder<?>> clothingBuilderConsumer) {
-        GenericClothingBuilder.shirt("tank_top")
+        GenericClothingBuilder.shirt(new ResourceLocation(MOD_ID, "tank_top"))
                 .addModifier(Attributes.ARMOR, 40.00, AttributeModifier.Operation.ADDITION)
                 .save(clothingBuilderConsumer);
     }
 
     @Override
     public void run(@NotNull CachedOutput pOutput) {
-        Set<String> locations = new HashSet<>();
+        Set<ResourceLocation> locations = new HashSet<>();
 
         buildEntries(
                 (clothingBuilder -> {
-                    ResourceLocation clothingId = new ResourceLocation(this.modId, clothingBuilder.getId());
+                    ResourceLocation clothingId = clothingBuilder.getId();
 
                     try {
-                        if (!locations.add(clothingBuilder.getId()))
+                        if (!locations.add(clothingId))
                             throw new IllegalStateException("Duplicate entry " + clothingId);
 
                         final DataGenerator.PathProvider pathProvider;
@@ -99,7 +100,7 @@ public class ClothingEntryGenerator implements DataProvider {
     }
 
     public static class GenericClothingBuilder extends ClothingBuilder<GenericClothingItem> {
-        protected GenericClothingBuilder(GenericClothingItem clothingItem, String name) {
+        protected GenericClothingBuilder(GenericClothingItem clothingItem, ResourceLocation name) {
             super(clothingItem, name);
             this.setTexture(name);
         }
@@ -109,12 +110,12 @@ public class ClothingEntryGenerator implements DataProvider {
             return this;
         }
 
-        public GenericClothingBuilder setTexture(String path) {
+        public GenericClothingBuilder setTexture(ResourceLocation path) {
             this.clothingItem.setTextureLocation(this.clothingStack, path);
             return this;
         }
 
-        public GenericClothingBuilder setOverlays(String[] paths) {
+        public GenericClothingBuilder setOverlays(ResourceLocation[] paths) {
             this.clothingItem.setOverlays(this.clothingStack, paths);
             return this;
         }
@@ -129,25 +130,25 @@ public class ClothingEntryGenerator implements DataProvider {
             return (GenericClothingBuilder) super.setColor(color);
         }
 
-        public static GenericClothingBuilder hat(String name) {
+        public static GenericClothingBuilder hat(ResourceLocation name) {
             return new GenericClothingBuilder(GENERIC_HAT.get(), name);
         }
 
-        public static GenericClothingBuilder shirt(String name) {
+        public static GenericClothingBuilder shirt(ResourceLocation name) {
             return new GenericClothingBuilder(GENERIC_SHIRT.get(), name);
         }
 
-        public static GenericClothingBuilder pants(String name) {
+        public static GenericClothingBuilder pants(ResourceLocation name) {
             return new GenericClothingBuilder(GENERIC_PANTS.get(), name);
         }
 
-        public static GenericClothingBuilder shoes(String name) {
+        public static GenericClothingBuilder shoes(ResourceLocation name) {
             return new GenericClothingBuilder(GENERIC_SHOES.get(), name);
         }
     }
 
     public static class BakedModelClothingBuilder extends ClothingBuilder<BakedModelClothingItem> {
-        protected BakedModelClothingBuilder(BakedModelClothingItem clothingItem, String name) {
+        protected BakedModelClothingBuilder(BakedModelClothingItem clothingItem, ResourceLocation name) {
             super(clothingItem, name);
         }
 
@@ -170,19 +171,19 @@ public class ClothingEntryGenerator implements DataProvider {
             return (BakedModelClothingBuilder) super.setColor(color);
         }
 
-        public static BakedModelClothingBuilder hat(String name) {
+        public static BakedModelClothingBuilder hat(ResourceLocation name) {
             return new BakedModelClothingBuilder(BAKED_HAT.get(), name);
         }
 
-        public static BakedModelClothingBuilder shirt(String name) {
+        public static BakedModelClothingBuilder shirt(ResourceLocation name) {
             return new BakedModelClothingBuilder(BAKED_SHIRT.get(), name);
         }
 
-        public static BakedModelClothingBuilder pants(String name) {
+        public static BakedModelClothingBuilder pants(ResourceLocation name) {
             return new BakedModelClothingBuilder(BAKED_PANTS.get(), name);
         }
 
-        public static BakedModelClothingBuilder shoes(String name) {
+        public static BakedModelClothingBuilder shoes(ResourceLocation name) {
             return new BakedModelClothingBuilder(BAKED_SHOES.get(), name);
         }
     }
@@ -191,10 +192,10 @@ public class ClothingEntryGenerator implements DataProvider {
         protected final T clothingItem;
         protected final ItemStack clothingStack;
         protected final EquipmentSlot slotForItem;
-        protected final String id;
+        protected final ResourceLocation id;
         protected boolean defaultAttributes = true;
 
-        protected ClothingBuilder(T clothingItem, String id) {
+        protected ClothingBuilder(T clothingItem, ResourceLocation id) {
             this.clothingItem = clothingItem;
             this.clothingStack = this.clothingItem.getDefaultInstance();
             this.id = id;
@@ -206,7 +207,7 @@ public class ClothingEntryGenerator implements DataProvider {
             return this.slotForItem;
         }
 
-        public String getId() {
+        public ResourceLocation getId() {
             return this.id;
         }
 
@@ -335,7 +336,7 @@ public class ClothingEntryGenerator implements DataProvider {
             JsonElement toReturn = NbtOps.INSTANCE.convertTo(JsonOps.INSTANCE, tagForSerialization);
 
             try {
-                if (this.id == null || this.id.isEmpty())
+                if (this.id == null || this.id.getPath().isEmpty())
                     throw new IllegalStateException("This builder has not had a name set!");
 
                 return toReturn.getAsJsonObject();

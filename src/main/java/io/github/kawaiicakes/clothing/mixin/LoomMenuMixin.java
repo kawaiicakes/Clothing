@@ -6,6 +6,7 @@ import io.github.kawaiicakes.clothing.common.LoomMenuOverlayGetter;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -115,17 +116,17 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
             }
 
             if (clothingItem instanceof GenericClothingItem genericClothingItem && overlay != null) {
-                String[] existingOverlays = genericClothingItem.getOverlays(outputStack);
-                List<String> overlayList = Arrays.asList(existingOverlays);
+                ResourceLocation[] existingOverlays = genericClothingItem.getOverlays(outputStack);
+                List<ResourceLocation> overlayList = Arrays.asList(existingOverlays);
 
                 if (overlayList.isEmpty()) {
-                    genericClothingItem.setOverlays(outputStack, new String[]{overlay.name()});
+                    genericClothingItem.setOverlays(outputStack, new ResourceLocation[]{overlay.name()});
                 } else if (!overlayList.get(0).equals(overlay.name())) {
-                    String[] newOverlays;
+                    ResourceLocation[] newOverlays;
 
                     if (overlayList.contains(overlay.name())) {
                         int existingIndex = overlayList.indexOf(overlay.name());
-                        newOverlays = new String[existingOverlays.length];
+                        newOverlays = new ResourceLocation[existingOverlays.length];
                         for (int i = 1; i < existingOverlays.length; i++) {
                             if (i <= existingIndex) {
                                 newOverlays[i] = existingOverlays[i - 1];
@@ -134,7 +135,7 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
                             }
                         }
                     } else {
-                        newOverlays = new String[existingOverlays.length + 1];
+                        newOverlays = new ResourceLocation[existingOverlays.length + 1];
                         System.arraycopy(existingOverlays, 0, newOverlays, 1, existingOverlays.length);
                     }
 

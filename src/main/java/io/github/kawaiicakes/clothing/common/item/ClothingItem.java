@@ -197,8 +197,8 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
      * @param stack  ItemStack for the equipped armor
      * @param entity The entity wearing the clothing
      * @param slot   The slot the clothing is in
-     * @param type   The subtype, can be any valid String according to
-     *              {@link net.minecraft.resources.ResourceLocation#isValidResourceLocation(String)}.
+     * @param type   The subtype, can be any {@link net.minecraft.resources.ResourceLocation} corresponding to a
+     *               {@link GenericClothingItem} overlay.
      * @return The <code>String</code> representing the path to the texture that should be used for this piece of
      *         clothing.
      */
@@ -206,12 +206,12 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     @Nullable
     public abstract String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type);
 
-    public String getClothingName(ItemStack itemStack) {
-        return this.getClothingPropertyTag(itemStack).getString(CLOTHING_NAME_KEY);
+    public ResourceLocation getClothingName(ItemStack itemStack) {
+        return new ResourceLocation(this.getClothingPropertyTag(itemStack).getString(CLOTHING_NAME_KEY));
     }
 
-    public void setClothingName(ItemStack itemStack, String name) {
-        this.getClothingPropertyTag(itemStack).putString(CLOTHING_NAME_KEY, name);
+    public void setClothingName(ItemStack itemStack, ResourceLocation name) {
+        this.getClothingPropertyTag(itemStack).putString(CLOTHING_NAME_KEY, name.toString());
     }
 
     /**
@@ -266,9 +266,10 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     @Override
     public @NotNull String getDescriptionId(@NotNull ItemStack pStack) {
         final String original = super.getDescriptionId(pStack);
-        final String suffix = this.getClothingName(pStack);
+        final ResourceLocation clothingLocation = this.getClothingName(pStack);
+        final String suffix = clothingLocation.getNamespace() + "-" + clothingLocation.getPath();
 
-        return suffix.isEmpty() ? original : original + "." + suffix;
+        return clothingLocation.getPath().isEmpty() ? original : original + "." + suffix;
     }
 
     /**

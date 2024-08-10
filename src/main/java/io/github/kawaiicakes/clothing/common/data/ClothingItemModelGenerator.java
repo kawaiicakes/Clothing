@@ -57,9 +57,10 @@ public class ClothingItemModelGenerator extends ItemModelProvider {
     }
 
     protected void generateEntryModel(ClothingEntryGenerator.ClothingBuilder<?> entry) {
-        this.getBuilder(ITEM_CLOTHING_MODEL_PATH + entry.getId())
+        String fullPath = ITEM_CLOTHING_MODEL_PATH + entry.getId().getPath();
+        this.getBuilder(fullPath)
                 .parent(GENERATED)
-                .texture("layer0", ITEM_CLOTHING_MODEL_PATH + entry.getId());
+                .texture("layer0", fullPath);
     }
 
     protected void generateItemModel(Set<ClothingEntryGenerator.ClothingBuilder<?>> clothingEntries) {
@@ -82,7 +83,8 @@ public class ClothingItemModelGenerator extends ItemModelProvider {
                 for (ClothingEntryGenerator.ClothingBuilder<?> clothingEntry : clothingEntries) {
                     if (!clothingItem.getSlot().equals(clothingEntry.clothingItem.getSlot())) continue;
                     ResourceLocation entryLocation = new ResourceLocation(
-                            this.modid, ITEM_CLOTHING_MODEL_PATH + clothingEntry.getId()
+                            clothingEntry.getId().getNamespace(),
+                            ITEM_CLOTHING_MODEL_PATH + clothingEntry.getId().getPath()
                     );
 
                     ModelFile entryModel = new ModelFile.ExistingModelFile(entryLocation, this.existingFileHelper);

@@ -79,9 +79,8 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
     private void clothing$renderGuiOverlay(
             PoseStack poseStack, OverlayDefinitionLoader.OverlayDefinition overlay, int x, int y
     ) {
-        String overlayFullPath = "textures/item/clothing/overlays/" + overlay.name() + ".png";
-        // TODO: OverlayDefinitionLoader L206
-        ResourceLocation overlayLocation = new ResourceLocation("clothing", overlayFullPath);
+        String overlayFullPath = "textures/item/clothing/overlays/" + overlay.name().getPath() + ".png";
+        ResourceLocation overlayLocation = new ResourceLocation(overlay.name().getNamespace(), overlayFullPath);
         RenderSystem.setShaderTexture(0, overlayLocation);
 
         poseStack.pushPose();

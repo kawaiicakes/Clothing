@@ -7,7 +7,9 @@ import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.Objects;
 
+import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 import static io.github.kawaiicakes.clothing.common.item.ClothingRegistry.*;
 
 public class GenericClothingEntryLoader extends ClothingEntryLoader<GenericClothingItem> {
@@ -34,8 +36,8 @@ public class GenericClothingEntryLoader extends ClothingEntryLoader<GenericCloth
         return (
                 (genericClothingItem, clothingStack) ->  {
                     GenericClothingItem.ModelStrata layer;
-                    String textureLocation;
-                    String[] overlays;
+                    ResourceLocation textureLocation;
+                    ResourceLocation[] overlays;
                     ClothingItem.ModelPartReference[] parts;
 
                     try {
@@ -46,13 +48,16 @@ public class GenericClothingEntryLoader extends ClothingEntryLoader<GenericCloth
                                 : genericClothingItem.getGenericLayerForRender(clothingStack);
 
                         textureLocation = topElement.has("texture")
-                                ? topElement.getAsJsonPrimitive("texture").getAsString()
-                                : "default";
-                        if (textureLocation.isEmpty()) textureLocation = "default";
+                                ? new ResourceLocation(topElement.getAsJsonPrimitive("texture").getAsString())
+                                : new ResourceLocation(MOD_ID, "default");
+                        if (textureLocation.getPath().isEmpty()) new ResourceLocation(MOD_ID, "default");
 
-                        overlays = topElement.has("overlays")
-                                ? collapseJsonArrayToStringArray(topElement.getAsJsonArray("overlays"))
-                                : new String[0];
+                        overlays = topElement.has("overlays") ? Arrays.stream(
+                                collapseJsonArrayToStringArray(topElement.getAsJsonArray("overlays")))
+                                .filter(Objects::nonNull)
+                                .map(ResourceLocation::new)
+                                .toArray(ResourceLocation[]::new)
+                                : new ResourceLocation[0];
 
                         parts = topElement.has("part_visibility")
                                 ? Arrays.stream(

@@ -18,6 +18,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
+
 public class ClothingOverlayGenerator implements DataProvider {
     protected static final Logger LOGGER = LogUtils.getLogger();
 
@@ -42,10 +44,10 @@ public class ClothingOverlayGenerator implements DataProvider {
 
     public void registerOverlays() {
         this.addOverlays(
-                OverlayDefinitionLoader.OverlayDefinitionBuilder.of("ouch")
+                OverlayDefinitionLoader.OverlayDefinitionBuilder.of(new ResourceLocation(MOD_ID, "ouch"))
                         .addSlot(EquipmentSlot.CHEST)
                         .build(),
-                OverlayDefinitionLoader.OverlayDefinitionBuilder.of("oppai")
+                OverlayDefinitionLoader.OverlayDefinitionBuilder.of(new ResourceLocation(MOD_ID, "oppai"))
                         .addSlot(EquipmentSlot.CHEST)
                         .build()
         );
@@ -55,14 +57,14 @@ public class ClothingOverlayGenerator implements DataProvider {
     public void run(@NotNull CachedOutput pOutput) {
         if (this.overlays == null || this.overlays.isEmpty()) this.registerOverlays();
 
-        Set<String> overlayIdSet = new HashSet<>();
+        Set<ResourceLocation> overlayIdSet = new HashSet<>();
 
         for (OverlayDefinitionLoader.OverlayDefinition overlay : this.overlays) {
             try {
                 if (!overlayIdSet.add(overlay.name()))
                     throw new IllegalStateException("Duplicate overlay " + overlay.name());
 
-                Path overlayPath = this.overlayPath.json(new ResourceLocation(this.modId, overlay.name()));
+                Path overlayPath = this.overlayPath.json(overlay.name());
 
                 DataProvider.saveStable(pOutput, overlay.serializeToJson(), overlayPath);
             } catch (IOException | RuntimeException e) {
