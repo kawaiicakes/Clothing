@@ -1,15 +1,26 @@
 package io.github.kawaiicakes.clothing.mixin;
 
+import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.logging.LogUtils;
+import com.mojang.math.Quaternion;
+import com.mojang.math.Vector3f;
+import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
+import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.common.LoomMenuOverlayGetter;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.inventory.LoomScreen;
+import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.entity.layers.RenderLayer;
+import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
@@ -17,7 +28,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.LoomMenu;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
@@ -53,6 +63,10 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
     @Unique private boolean clothing$displayOverlays;
     @Unique private float clothing$xMouse;
     @Unique private float clothing$yMouse;
+    @Unique
+    private HumanoidClothingLayer<AbstractClientPlayer, HumanoidModel<AbstractClientPlayer>, HumanoidModel<AbstractClientPlayer>>
+            clothing$humanoidClothingLayer;
+    @Unique private ItemStack clothing$previewClothing;
 
     @Unique
     private int clothing$totalOverlayRowCount() {
@@ -60,7 +74,7 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
     }
 
     @Unique
-    private void clothing$renderOverlay(
+    private void clothing$renderGuiOverlay(
             PoseStack poseStack, OverlayDefinitionLoader.OverlayDefinition overlay, int x, int y
     ) {
         String overlayFullPath = "textures/item/clothing/overlays/" + overlay.name() + ".png";
@@ -75,6 +89,76 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
         poseStack.popPose();
 
         RenderSystem.setShaderTexture(0, BG_LOCATION);
+    }
+
+    @SuppressWarnings({"SameParameterValue"})
+    @Unique
+    private void clothing$renderClothingPreview(
+            float partialTick, int pPosX, int pPosY, int pScale, float pMouseX, float pMouseY
+    ) {
+        if (!(this.clothing$previewClothing.getItem() instanceof ClothingItem<?> clothingItem)) return;
+
+        PoseStack posestack = RenderSystem.getModelViewStack();
+        posestack.pushPose();
+        posestack.translate(pPosX, pPosY, 1050.0D);
+        posestack.scale(1.0F, 1.0F, -1.0F);
+        RenderSystem.applyModelViewMatrix();
+        PoseStack posestack1 = new PoseStack();
+        posestack1.translate(0.0D, 0.0D, 1000.0D);
+        posestack1.scale((float)pScale, (float)pScale, (float)pScale);
+        Quaternion quaternion = Vector3f.ZP.rotationDegrees(180.0F);
+        posestack1.mulPose(quaternion);
+        Lighting.setupForEntityInInventory();
+
+        posestack1.scale(-1.0F, -1.0F, 1.0F);
+        posestack1.translate(0.0D, -1.501F, 0.0D);
+
+        assert Minecraft.getInstance().player != null;
+
+        if (clothingItem.getClientClothingRenderManager() instanceof ClientClothingRenderManager renderer) {
+            MultiBufferSource.BufferSource buffer = Minecraft.getInstance().renderBuffers().bufferSource();
+
+            renderer.render(
+                    this.clothing$humanoidClothingLayer, this.clothing$previewClothing,
+                    posestack1, buffer,
+                    Minecraft.getInstance()
+                            .getEntityRenderDispatcher()
+                            .getPackedLightCoords(Minecraft.getInstance().player, partialTick),
+                    Minecraft.getInstance().player,
+                    0.0F, 0.0F,
+                    partialTick, 0.0F,
+                    0.0F, 0.0F
+            );
+
+            buffer.endBatch();
+        }
+
+        posestack.popPose();
+        RenderSystem.applyModelViewMatrix();
+        Lighting.setupFor3DItems();
+    }
+
+    @Inject(method = "init", at = @At(value = "TAIL"))
+    private void init(CallbackInfo ci) {
+        assert this.minecraft != null;
+        assert this.minecraft.player != null;
+        EntityRenderer<?> entityRenderer
+                = this.minecraft.getEntityRenderDispatcher().getRenderer(this.minecraft.player);
+
+        if (!(entityRenderer instanceof PlayerRenderer playerRenderer)) return;
+
+        RenderLayer<?,?> renderLayer = playerRenderer.layers.stream()
+                .filter(layer -> layer instanceof HumanoidClothingLayer<?,?,?>)
+                .findFirst()
+                .orElseThrow();
+
+        //noinspection unchecked
+        this.clothing$humanoidClothingLayer
+                = (
+                        HumanoidClothingLayer<AbstractClientPlayer,
+                                HumanoidModel<AbstractClientPlayer>,
+                                HumanoidModel<AbstractClientPlayer>>
+                ) renderLayer;
     }
 
     @Inject(
@@ -193,8 +277,12 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
                     shift = At.Shift.AFTER
             )
     )
-    private void renderBgInject0(CallbackInfo ci) {
-        if (!this.clothing$displayOverlays) return;
+    private void renderBgInject0(PoseStack pPoseStack, float pPartialTick, int pX, int pY, CallbackInfo ci) {
+        if (
+                !this.clothing$displayOverlays
+                        || this.clothing$previewClothing == null
+                        || this.clothing$previewClothing.isEmpty()
+        ) return;
         if (this.resultBannerPatterns != null) {
             clothing$LOGGER.error(
                     "Result banner patterns non-null but result overlays are also non-null! If you are seeing" +
@@ -203,18 +291,13 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
             return;
         }
 
-        Player previewPlayer = Minecraft.getInstance().player;
-        assert previewPlayer != null;
-
-        // TODO: add new piece of clothing with applied overlay to preview player
-
-        InventoryScreen.renderEntityInInventory(
+        this.clothing$renderClothingPreview(
+                pPartialTick,
                 this.leftPos + 151,
-                this.topPos + 46,
-                20,
+                this.topPos + 56,
+                50,
                 this.leftPos - this.clothing$xMouse + 151,
-                this.topPos - this.clothing$yMouse + 46 - 33,
-                previewPlayer
+                this.topPos - this.clothing$yMouse + 56 - 33
         );
     }
 
@@ -262,7 +345,7 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
                 }
 
                 this.blit(pPoseStack, l1, i2, 14, j2, 14, 14);
-                this.clothing$renderOverlay(pPoseStack, overlayList.get(k1), l1, i2);
+                this.clothing$renderGuiOverlay(pPoseStack, overlayList.get(k1), l1, i2);
             }
         }
     }
@@ -299,6 +382,16 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
         if (this.startRow >= totalOverlayRows) {
             this.startRow = 0;
             this.scrollOffs = 0.0F;
+        }
+
+        if (
+                this.clothing$displayOverlays
+                        && !this.menu.getResultSlot().getItem().isEmpty()
+                        && this.menu.getResultSlot().getItem().getItem() instanceof ClothingItem<?>
+        ) {
+            this.clothing$previewClothing = this.menu.getResultSlot().getItem().copy();
+        } else {
+            this.clothing$previewClothing = null;
         }
 
         this.bannerStack = clothingStack.copy();

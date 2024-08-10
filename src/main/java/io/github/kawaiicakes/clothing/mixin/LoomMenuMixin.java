@@ -21,9 +21,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+// FIXME: placing dye into loom alone causes scroll bar to become active
+// FIXME: banner preview no longer displays??
 // TODO: overlay pattern: banner pattern but allows access to otherwise unobtainable overlays (also allows op'd/creative players to force overlays onto clothing that normally shouldn't work)
+// TODO: new thread item, allowed to be placed in dye slot if a clothing item is present
+// FIXME: placing dye into the loom sets up result slot without having chosen an overlay
+// TODO: make overlays removable by right clicking cauldron with water/new bleach liquid in it
 @Mixin(LoomMenu.class)
 public abstract class LoomMenuMixin extends AbstractContainerMenu implements LoomMenuOverlayGetter {
     @Unique
@@ -106,11 +112,11 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
             outputStack.setCount(1);
 
             if (!dyeStack.isEmpty()) {
-                DyeColor dyecolor = ((DyeItem) dyeStack.getItem()).getDyeColor();
-                clothingItem.setColor(outputStack, dyecolor.getId());
+                List<DyeItem> dyeColor = Collections.singletonList(((DyeItem) dyeStack.getItem()));
+                ClothingItem.dyeClothing(outputStack, dyeColor);
             }
 
-            if (clothingItem instanceof GenericClothingItem genericClothingItem) {
+            if (clothingItem instanceof GenericClothingItem genericClothingItem && overlay != null) {
                 String[] existingOverlays = genericClothingItem.getOverlays(outputStack);
                 List<String> overlayList = Arrays.asList(existingOverlays);
 

@@ -397,6 +397,57 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     }
 
     /**
+     * Mirror of {@link DyeableLeatherItem#dyeArmor(ItemStack, List)} but actually mutates the passed {@code stack}
+     * @param stack
+     * @param dyeItems
+     */
+    public static void dyeClothing(ItemStack stack, List<DyeItem> dyeItems) {
+        int[] colors = new int[3];
+        int i = 0;
+        int j = 0;
+
+        Item item = stack.getItem();
+        if (!(item instanceof ClothingItem<?> clothingItem)) return;
+
+        if (clothingItem.hasCustomColor(stack)) {
+            int k = clothingItem.getColor(stack);
+            float f = (float)(k >> 16 & 255) / 255.0F;
+            float f1 = (float)(k >> 8 & 255) / 255.0F;
+            float f2 = (float)(k & 255) / 255.0F;
+            i += (int)(Math.max(f, Math.max(f1, f2)) * 255.0F);
+            colors[0] += (int)(f * 255.0F);
+            colors[1] += (int)(f1 * 255.0F);
+            colors[2] += (int)(f2 * 255.0F);
+            ++j;
+        }
+
+        for (DyeItem dyeitem : dyeItems) {
+            float[] afloat = dyeitem.getDyeColor().getTextureDiffuseColors();
+            int i2 = (int)(afloat[0] * 255.0F);
+            int l = (int)(afloat[1] * 255.0F);
+            int i1 = (int)(afloat[2] * 255.0F);
+            i += Math.max(i2, Math.max(l, i1));
+            colors[0] += i2;
+            colors[1] += l;
+            colors[2] += i1;
+            ++j;
+        }
+
+        int j1 = colors[0] / j;
+        int k1 = colors[1] / j;
+        int l1 = colors[2] / j;
+        float f3 = (float)i / (float)j;
+        float f4 = (float)Math.max(j1, Math.max(k1, l1));
+        j1 = (int)((float)j1 * f3 / f4);
+        k1 = (int)((float)k1 * f3 / f4);
+        l1 = (int)((float)l1 * f3 / f4);
+        int j2 = (j1 << 8) + k1;
+        j2 = (j2 << 8) + l1;
+
+        clothingItem.setColor(stack, j2);
+    }
+
+    /**
      * {@link ModelPart} and references to {@link HumanoidClothingLayer}s which contain the models from which parts may
      * come are client-only classes; directly referencing them in {@link net.minecraft.world.item.Item} increases the
      * chances of serverside crashes due to {@link ClassNotFoundException}s.
