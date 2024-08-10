@@ -3,10 +3,11 @@ package io.github.kawaiicakes.clothing.common.network;
 import com.google.common.collect.ImmutableList;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.NonNullList;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkDirection;
@@ -60,25 +61,25 @@ public class ClothingPackets {
 
     public static class S2CClothingEntryPacket {
         protected final String loaderClass;
-        protected final ImmutableList<CompoundTag> clothingEntries;
+        protected final NonNullList<ItemStack> clothingEntries;
 
         public S2CClothingEntryPacket(ClothingEntryLoader<?> clothingEntryLoader) {
             this.loaderClass = clothingEntryLoader.getName();
-            this.clothingEntries = clothingEntryLoader.getStacks();
+            this.clothingEntries = clothingEntryLoader.generateStacks();
         }
 
         public S2CClothingEntryPacket(FriendlyByteBuf buf) {
             this.loaderClass = buf.readUtf();
-            this.clothingEntries = ImmutableList.copyOf(
-                    buf.readList(FriendlyByteBuf::readAnySizeNbt)
-            );
+            NonNullList<ItemStack> stacks = NonNullList.create();
+            stacks.addAll(buf.readList(FriendlyByteBuf::readItem));
+            this.clothingEntries = stacks;
         }
 
         public void toBytes(FriendlyByteBuf buf) {
             buf.writeUtf(this.loaderClass);
             buf.writeCollection(
                     this.clothingEntries,
-                    FriendlyByteBuf::writeNbt
+                    FriendlyByteBuf::writeItem
             );
         }
 
@@ -89,8 +90,8 @@ public class ClothingPackets {
                     () -> DistExecutor.unsafeRunWhenOn(
                             Dist.CLIENT,
                             () -> () -> {
-                                ClothingEntryLoader<?> clothingEntryLoader
-                                        = ClothingEntryLoader.getLoader(this.loaderClass);
+                                ClothingEntryLoader<?> clothingEntryLoader;
+                                clothingEntryLoader = ClothingEntryLoader.getLoader(this.loaderClass);
                                 if (clothingEntryLoader == null) return;
 
                                 clothingEntryLoader.addStacks(this.clothingEntries);
@@ -125,7 +126,7 @@ public class ClothingPackets {
             contextSupplier.get().enqueueWork(
                     () -> DistExecutor.unsafeRunWhenOn(
                             Dist.CLIENT,
-                            () -> () -> OverlayDefinitionLoader.getInstance().addOverlays(this.overlayDefinitions)
+                            () -> () -> new OverlayDefinitionLoader().addOverlays(this.overlayDefinitions)
                     )
             );
 

@@ -46,6 +46,8 @@ import java.util.Collection;
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.BASE_MODEL_DATA;
 import static io.github.kawaiicakes.clothing.common.item.ClothingRegistry.CLOTHING_REGISTRY;
 
+// TODO: custom item models for clothing so I don't have to rely on 9213912939123 item predicates
+// TODO: clothing recipe type for easier creation: internally it's just loaded into a normal crafting recipe
 @Mod(ClothingMod.MOD_ID)
 public class ClothingMod
 {
@@ -77,9 +79,9 @@ public class ClothingMod
 
     @SubscribeEvent
     public void onAddReloadListener(AddReloadListenerEvent event) {
-        event.addListener(OverlayDefinitionLoader.getInstance());
-        event.addListener(GenericClothingEntryLoader.getInstance());
-        event.addListener(BakedClothingEntryLoader.getInstance());
+        event.addListener(new OverlayDefinitionLoader());
+        event.addListener(new GenericClothingEntryLoader());
+        event.addListener(new BakedClothingEntryLoader());
     }
 
     @SubscribeEvent

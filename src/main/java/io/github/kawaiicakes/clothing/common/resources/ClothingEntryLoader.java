@@ -22,6 +22,7 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
@@ -35,6 +36,7 @@ import static io.github.kawaiicakes.clothing.common.item.ClothingItem.ATTRIBUTES
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.CLOTHING_SLOT_NBT_KEY;
 import static net.minecraft.world.item.DyeableLeatherItem.TAG_COLOR;
 
+// FIXME: entries not appearing. anywhere.
 /**
  * This class is a {@link SimpleJsonResourceReloadListener} that pretty heavily abstracts stuff related to Minecraft
  * datapack loading. Its purpose is to load data entries for the clothing item {@link T} to appropriate
@@ -52,7 +54,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
     private static final Map<String, ClothingEntryLoader<?>> LOADERS = new HashMap<>();
 
     protected ImmutableMap<ResourceLocation, NbtStackInitializer<T>> stackEntries = ImmutableMap.of();
-    protected ImmutableList<CompoundTag> stacks = ImmutableList.of();
+    protected NonNullList<ItemStack> stacks = NonNullList.create();
     protected final String subDirectory;
 
     /**
@@ -64,8 +66,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
         LOADERS.put(pSubDirectory, this);
     }
 
-    @Nullable
-    public static ClothingEntryLoader<?> getLoader(String pSubDirectory) {
+    public static @Nullable ClothingEntryLoader<?> getLoader(String pSubDirectory) {
         return LOADERS.get(pSubDirectory);
     }
 
@@ -79,6 +80,14 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
      */
     @NotNull
     public abstract NbtStackInitializer<T> deserializeFromJson(ResourceLocation entryId, JsonObject topElement);
+
+    /**
+     * Indicates what items are registered for {@link T} of the implementation. Used to verify slots when adding items
+     * in {@link ClothingItem#fillItemCategory(CreativeModeTab, NonNullList)}.
+     * @return an array of {@link T} containing all the registered instances of {@link T}.
+     * @see #getStacks(ClothingItem)
+     */
+    public abstract T[] clothingItemsForLoader();
 
     @NotNull
     public NbtStackInitializer<T> defaultDeserialization(ResourceLocation entryId, JsonObject topElement) {
@@ -178,43 +187,58 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
     }
 
     /**
-     * Generates the {@link ItemStack}s specified in the datapack loaded by this by iterating in {@link #stackEntries}.
-     * @param stackType the clothing item of type {@link T} for which the return is being generated.
+     * Used primarily for data transfer from server to client. Generates the {@link ItemStack}s specified in the
+     * datapack loaded by this by iterating in {@link #stackEntries}. Note that on the server, {@link #stacks} isn't
+     * actually being filled and this method merely generates the stacks needed for {@link #addStacks(NonNullList)}.
      * @return a {@link NonNullList} containing the {@link ItemStack}s generated from this loader.
      */
-    public NonNullList<ItemStack> generateStacks(T stackType) {
-        NonNullList<ItemStack> stacks = NonNullList.create();
-        for (Map.Entry<ResourceLocation, NbtStackInitializer<T>> entry : this.stackEntries.entrySet()) {
-            try {
-                ItemStack generated = stackType.getDefaultInstance();
-                entry.getValue().writeToStack(stackType, generated);
-                if (generated.equals(stackType.getDefaultInstance())) continue;
-                if (!stackType.getSlot().equals(stackType.getSlot(generated))) continue;
-                stacks.add(generated);
-            } catch (RuntimeException e) {
-                LOGGER.error("Exception while attempting to load clothing entry {}! Skipped!", entry.getKey(), e);
+    public NonNullList<ItemStack> generateStacks() {
+        NonNullList<ItemStack> toReturn = NonNullList.createWithCapacity(this.stacks.size());
+        for (T clothingItem : this.clothingItemsForLoader()) {
+            for (Map.Entry<ResourceLocation, NbtStackInitializer<T>> entry : this.stackEntries.entrySet()) {
+                try {
+                    ItemStack generated = clothingItem.getDefaultInstance();
+                    entry.getValue().writeToStack(clothingItem, generated);
+                    if (generated.equals(clothingItem.getDefaultInstance())) continue;
+                    if (!clothingItem.getSlot().equals(clothingItem.getSlot(generated))) continue;
+                    toReturn.add(generated);
+                } catch (RuntimeException e) {
+                    LOGGER.error("Exception while attempting to load clothing entry {}! Skipped!", entry.getKey(), e);
+                }
             }
         }
-        return stacks;
+        return toReturn;
     }
 
     /**
-     * Used primarily for data transfer from server to client
-     * @return an immutable shallow copy of {@link #stacks}.
+     * Returns the {@link ItemStack}s from {@link #stacks} filtered down to those stacks whose slot is equal to the
+     * slot of the passed instance. Used for {@link ClothingItem#fillItemCategory(CreativeModeTab, NonNullList)}. Does
+     * nothing serverside.
+     * @param clothingItemInstance the {@link T} instance to obtain stacks for.
+     * @return an {@link ImmutableList} with no null elements containing the {@link ItemStack}s belonging to the passed
+     *          clothing item.
      */
-    public ImmutableList<CompoundTag> getStacks() {
-        ImmutableList.Builder<CompoundTag> toReturn = ImmutableList.builder();
-        toReturn.addAll(this.stacks.stream().map(CompoundTag::copy).toList());
+    public ImmutableList<ItemStack> getStacks(T clothingItemInstance) {
+        if (this.stacks == null) throw new IllegalStateException("This cannot be used serverside!");
+        ImmutableList.Builder<ItemStack> toReturn = ImmutableList.builder();
+
+        toReturn.addAll(
+                this.stacks.stream()
+                        .map(ItemStack::copy)
+                        .filter(stack -> clothingItemInstance.getSlot().equals(clothingItemInstance.getSlot(stack)))
+                        .toList()
+        );
+
         return toReturn.build();
     }
 
     /**
      * Adds stacks for the {@link net.minecraft.world.item.CreativeModeTab}. Used on the client; this overwrites
      * existing entries since the server will send ALL entries at least once per reload anyway.
-     * @param stacks the {@link ImmutableList} of {@link CompoundTag}s which will be written onto {@link ItemStack}s.
+     * @param stacks the {@link ItemStack}s for the clothing entries.
      * @see net.minecraftforge.event.AddReloadListenerEvent
      */
-    public void addStacks(ImmutableList<CompoundTag> stacks) {
+    public void addStacks(NonNullList<ItemStack> stacks) {
         this.stacks = stacks;
     }
 

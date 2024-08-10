@@ -8,10 +8,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
+import static io.github.kawaiicakes.clothing.common.item.ClothingRegistry.*;
+
 public class GenericClothingEntryLoader extends ClothingEntryLoader<GenericClothingItem> {
     protected static GenericClothingEntryLoader INSTANCE = null;
 
-    protected GenericClothingEntryLoader() {
+    public GenericClothingEntryLoader() {
         super("generic");
         INSTANCE = this;
     }
@@ -72,5 +74,15 @@ public class GenericClothingEntryLoader extends ClothingEntryLoader<GenericCloth
                     genericClothingItem.setPartsForVisibility(clothingStack, parts);
                 }
         );
+    }
+
+    @Override
+    public GenericClothingItem[] clothingItemsForLoader() {
+        return new GenericClothingItem[]{
+                GENERIC_HAT.get(),
+                GENERIC_SHIRT.get(),
+                GENERIC_PANTS.get(),
+                GENERIC_SHOES.get()
+        };
     }
 }

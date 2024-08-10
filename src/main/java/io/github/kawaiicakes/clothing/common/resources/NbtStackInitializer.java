@@ -13,7 +13,8 @@ import java.util.Objects;
  * whose item corresponds to type {@link T}. These stacks are then loaded into the client's creative menu tab.
  * @param <T> a {@link ClothingItem} subclass.
  * @see ClothingItem#fillItemCategory(CreativeModeTab, NonNullList)
- * @see ClothingEntryLoader#generateStacks(ClothingItem)
+ * @see ClothingEntryLoader#generateStacks()
+ * @see ClothingEntryLoader#getStacks(ClothingItem)
  */
 @FunctionalInterface
 public interface NbtStackInitializer<T> {

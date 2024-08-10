@@ -50,7 +50,6 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
     public static final String DEFAULT_TEXTURE_NBT_KEY = "default";
 
     // TODO: consider allowing multiple layers when rendering generic clothing
-    // TODO: server-sided texture/overlay picker; data from GenericClothingEntryLoader prevents choosing arbitrarily
     public GenericClothingItem(EquipmentSlot pSlot) {
         super(pSlot);
     }

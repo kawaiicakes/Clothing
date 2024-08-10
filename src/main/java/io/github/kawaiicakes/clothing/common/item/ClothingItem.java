@@ -156,10 +156,9 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
 
         try {
             final ClothingEntryLoader<T> loader = this.loaderForType();
-
             //noinspection unchecked
-            pItems.addAll(loader.generateStacks((T) this));
-        } catch (RuntimeException e) {
+            pItems.addAll(loader.getStacks((T) this));
+        } catch (Exception e) {
             LOGGER.error("Unable to generate clothing entries!", e);
         }
     }

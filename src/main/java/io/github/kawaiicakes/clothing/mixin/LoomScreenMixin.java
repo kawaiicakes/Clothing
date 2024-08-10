@@ -45,6 +45,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import javax.annotation.Nullable;
 import java.util.List;
 
+// TODO: rotatable clothing preview
+// FIXME: seemingly at random, the preview is scaled up in size and is not aligned with the box
 @Mixin(LoomScreen.class)
 public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> {
     @Shadow @Final private static ResourceLocation BG_LOCATION;

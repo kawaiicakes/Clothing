@@ -9,10 +9,12 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
+import static io.github.kawaiicakes.clothing.common.item.ClothingRegistry.*;
+
 public class BakedClothingEntryLoader extends ClothingEntryLoader<BakedModelClothingItem> {
     protected static BakedClothingEntryLoader INSTANCE = null;
 
-    protected BakedClothingEntryLoader() {
+    public BakedClothingEntryLoader() {
         super("baked");
     }
 
@@ -61,5 +63,15 @@ public class BakedClothingEntryLoader extends ClothingEntryLoader<BakedModelClot
                     bakedClothingItem.setModelPartLocations(clothingStack, models);
                 }
         );
+    }
+
+    @Override
+    public BakedModelClothingItem[] clothingItemsForLoader() {
+        return new BakedModelClothingItem[]{
+                BAKED_HAT.get(),
+                BAKED_SHIRT.get(),
+                BAKED_PANTS.get(),
+                BAKED_SHOES.get()
+        };
     }
 }
