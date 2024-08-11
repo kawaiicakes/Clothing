@@ -52,7 +52,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
     private static final Map<String, ClothingEntryLoader<?>> LOADERS = new HashMap<>();
 
     protected ImmutableMap<ResourceLocation, NbtStackInitializer<T>> stackEntries = ImmutableMap.of();
-    protected NonNullList<ItemStack> stacks = NonNullList.create();
+    protected ImmutableMap<ResourceLocation, ItemStack> stacks = ImmutableMap.of();
     protected final String subDirectory;
 
     /**
@@ -192,12 +192,23 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
 
     /**
      * Used primarily for data transfer from server to client. Generates the {@link ItemStack}s specified in the
-     * datapack loaded by this by iterating in {@link #stackEntries}. Note that on the server, {@link #stacks} isn't
-     * actually being filled and this method merely generates the stacks needed for {@link #addStacks(NonNullList)}.
-     * @return a {@link NonNullList} containing the {@link ItemStack}s generated from this loader.
+     * datapack loaded by this by iterating in {@link #stackEntries}. When called, it fills {@link #stacks} with
+     * the mapped clothing entries.
+     * @return an {@link ImmutableMap} containing the mapped {@link ItemStack}s generated from this loader.
      */
-    public NonNullList<ItemStack> generateStacks() {
-        NonNullList<ItemStack> toReturn = NonNullList.createWithCapacity(this.stacks.size());
+    public ImmutableMap<ResourceLocation, ItemStack> getStacks() {
+        if (this.stacks != null && !this.stacks.isEmpty()) {
+            ImmutableMap.Builder<ResourceLocation, ItemStack> toReturn = ImmutableMap.builder();
+
+            for (Map.Entry<ResourceLocation, ItemStack> entry : this.stacks.entrySet()) {
+                toReturn.put(entry.getKey(), entry.getValue().copy());
+            }
+
+            return toReturn.build();
+        }
+
+        ImmutableMap.Builder<ResourceLocation, ItemStack> stackMapBuilder = ImmutableMap.builder();
+
         for (T clothingItem : this.clothingItemsForLoader()) {
             for (Map.Entry<ResourceLocation, NbtStackInitializer<T>> entry : this.stackEntries.entrySet()) {
                 try {
@@ -205,30 +216,37 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
                     entry.getValue().writeToStack(clothingItem, generated);
                     if (generated.equals(clothingItem.getDefaultInstance())) continue;
                     if (!clothingItem.getSlot().equals(clothingItem.getSlot(generated))) continue;
-                    toReturn.add(generated);
+                    stackMapBuilder.put(entry.getKey(), generated);
                 } catch (RuntimeException e) {
                     LOGGER.error("Exception while attempting to load clothing entry {}! Skipped!", entry.getKey(), e);
                 }
             }
         }
-        return toReturn;
+
+        this.stacks = stackMapBuilder.build();
+
+        ImmutableMap.Builder<ResourceLocation, ItemStack> toReturn = ImmutableMap.builder();
+
+        for (Map.Entry<ResourceLocation, ItemStack> entry : this.stacks.entrySet()) {
+            toReturn.put(entry.getKey(), entry.getValue().copy());
+        }
+
+        return toReturn.build();
     }
 
     /**
      * Returns the {@link ItemStack}s from {@link #stacks} filtered down to those stacks whose slot is equal to the
-     * slot of the passed instance. Used for {@link ClothingItem#fillItemCategory(CreativeModeTab, NonNullList)}. Does
-     * nothing serverside.
+     * slot of the passed instance. Used for {@link ClothingItem#fillItemCategory(CreativeModeTab, NonNullList)}.
      * @param clothingItemInstance the {@link T} instance to obtain stacks for.
      * @return an {@link ImmutableList} with no null elements containing the {@link ItemStack}s belonging to the passed
      *          clothing item.
      */
     public ImmutableList<ItemStack> getStacks(T clothingItemInstance) {
-        if (this.stacks == null) throw new IllegalStateException("This cannot be used serverside!");
         ImmutableList.Builder<ItemStack> toReturn = ImmutableList.builder();
 
         toReturn.addAll(
-                this.stacks.stream()
-                        .map(ItemStack::copy)
+                this.getStacks().values()
+                        .stream()
                         .filter(stack -> clothingItemInstance.getSlot().equals(clothingItemInstance.getSlot(stack)))
                         .toList()
         );
@@ -237,13 +255,28 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
     }
 
     /**
-     * Adds stacks for the {@link net.minecraft.world.item.CreativeModeTab}. Used on the client; this overwrites
-     * existing entries since the server will send ALL entries at least once per reload anyway.
-     * @param stacks the {@link ItemStack}s for the clothing entries.
+     * Used mainly for clothing recipes
+     * @param entryLocation the {@link ResourceLocation} of the piece of clothing.
+     * @return the corresponding {@link ItemStack} for the passed location. Returns as {@link ItemStack#EMPTY} if
+     * no such entry location exists.
+     * @see io.github.kawaiicakes.clothing.common.resources.recipe.ClothingRecipe.Serializer
+     */
+    @NotNull
+    public ItemStack getStack(ResourceLocation entryLocation) {
+        ImmutableMap<ResourceLocation, ItemStack> stackMap = this.getStacks();
+        return stackMap.containsKey(entryLocation)
+                ? Objects.requireNonNull(stackMap.get(entryLocation))
+                : ItemStack.EMPTY;
+    }
+
+    /**
+     * Sets {@link #stacks} for the {@link net.minecraft.world.item.CreativeModeTab}. Used on the client; this
+     * overwrites existing entries since the server will send ALL entries at least once per reload anyway.
+     * @param stacks the mapped {@link ItemStack}s for the clothing entries.
      * @see net.minecraftforge.event.AddReloadListenerEvent
      */
-    public void addStacks(NonNullList<ItemStack> stacks) {
-        this.stacks = stacks;
+    public void setStacks(Map<ResourceLocation, ItemStack> stacks) {
+        this.stacks = ImmutableMap.copyOf(stacks);
     }
 
     /**
@@ -254,6 +287,8 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
      */
     public void setEntries(ImmutableMap<ResourceLocation, NbtStackInitializer<T>> clothingMap) {
         this.stackEntries = ImmutableMap.copyOf(clothingMap);
+        // forces a regeneration of the stacks if previous data exists
+        this.stacks = ImmutableMap.of();
     }
 
     /**
@@ -291,6 +326,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
         }
 
         this.setEntries(builder.build());
+        this.getStacks();
 
         LOGGER.info("Loaded {} clothing entries in directory {}!", this.stackEntries.size(), this.subDirectory);
     }

@@ -45,9 +45,9 @@ import java.util.Collection;
 
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.BASE_MODEL_DATA;
 import static io.github.kawaiicakes.clothing.common.item.ClothingRegistry.CLOTHING_REGISTRY;
+import static io.github.kawaiicakes.clothing.common.resources.recipe.ClothingRecipeRegistry.SERIALIZER_REGISTRY;
 
 // TODO: custom item models for clothing so I don't have to rely on 9213912939123 item predicates
-// TODO: clothing recipe type for easier creation: internally it's just loaded into a normal crafting recipe
 @Mod(ClothingMod.MOD_ID)
 public class ClothingMod
 {
@@ -63,6 +63,7 @@ public class ClothingMod
         IEventBus forgeEventBus = MinecraftForge.EVENT_BUS;
 
         CLOTHING_REGISTRY.register(modEventBus);
+        SERIALIZER_REGISTRY.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::onInterModEnqueue);

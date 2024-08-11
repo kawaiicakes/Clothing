@@ -3,7 +3,6 @@ package io.github.kawaiicakes.clothing.common.network;
 import com.google.common.collect.ImmutableList;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
-import net.minecraft.core.NonNullList;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -17,6 +16,7 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
@@ -61,24 +61,26 @@ public class ClothingPackets {
 
     public static class S2CClothingEntryPacket {
         protected final String loaderClass;
-        protected final NonNullList<ItemStack> clothingEntries;
+        protected final Map<ResourceLocation, ItemStack> clothingEntries;
 
         public S2CClothingEntryPacket(ClothingEntryLoader<?> clothingEntryLoader) {
             this.loaderClass = clothingEntryLoader.getName();
-            this.clothingEntries = clothingEntryLoader.generateStacks();
+            this.clothingEntries = clothingEntryLoader.getStacks();
         }
 
         public S2CClothingEntryPacket(FriendlyByteBuf buf) {
             this.loaderClass = buf.readUtf();
-            NonNullList<ItemStack> stacks = NonNullList.create();
-            stacks.addAll(buf.readList(FriendlyByteBuf::readItem));
-            this.clothingEntries = stacks;
+            this.clothingEntries = buf.readMap(
+                    FriendlyByteBuf::readResourceLocation,
+                    FriendlyByteBuf::readItem
+            );
         }
 
         public void toBytes(FriendlyByteBuf buf) {
             buf.writeUtf(this.loaderClass);
-            buf.writeCollection(
+            buf.writeMap(
                     this.clothingEntries,
+                    FriendlyByteBuf::writeResourceLocation,
                     FriendlyByteBuf::writeItem
             );
         }
@@ -94,7 +96,7 @@ public class ClothingPackets {
                                 clothingEntryLoader = ClothingEntryLoader.getLoader(this.loaderClass);
                                 if (clothingEntryLoader == null) return;
 
-                                clothingEntryLoader.addStacks(this.clothingEntries);
+                                clothingEntryLoader.setStacks(this.clothingEntries);
                             }
                     )
             );
