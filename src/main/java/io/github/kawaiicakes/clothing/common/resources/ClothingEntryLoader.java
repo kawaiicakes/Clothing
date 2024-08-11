@@ -36,7 +36,6 @@ import static io.github.kawaiicakes.clothing.common.item.ClothingItem.ATTRIBUTES
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.CLOTHING_SLOT_NBT_KEY;
 import static net.minecraft.world.item.DyeableLeatherItem.TAG_COLOR;
 
-// FIXME: entries not appearing. anywhere.
 /**
  * This class is a {@link SimpleJsonResourceReloadListener} that pretty heavily abstracts stuff related to Minecraft
  * datapack loading. Its purpose is to load data entries for the clothing item {@link T} to appropriate
@@ -63,7 +62,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
     protected ClothingEntryLoader(String pSubDirectory) {
         super(GSON, "clothing/" + pSubDirectory);
         this.subDirectory = pSubDirectory;
-        LOADERS.put(pSubDirectory, this);
+        LOADERS.put(this.getName(), this);
     }
 
     public static @Nullable ClothingEntryLoader<?> getLoader(String pSubDirectory) {
@@ -243,23 +242,13 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
     }
 
     /**
-     * Adds entries for display without overwriting existing entries.
+     * Overwrites existing data to avoid duplication of entries when switching worlds or servers.
      * @param clothingMap a {@link ImmutableMap} of types {@link ResourceLocation} and
      * {@link NbtStackInitializer}. Its key corresponds to the entry's file name; including its namespace.
      * @see net.minecraftforge.event.AddReloadListenerEvent
      */
-    public void addEntries(ImmutableMap<ResourceLocation, NbtStackInitializer<T>> clothingMap) {
-        ImmutableMap.Builder<ResourceLocation, NbtStackInitializer<T>> builder
-                = ImmutableMap.builder();
-
-        if (this.stackEntries == null || this.stackEntries.isEmpty()) {
-            this.stackEntries = ImmutableMap.copyOf(clothingMap);
-        } else {
-            builder.putAll(this.stackEntries);
-            builder.putAll(clothingMap);
-
-            this.stackEntries = builder.build();
-        }
+    public void setEntries(ImmutableMap<ResourceLocation, NbtStackInitializer<T>> clothingMap) {
+        this.stackEntries = ImmutableMap.copyOf(clothingMap);
     }
 
     /**
@@ -296,7 +285,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
             }
         }
 
-        this.addEntries(builder.build());
+        this.setEntries(builder.build());
 
         LOGGER.info("Loaded {} clothing entries in directory {}!", this.stackEntries.size(), this.subDirectory);
     }

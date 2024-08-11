@@ -121,7 +121,6 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
         LOGGER.info("Loaded {} clothing overlays!", finalOverlays.size());
     }
 
-    // FIXME: duplicated overlays on listen server
     public void addOverlays(ImmutableList<OverlayDefinition> overlays) {
         ImmutableList.Builder<OverlayDefinition> builder
                 = ImmutableList.builder();

@@ -74,14 +74,23 @@ public class ClothingMod
 
     @SubscribeEvent
     public void commonSetup(FMLCommonSetupEvent event) {
+        /*
+            Ensures singleton instance is non-null prior to client connections to/from the server. This was mainly done
+            for the client, as upon connecting to a (remote) server for the first time
+            ClothingEntryLoader#getLoader(String) would always return null in ClothingPackets.
+         */
+        OverlayDefinitionLoader.getInstance();
+        GenericClothingEntryLoader.getInstance();
+        BakedClothingEntryLoader.getInstance();
+
         ClothingPackets.register();
     }
 
     @SubscribeEvent
     public void onAddReloadListener(AddReloadListenerEvent event) {
-        event.addListener(new OverlayDefinitionLoader());
-        event.addListener(new GenericClothingEntryLoader());
-        event.addListener(new BakedClothingEntryLoader());
+        event.addListener(OverlayDefinitionLoader.getInstance());
+        event.addListener(GenericClothingEntryLoader.getInstance());
+        event.addListener(BakedClothingEntryLoader.getInstance());
     }
 
     @SubscribeEvent
