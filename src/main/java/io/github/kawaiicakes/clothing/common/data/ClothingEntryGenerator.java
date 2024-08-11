@@ -60,6 +60,7 @@ public class ClothingEntryGenerator implements DataProvider {
     public void buildEntries(Consumer<ClothingBuilder<?>> clothingBuilderConsumer) {
         GenericClothingBuilder.shirt(new ResourceLocation(MOD_ID, "tank_top"))
                 .addModifier(Attributes.ARMOR, 40.00, AttributeModifier.Operation.ADDITION)
+                .setDurability(300)
                 .save(clothingBuilderConsumer);
     }
 
@@ -269,6 +270,11 @@ public class ClothingEntryGenerator implements DataProvider {
          */
         public ClothingBuilder<T> setModifiers(Multimap<Attribute, AttributeModifier> modifiers) {
             this.clothingItem.setAttributeModifiers(this.clothingStack, modifiers);
+            return this;
+        }
+
+        public ClothingBuilder<T> setDurability(int durability) {
+            this.clothingItem.setMaxDamage(this.clothingStack, durability);
             return this;
         }
 

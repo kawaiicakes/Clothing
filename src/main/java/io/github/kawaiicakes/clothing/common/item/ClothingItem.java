@@ -52,7 +52,8 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     public static final String CLOTHING_SLOT_NBT_KEY = "slot";
     public static final String BASE_MODEL_DATA_NBT_KEY = "BaseModelData";
     public static final String ATTRIBUTES_KEY = "attributes";
-    public static final String EQUIP_SOUND_KEY = "EquipSound";
+    public static final String EQUIP_SOUND_KEY = "equip_sound";
+    public static final String MAX_DAMAGE_KEY = "durability";
 
     public static final ResourceLocation BASE_MODEL_DATA = new ResourceLocation(MOD_ID, "base_model_data");
 
@@ -135,10 +136,20 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
                 toReturn,
                 this.getDefaultAttributeModifiers(this.getSlot())
         );
+        this.setMaxDamage(toReturn, 0);
 
         this.setEquipSound(toReturn, this.material.getEquipSound().getLocation());
 
         return toReturn;
+    }
+
+    @Override
+    public int getMaxDamage(ItemStack stack) {
+        return this.getClothingPropertyTag(stack).getInt(MAX_DAMAGE_KEY);
+    }
+
+    public void setMaxDamage(ItemStack stack, int durability) {
+        this.getClothingPropertyTag(stack).putInt(MAX_DAMAGE_KEY, durability);
     }
 
     /**

@@ -32,8 +32,7 @@ import org.slf4j.Logger;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.*;
 
-import static io.github.kawaiicakes.clothing.common.item.ClothingItem.ATTRIBUTES_KEY;
-import static io.github.kawaiicakes.clothing.common.item.ClothingItem.CLOTHING_SLOT_NBT_KEY;
+import static io.github.kawaiicakes.clothing.common.item.ClothingItem.*;
 import static net.minecraft.world.item.DyeableLeatherItem.TAG_COLOR;
 
 /**
@@ -94,6 +93,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
             EquipmentSlot slot;
             int color;
             Multimap<Attribute, AttributeModifier> modifiers;
+            int durability;
             ResourceLocation equipSoundLocation;
 
             try {
@@ -107,8 +107,12 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
                         ? this.deserializeAttributes(clothingStack, topElement.getAsJsonObject(ATTRIBUTES_KEY))
                         : clothingItem.getDefaultAttributeModifiers(slot);
 
-                equipSoundLocation = topElement.has("equip_sound")
-                        ? new ResourceLocation(topElement.getAsJsonPrimitive("equip_sound").getAsString())
+                durability = topElement.has(MAX_DAMAGE_KEY)
+                        ? topElement.getAsJsonPrimitive(MAX_DAMAGE_KEY).getAsInt()
+                        : 0;
+
+                equipSoundLocation = topElement.has(EQUIP_SOUND_KEY)
+                        ? new ResourceLocation(topElement.getAsJsonPrimitive(EQUIP_SOUND_KEY).getAsString())
                         : SoundEvents.ARMOR_EQUIP_LEATHER.getLocation();
             } catch (Exception e) {
                 LOGGER.error("Error deserializing clothing entry!", e);
@@ -119,6 +123,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
             clothingItem.setSlot(clothingStack, slot);
             clothingItem.setColor(clothingStack, color);
             clothingItem.setAttributeModifiers(clothingStack, modifiers);
+            clothingItem.setMaxDamage(clothingStack, durability);
             clothingItem.setEquipSound(clothingStack, equipSoundLocation);
         };
     }

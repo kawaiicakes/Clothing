@@ -382,17 +382,6 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
         );
     }
 
-    @Override
-    public boolean canBeDepleted() {
-        return false;
-    }
-
-    // TODO: override this in ClothingItem. default impl like the attributes
-    @Override
-    public boolean isDamageable(ItemStack stack) {
-        return false;
-    }
-
     public enum ModelStrata implements StringRepresentable {
         BASE("base"),
         INNER("inner"),

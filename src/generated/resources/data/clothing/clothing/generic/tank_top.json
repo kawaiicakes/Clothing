@@ -7,6 +7,7 @@
       }
     ]
   },
+  "durability": 300,
   "slot": "chest",
   "texture": "clothing:tank_top"
 }
