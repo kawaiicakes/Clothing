@@ -2,7 +2,6 @@ package io.github.kawaiicakes.clothing.common.resources.recipe;
 
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
-import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.BakedClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
 import net.minecraft.core.NonNullList;
@@ -22,8 +21,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Map;
 import java.util.Objects;
 
-import static io.github.kawaiicakes.clothing.common.item.ClothingItem.*;
-import static io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem.MODEL_LAYER_NBT_KEY;
+import static io.github.kawaiicakes.clothing.common.item.ClothingItem.CLOTHING_PROPERTY_NBT_KEY;
 import static io.github.kawaiicakes.clothing.common.resources.recipe.ClothingRecipeRegistry.CLOTHING_SERIALIZER;
 
 public class ClothingRecipe extends ShapedRecipe {
@@ -91,34 +89,20 @@ public class ClothingRecipe extends ShapedRecipe {
                 }
             }
 
-            CompoundTag stackTag = defaultStackForEntry.getOrCreateTag();
-
-            ClothingItem<?> clothingItem = (ClothingItem<?>) defaultStackForEntry.getItem();
-            CompoundTag mergedProperties = clothingItem.getClothingPropertyTag(defaultStackForEntry);
+            CompoundTag stackTag = defaultStackForEntry.getTag();
+            assert stackTag != null;
 
             for (String key : miscNbt.getAllKeys()) {
                 if (key.equals(CLOTHING_PROPERTY_NBT_KEY)) {
-                    for (String propertyKey : miscNbt.getCompound(key).getAllKeys()) {
-                        if (propertyKey.equals(CLOTHING_NAME_KEY)) continue;
-                        if (propertyKey.equals(CLOTHING_SLOT_NBT_KEY)) continue;
-
-                        mergedProperties.put(
-                                propertyKey, Objects.requireNonNull(miscNbt.getCompound(key).get(propertyKey))
-                        );
-                    }
+                    LOGGER.error(
+                            "ClothingRecipes do not support changing clothing properties in the result! " +
+                                    "Make a new clothing entry instead!"
+                    );
                     continue;
                 }
 
                 stackTag.put(key, Objects.requireNonNull(miscNbt.get(key)));
             }
-
-            CompoundTag declaredClothingProperties = getProperties(isGenericEntry, mergedProperties, json);
-
-            for (String key : declaredClothingProperties.getAllKeys()) {
-                mergedProperties.put(key, Objects.requireNonNull(declaredClothingProperties.get(key)));
-            }
-
-            stackTag.put(CLOTHING_PROPERTY_NBT_KEY, mergedProperties);
 
             stackAsNbt.put("tag", stackTag);
             stackAsNbt.putString(
@@ -128,63 +112,6 @@ public class ClothingRecipe extends ShapedRecipe {
             stackAsNbt.putInt("Count", GsonHelper.getAsInt(json, "count", 1));
 
             return ItemStack.of(stackAsNbt);
-        }
-
-        @NotNull
-        public static CompoundTag getProperties(boolean isGeneric, CompoundTag mergedProperties, JsonObject json) {
-            mergedProperties = mergedProperties.copy();
-
-            // FIXME: add validation of values
-
-            CompoundTag toReturn = new CompoundTag();
-
-            int color;
-            int baseModelData;
-            CompoundTag attributes;
-            String equipSound;
-            int maxDamage;
-
-            String modelStrata;
-
-            try {
-                color = json.has(TAG_COLOR)
-                        ? json.getAsJsonPrimitive(TAG_COLOR).getAsInt()
-                        : mergedProperties.getInt(TAG_COLOR);
-
-                baseModelData = json.has(BASE_MODEL_DATA_NBT_KEY)
-                        ? json.getAsJsonPrimitive(BASE_MODEL_DATA_NBT_KEY).getAsInt()
-                        : mergedProperties.getInt(BASE_MODEL_DATA_NBT_KEY);
-
-                // TODO: attributes and remaining generic/baked properties
-                attributes = json.has(ATTRIBUTES_KEY)
-                        ? new CompoundTag()
-                        : mergedProperties.getCompound(ATTRIBUTES_KEY);
-
-                equipSound = json.has(EQUIP_SOUND_KEY)
-                        ? json.getAsJsonPrimitive(EQUIP_SOUND_KEY).getAsString()
-                        : mergedProperties.getString(EQUIP_SOUND_KEY);
-
-                maxDamage = json.has(MAX_DAMAGE_KEY)
-                        ? json.getAsJsonPrimitive(MAX_DAMAGE_KEY).getAsInt()
-                        : mergedProperties.getInt(MAX_DAMAGE_KEY);
-
-                modelStrata = json.has(MODEL_LAYER_NBT_KEY)
-                        ? json.getAsJsonPrimitive(MODEL_LAYER_NBT_KEY).getAsString()
-                        : mergedProperties.getString(MODEL_LAYER_NBT_KEY);
-            } catch (Exception e) {
-                LOGGER.error("Unable to write clothing properties for recipe!");
-                return toReturn;
-            }
-
-            toReturn.putInt(TAG_COLOR, color);
-            toReturn.putInt(BASE_MODEL_DATA_NBT_KEY, baseModelData);
-            toReturn.put(ATTRIBUTES_KEY, attributes);
-            toReturn.putString(EQUIP_SOUND_KEY, equipSound);
-            toReturn.putInt(MAX_DAMAGE_KEY, maxDamage);
-
-            toReturn.putString(MODEL_LAYER_NBT_KEY, modelStrata);
-
-            return toReturn;
         }
     }
 }

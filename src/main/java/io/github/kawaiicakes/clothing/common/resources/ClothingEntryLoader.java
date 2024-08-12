@@ -104,7 +104,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
                         : 0xFFFFFF;
 
                 modifiers = topElement.has(ATTRIBUTES_KEY)
-                        ? this.deserializeAttributes(clothingStack, topElement.getAsJsonObject(ATTRIBUTES_KEY))
+                        ? deserializeAttributes(topElement.getAsJsonObject(ATTRIBUTES_KEY))
                         : clothingItem.getDefaultAttributeModifiers(slot);
 
                 durability = topElement.has(MAX_DAMAGE_KEY)
@@ -128,9 +128,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
         };
     }
 
-    public ImmutableMultimap<Attribute, AttributeModifier> deserializeAttributes(
-            ItemStack clothingStack, JsonObject jsonData
-    ) {
+    public static ImmutableMultimap<Attribute, AttributeModifier> deserializeAttributes(JsonObject jsonData) {
         ImmutableMultimap.Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
 
         try {
@@ -139,9 +137,6 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
                 if (attribute == null) throw new IllegalArgumentException(
                         "Passed JSON contains unknown attribute '" + key + "'!"
                 );
-
-                if (!(clothingStack.getItem() instanceof ClothingItem<?>))
-                    throw new IllegalArgumentException("Passed ItemStack is not a clothing item!");
                 
                 if (!(jsonData.get(key) instanceof JsonArray jsonArray))
                     throw new IllegalArgumentException(
