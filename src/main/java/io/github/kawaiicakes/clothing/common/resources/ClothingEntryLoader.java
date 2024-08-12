@@ -249,6 +249,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
         return toReturn.build();
     }
 
+    // FIXME: ClothingRecipes don't load when a player connects until a reload is executed
     /**
      * Used mainly for clothing recipes
      * @param entryLocation the {@link ResourceLocation} of the piece of clothing.

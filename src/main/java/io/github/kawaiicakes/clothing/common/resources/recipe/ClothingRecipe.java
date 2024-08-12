@@ -24,6 +24,7 @@ import java.util.Objects;
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.CLOTHING_PROPERTY_NBT_KEY;
 import static io.github.kawaiicakes.clothing.common.resources.recipe.ClothingRecipeRegistry.CLOTHING_SERIALIZER;
 
+// TODO: I change my mind. These should allow changing colour
 public class ClothingRecipe extends ShapedRecipe {
     protected static final Logger LOGGER = LogUtils.getLogger();
 

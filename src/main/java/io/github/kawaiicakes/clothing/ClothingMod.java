@@ -3,10 +3,7 @@ package io.github.kawaiicakes.clothing;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.client.model.GenericDefinitions;
-import io.github.kawaiicakes.clothing.common.data.ClothingEntryGenerator;
-import io.github.kawaiicakes.clothing.common.data.ClothingItemModelGenerator;
-import io.github.kawaiicakes.clothing.common.data.ClothingLangGenerator;
-import io.github.kawaiicakes.clothing.common.data.ClothingOverlayGenerator;
+import io.github.kawaiicakes.clothing.common.data.*;
 import io.github.kawaiicakes.clothing.common.network.ClothingPackets;
 import io.github.kawaiicakes.clothing.common.resources.BakedClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
@@ -145,12 +142,16 @@ public class ClothingMod
                 dataGenerator, fileHelper, MOD_ID
         );
         ClothingEntryGenerator clothingEntryGenerator = new ClothingEntryGenerator(dataGenerator, MOD_ID);
+
         ClothingLangGenerator clothingLangGenerator
                 = new ClothingLangGenerator(dataGenerator, MOD_ID, "en_us", clothingEntryGenerator);
         ClothingItemModelGenerator clothingItemModelGenerator
                 = new ClothingItemModelGenerator(
                         dataGenerator, MOD_ID, fileHelper, clothingEntryGenerator, clothingOverlayGenerator
         );
+
+        ClothingRecipeGenerator clothingRecipeGenerator
+                = new ClothingRecipeGenerator(dataGenerator);
 
         dataGenerator.addProvider(
                 event.includeClient(),
@@ -160,6 +161,11 @@ public class ClothingMod
         dataGenerator.addProvider(
                 event.includeClient(),
                 clothingLangGenerator
+        );
+
+        dataGenerator.addProvider(
+                event.includeServer() || event.includeClient(),
+                clothingRecipeGenerator
         );
 
         dataGenerator.addProvider(
