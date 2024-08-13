@@ -5,10 +5,12 @@ import com.google.common.collect.Multimap;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
+import io.github.kawaiicakes.clothing.client.ClothingItemRenderer;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
-import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
+import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
 import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -22,6 +24,7 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.*;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -194,6 +197,18 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
      *                        Do not implement in this class; use an anonymous class or a separate implementation.
      */
     public abstract void acceptClientClothingRenderManager(Consumer<ClientClothingRenderManager> clothingManager);
+
+    @Override
+    public void initializeClient(Consumer<IClientItemExtensions> consumer) {
+        consumer.accept(
+                new IClientItemExtensions() {
+                    @Override
+                    public BlockEntityWithoutLevelRenderer getCustomRenderer() {
+                        return ClothingItemRenderer.getInstance();
+                    }
+                }
+        );
+    }
 
     /**
      * Overridden Forge method; see super for more details. This method returns a <code>String</code> representing the

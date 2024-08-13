@@ -2,6 +2,7 @@ package io.github.kawaiicakes.clothing;
 
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
+import io.github.kawaiicakes.clothing.client.model.ClothingItemModel;
 import io.github.kawaiicakes.clothing.client.model.GenericDefinitions;
 import io.github.kawaiicakes.clothing.common.data.*;
 import io.github.kawaiicakes.clothing.common.network.ClothingPackets;
@@ -38,13 +39,13 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 import top.theillusivec4.curios.api.SlotTypePreset;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.BASE_MODEL_DATA;
 import static io.github.kawaiicakes.clothing.common.item.ClothingRegistry.CLOTHING_REGISTRY;
 import static io.github.kawaiicakes.clothing.common.resources.recipe.ClothingRecipeRegistry.SERIALIZER_REGISTRY;
 
-// TODO: custom item models for clothing so I don't have to rely on 9213912939123 item predicates
 @Mod(ClothingMod.MOD_ID)
 public class ClothingMod
 {
@@ -193,17 +194,34 @@ public class ClothingMod
         }
 
         @SubscribeEvent
+        public static void onModelLoaderRegistration(ModelEvent.RegisterGeometryLoaders event) {
+            event.register(ClothingItemModel.Loader.ID, ClothingItemModel.Loader.INSTANCE);
+        }
+
+        @SubscribeEvent
         public static void onModelRegistration(ModelEvent.RegisterAdditional event) {
-            final Collection<ResourceLocation> list = Minecraft.getInstance().getResourceManager().listResources(
-                    "models/clothing", (location) -> location.getPath().endsWith(".json")
-            ).keySet();
+            Collection<Collection<ResourceLocation>> lists = new ArrayList<>();
 
+            lists.add(Minecraft.getInstance().getResourceManager().listResources(
+                    "models/clothing", (location) -> location.getPath().endsWith(".json")).keySet());
 
-            for (ResourceLocation modelLocation : list) {
-                String pathWithoutDuplicate = modelLocation.getPath().replace("models/", "");
-                String pathWithoutSuffix = pathWithoutDuplicate.replace(".json", "");
-                ResourceLocation withoutSuffix = new ResourceLocation(modelLocation.getNamespace(), pathWithoutSuffix);
-                event.register(withoutSuffix);
+            lists.add(Minecraft.getInstance().getResourceManager().listResources(
+                    "models/item/clothing", (location) -> location.getPath().endsWith(".json")
+            ).keySet());
+
+            lists.add(Minecraft.getInstance().getResourceManager().listResources(
+                    "models/item/clothing/overlays", (location) -> location.getPath().endsWith(".json")
+            ).keySet());
+
+            for (Collection<ResourceLocation> list : lists) {
+                for (ResourceLocation modelLocation : list) {
+                    String pathWithoutDuplicate = modelLocation.getPath().replace("models/", "");
+                    String pathWithoutSuffix = pathWithoutDuplicate.replace(".json", "");
+                    ResourceLocation withoutSuffix = new ResourceLocation(
+                            modelLocation.getNamespace(), pathWithoutSuffix
+                    );
+                    event.register(withoutSuffix);
+                }
             }
         }
 
