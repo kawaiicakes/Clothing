@@ -1,5 +1,6 @@
 {
   "parent": "minecraft:item/generated",
+  "loader": "clothing:item_model_loader",
   "textures": {
     "layer0": "clothing:item/baked_shoes"
   }

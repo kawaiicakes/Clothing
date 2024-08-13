@@ -1,30 +1,31 @@
 package io.github.kawaiicakes.clothing.common.data;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.mojang.logging.LogUtils;
-import io.github.kawaiicakes.clothing.common.item.ClothingItem;
-import io.github.kawaiicakes.clothing.common.item.ClothingRegistry;
+import io.github.kawaiicakes.clothing.client.model.ClothingItemModel;
+import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.client.model.generators.CustomLoaderBuilder;
 import net.minecraftforge.client.model.generators.ItemModelBuilder;
 import net.minecraftforge.client.model.generators.ItemModelProvider;
 import net.minecraftforge.client.model.generators.ModelFile;
 import net.minecraftforge.common.data.ExistingFileHelper;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.slf4j.Logger;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import static io.github.kawaiicakes.clothing.common.item.ClothingItem.BASE_MODEL_DATA;
+import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 
 public class ClothingItemModelGenerator extends ItemModelProvider {
     protected static final Logger LOGGER = LogUtils.getLogger();
 
     public static final ModelFile GENERATED = new ModelFile.UncheckedModelFile("item/generated");
     public static final String ITEM_CLOTHING_MODEL_PATH = "item/clothing/";
+    public static final String ITEM_OVERLAY_MODEL_PATH = ITEM_CLOTHING_MODEL_PATH + "overlays/";
 
     protected final ClothingEntryGenerator clothingEntryGenerator;
     protected final ClothingOverlayGenerator clothingOverlayGenerator;
+    protected ImmutableList<OverlayDefinitionLoader.OverlayDefinition> overlays;
 
     public ClothingItemModelGenerator(
             DataGenerator generator, String modid,
@@ -42,64 +43,88 @@ public class ClothingItemModelGenerator extends ItemModelProvider {
         if (this.clothingOverlayGenerator.overlays == null || this.clothingOverlayGenerator.overlays.isEmpty())
             this.clothingOverlayGenerator.registerOverlays();
 
-        Set<ClothingEntryGenerator.ClothingBuilder<?>> clothingEntrySet = new HashSet<>();
-        this.clothingEntryGenerator.buildEntries(
-                entry -> {
-                    clothingEntrySet.add(entry);
-                    this.generateEntryModel(entry);
-                }
-        );
-
-        this.generateItemModel(clothingEntrySet);
+        this.overlays = clothingOverlayGenerator.getOverlays();
 
         // TODO: pseudo datagen using command from in-game; takes client assets and generates models, lang, entries, overlays...
         // see other mods for ways to write files in a way that won't break
+
+        this.registerItemModels();
+        this.clothingEntryGenerator.buildEntries(this::registerBaseClothingModels);
+        this.registerOverlayModels();
     }
 
-    protected void generateEntryModel(ClothingEntryGenerator.ClothingBuilder<?> entry) {
-        String fullPath = ITEM_CLOTHING_MODEL_PATH + entry.getId().getPath();
-        this.getBuilder(fullPath)
+    public ItemModelBuilder getBuilderWithNamespace(String namespace, String path) {
+        Preconditions.checkNotNull(path, "Path must not be null");
+
+        ResourceLocation output = path.contains(":") ? new ResourceLocation(path) : new ResourceLocation(namespace, path);
+
+        if (!output.getPath().contains("/"))
+            output = new ResourceLocation(output.getNamespace(), this.folder + "/" + output.getPath());
+
+        this.existingFileHelper.trackGenerated(output, MODEL);
+        return this.generatedModels.computeIfAbsent(output, this.factory);
+    }
+
+    public void registerItemModels() {
+        String[] items = {
+                "generic_hat",
+                "generic_shirt",
+                "generic_pants",
+                "generic_shoes",
+                "baked_hat",
+                "baked_shirt",
+                "baked_pants",
+                "baked_shoes"
+        };
+
+        for (String name : items) {
+            String itemName = "item/" + name;
+
+            this.getBuilder(itemName)
+                    .parent(GENERATED)
+                    .texture("layer0", itemName)
+                    .customLoader(ClothingModelBuilder::begin)
+                    .end();
+        }
+    }
+
+    public void registerBaseClothingModels(ClothingEntryGenerator.ClothingBuilder<?> builder) {
+        ResourceLocation entryLoc = builder.clothingItem.getClothingName(builder.clothingStack);
+
+        String entryName = ITEM_CLOTHING_MODEL_PATH + entryLoc.getPath();
+
+        this.getBuilderWithNamespace(entryLoc.getNamespace(), entryName)
                 .parent(GENERATED)
-                .texture("layer0", fullPath);
+                .texture("layer0", entryName);
     }
 
-    protected void generateItemModel(Set<ClothingEntryGenerator.ClothingBuilder<?>> clothingEntries) {
-        ClothingItem<?>[] clothingItems = ClothingRegistry.getAll();
-        if (clothingItems == null || clothingItems.length == 0) {
-            LOGGER.error("No clothing items exist! Is this being called before item registration?");
-            return;
+    public void registerOverlayModels() {
+        this.overlays.forEach(
+                overlay -> {
+                    ResourceLocation overlayLocation = overlay.name();
+                    String overlayName = ITEM_OVERLAY_MODEL_PATH + overlayLocation.getPath();
+
+                    this.getBuilderWithNamespace(overlayLocation.getNamespace(), overlayName)
+                            .parent(GENERATED)
+                            .texture("layer0", overlayName);
+                }
+        );
+    }
+
+    /**
+     * This only exists to add the "loader" property to the serialized JSON. That's it.
+     */
+    public static class ClothingModelBuilder extends CustomLoaderBuilder<ItemModelBuilder> {
+        public static ClothingModelBuilder begin(ItemModelBuilder parent, ExistingFileHelper existingFileHelper) {
+            return new ClothingModelBuilder(parent, existingFileHelper);
         }
 
-        for (ClothingItem<?> clothingItem : clothingItems) {
-            try {
-                ResourceLocation clothingLocation = ForgeRegistries.ITEMS.getKey(clothingItem);
-                assert clothingLocation != null;
-                String clothingPath = clothingLocation.getPath();
-
-                ItemModelBuilder modelBuilder = this.getBuilder("item/" + clothingPath)
-                        .parent(GENERATED)
-                        .texture("layer0", "item/" + clothingPath);
-
-                for (ClothingEntryGenerator.ClothingBuilder<?> clothingEntry : clothingEntries) {
-                    if (!clothingItem.getSlot().equals(clothingEntry.clothingItem.getSlot())) continue;
-                    ResourceLocation entryLocation = new ResourceLocation(
-                            clothingEntry.getId().getNamespace(),
-                            ITEM_CLOTHING_MODEL_PATH + clothingEntry.getId().getPath()
-                    );
-
-                    ModelFile entryModel = new ModelFile.ExistingModelFile(entryLocation, this.existingFileHelper);
-
-                    String hashValueString = String.valueOf(clothingEntry.hashCodeForBaseModelData());
-
-                    // FIXME: float is serialized in scientific notation
-                    modelBuilder.override()
-                            .model(entryModel)
-                            .predicate(BASE_MODEL_DATA, Float.parseFloat(hashValueString))
-                            .end();
-                }
-            } catch (RuntimeException e) {
-                LOGGER.error("Error while generating clothing item model for {}!", clothingItem, e);
-            }
+        protected ClothingModelBuilder(ItemModelBuilder parent, ExistingFileHelper existingFileHelper) {
+            super(
+                    new ResourceLocation(MOD_ID, ClothingItemModel.Loader.ID),
+                    parent,
+                    existingFileHelper
+            );
         }
     }
 }

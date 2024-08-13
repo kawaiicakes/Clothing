@@ -1,13 +1,6 @@
 {
   "parent": "minecraft:item/generated",
-  "overrides": [
-    {
-      "model": "clothing:item/clothing/tank_top",
-      "predicate": {
-        "clothing:base_model_data": 2.69287136E8
-      }
-    }
-  ],
+  "loader": "clothing:item_model_loader",
   "textures": {
     "layer0": "clothing:item/baked_shirt"
   }

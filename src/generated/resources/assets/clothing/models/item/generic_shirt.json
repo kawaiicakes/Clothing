@@ -1,6 +1,6 @@
 {
-  "loader": "clothing:item_model_loader",
   "parent": "minecraft:item/generated",
+  "loader": "clothing:item_model_loader",
   "textures": {
     "layer0": "clothing:item/generic_shirt"
   }

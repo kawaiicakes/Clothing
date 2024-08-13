@@ -17,6 +17,7 @@ import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
@@ -201,17 +202,20 @@ public class ClothingMod
         @SubscribeEvent
         public static void onModelRegistration(ModelEvent.RegisterAdditional event) {
             Collection<Collection<ResourceLocation>> lists = new ArrayList<>();
+            ResourceManager manager = Minecraft.getInstance().getResourceManager();
 
-            lists.add(Minecraft.getInstance().getResourceManager().listResources(
-                    "models/clothing", (location) -> location.getPath().endsWith(".json")).keySet());
+            // TODO: investigate whether models are baked again if an in-game resource pack reload changes them
+            String[] locations = {
+                    "models/clothing",
+                    "models/item/clothing",
+                    "models/item/clothing/overlays"
+            };
 
-            lists.add(Minecraft.getInstance().getResourceManager().listResources(
-                    "models/item/clothing", (location) -> location.getPath().endsWith(".json")
-            ).keySet());
-
-            lists.add(Minecraft.getInstance().getResourceManager().listResources(
-                    "models/item/clothing/overlays", (location) -> location.getPath().endsWith(".json")
-            ).keySet());
+            for (String location : locations) {
+                lists.add(manager.listResources(
+                        location, (existing) -> existing.getPath().endsWith(".json")).keySet()
+                );
+            }
 
             for (Collection<ResourceLocation> list : lists) {
                 for (ResourceLocation modelLocation : list) {
