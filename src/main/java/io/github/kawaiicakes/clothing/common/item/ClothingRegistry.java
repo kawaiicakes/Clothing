@@ -3,11 +3,13 @@ package io.github.kawaiicakes.clothing.common.item;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import io.github.kawaiicakes.clothing.common.item.impl.BakedModelClothingItem;
+import net.minecraft.core.cauldron.CauldronInteraction;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -87,6 +89,13 @@ public class ClothingRegistry {
         } catch (NoSuchElementException | NullPointerException e) {
             LOGGER.error("No such Clothing item as {}!", itemName, e);
             return null;
+        }
+    }
+
+    @ApiStatus.Internal
+    public static void registerCauldronInteractions() {
+        for (Item item : getAll()) {
+            CauldronInteraction.WATER.put(item, CauldronInteraction.DYED_ITEM);
         }
     }
 }

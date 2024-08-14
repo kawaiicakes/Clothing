@@ -5,12 +5,12 @@ import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.client.model.ClothingItemModel;
 import io.github.kawaiicakes.clothing.client.model.GenericDefinitions;
 import io.github.kawaiicakes.clothing.common.data.*;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.ClothingRegistry;
 import io.github.kawaiicakes.clothing.common.network.ClothingPackets;
 import io.github.kawaiicakes.clothing.common.resources.BakedClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
-import io.github.kawaiicakes.clothing.common.item.ClothingItem;
-import io.github.kawaiicakes.clothing.common.item.ClothingRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
@@ -35,6 +35,7 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent;
 import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
@@ -67,6 +68,7 @@ public class ClothingMod
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::onInterModEnqueue);
         modEventBus.addListener(this::onGatherData);
+        modEventBus.addListener(this::onLoadComplete);
 
         forgeEventBus.addListener(this::onAddReloadListener);
         forgeEventBus.addListener(this::onDatapackSync);
@@ -179,6 +181,11 @@ public class ClothingMod
                 event.includeServer() || event.includeClient(),
                 clothingOverlayGenerator
         );
+    }
+
+    @SubscribeEvent
+    public void onLoadComplete(FMLLoadCompleteEvent event) {
+        ClothingRegistry.registerCauldronInteractions();
     }
 
     @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
