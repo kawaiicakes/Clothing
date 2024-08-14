@@ -281,7 +281,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     @Override
     public boolean hasCustomColor(@NotNull ItemStack pStack) {
         CompoundTag root = this.getClothingPropertyTag(pStack);
-        return root.contains(TAG_COLOR, 99);
+        return root.contains(TAG_COLOR, 99) && root.getInt(TAG_COLOR) != 0xFFFFFF;
     }
 
     @Override

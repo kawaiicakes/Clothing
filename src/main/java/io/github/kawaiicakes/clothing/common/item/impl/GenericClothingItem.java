@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.core.cauldron.CauldronInteraction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -23,12 +24,14 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.LayeredCauldronBlock;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,6 +51,27 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
     public static final String OVERLAY_NBT_KEY = "overlays";
     public static final String PART_VISIBILITY_KEY = "partVisibility";
     public static final ResourceLocation DEFAULT_TEXTURE_NBT_KEY = new ResourceLocation(MOD_ID, "default");
+
+    public static final CauldronInteraction GENERIC_CLOTHING
+            = (pBlockState, pLevel, pBlockPos, pPlayer, pHand, pStack) -> {
+        if (!(pStack.getItem() instanceof GenericClothingItem generic)) return InteractionResult.PASS;
+        if (generic.getOverlays(pStack).length == 0) return InteractionResult.PASS;
+        if (pLevel.isClientSide) return InteractionResult.sidedSuccess(true);
+
+        ResourceLocation[] originalOverlays = generic.getOverlays(pStack);
+
+        int newLength = originalOverlays.length - 1;
+        ResourceLocation[] newOverlays = new ResourceLocation[newLength];
+
+        if (newLength > 0)
+            System.arraycopy(originalOverlays, 1, newOverlays, 0, newLength);
+
+        generic.setOverlays(pStack, newOverlays);
+
+        LayeredCauldronBlock.lowerFillLevel(pBlockState, pLevel, pBlockPos);
+
+        return InteractionResult.sidedSuccess(false);
+    };
 
     // TODO: consider allowing multiple layers when rendering generic clothing
     public GenericClothingItem(EquipmentSlot pSlot) {
