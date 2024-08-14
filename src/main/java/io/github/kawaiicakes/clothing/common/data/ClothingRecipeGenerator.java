@@ -34,9 +34,9 @@ import java.util.function.Consumer;
 
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.*;
-import static io.github.kawaiicakes.clothing.common.item.ClothingRegistry.GENERIC_SHIRT;
+import static io.github.kawaiicakes.clothing.ClothingRegistry.GENERIC_SHIRT;
 import static io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem.OVERLAY_NBT_KEY;
-import static io.github.kawaiicakes.clothing.common.resources.recipe.ClothingRecipeRegistry.CLOTHING_SERIALIZER;
+import static io.github.kawaiicakes.clothing.ClothingRegistry.CLOTHING_SERIALIZER;
 import static net.minecraft.world.item.DyeableLeatherItem.TAG_COLOR;
 import static net.minecraft.world.item.Items.*;
 

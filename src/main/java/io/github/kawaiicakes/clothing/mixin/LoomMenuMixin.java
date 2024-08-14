@@ -28,7 +28,6 @@ import java.util.List;
 // FIXME: weird ass glitch where banners only work in looms after interacting with the stacks (but not emptying them)
 // TODO: overlay pattern: banner pattern but allows access to otherwise unobtainable overlays (also allows op'd/creative players to force overlays onto clothing that normally shouldn't work)
 // TODO: new thread item, allowed to be placed in dye slot if a clothing item is present
-// TODO: make overlays removable by right clicking cauldron with water/new bleach liquid in it
 @Mixin(LoomMenu.class)
 public abstract class LoomMenuMixin extends AbstractContainerMenu implements LoomMenuOverlayGetter {
     @Unique

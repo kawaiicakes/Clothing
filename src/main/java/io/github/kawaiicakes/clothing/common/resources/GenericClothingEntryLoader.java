@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
-import static io.github.kawaiicakes.clothing.common.item.ClothingRegistry.*;
+import static io.github.kawaiicakes.clothing.ClothingRegistry.*;
 
 public class GenericClothingEntryLoader extends ClothingEntryLoader<GenericClothingItem> {
     protected static GenericClothingEntryLoader INSTANCE = null;

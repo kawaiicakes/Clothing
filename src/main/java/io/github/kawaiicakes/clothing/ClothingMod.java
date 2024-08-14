@@ -6,7 +6,6 @@ import io.github.kawaiicakes.clothing.client.model.ClothingItemModel;
 import io.github.kawaiicakes.clothing.client.model.GenericDefinitions;
 import io.github.kawaiicakes.clothing.common.data.*;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
-import io.github.kawaiicakes.clothing.common.item.ClothingRegistry;
 import io.github.kawaiicakes.clothing.common.network.ClothingPackets;
 import io.github.kawaiicakes.clothing.common.resources.BakedClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
@@ -45,8 +44,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.BASE_MODEL_DATA;
-import static io.github.kawaiicakes.clothing.common.item.ClothingRegistry.CLOTHING_REGISTRY;
-import static io.github.kawaiicakes.clothing.common.resources.recipe.ClothingRecipeRegistry.SERIALIZER_REGISTRY;
 
 @Mod(ClothingMod.MOD_ID)
 public class ClothingMod
@@ -62,8 +59,7 @@ public class ClothingMod
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         IEventBus forgeEventBus = MinecraftForge.EVENT_BUS;
 
-        CLOTHING_REGISTRY.register(modEventBus);
-        SERIALIZER_REGISTRY.register(modEventBus);
+        ClothingRegistry.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::onInterModEnqueue);

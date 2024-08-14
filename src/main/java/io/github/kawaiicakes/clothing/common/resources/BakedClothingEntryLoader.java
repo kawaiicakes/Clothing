@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.github.kawaiicakes.clothing.common.item.ClothingRegistry.*;
+import static io.github.kawaiicakes.clothing.ClothingRegistry.*;
 
 public class BakedClothingEntryLoader extends ClothingEntryLoader<BakedModelClothingItem> {
     protected static BakedClothingEntryLoader INSTANCE = null;

@@ -38,7 +38,7 @@ import java.util.function.Consumer;
 
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.*;
-import static io.github.kawaiicakes.clothing.common.item.ClothingRegistry.*;
+import static io.github.kawaiicakes.clothing.ClothingRegistry.*;
 
 public class ClothingEntryGenerator implements DataProvider {
     protected static final Logger LOGGER = LogUtils.getLogger();

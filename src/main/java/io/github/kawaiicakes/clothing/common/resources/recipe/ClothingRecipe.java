@@ -37,7 +37,7 @@ import java.util.function.Supplier;
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.*;
 import static io.github.kawaiicakes.clothing.common.item.impl.BakedModelClothingItem.MODEL_PARENTS_KEY;
 import static io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem.*;
-import static io.github.kawaiicakes.clothing.common.resources.recipe.ClothingRecipeRegistry.CLOTHING_SERIALIZER;
+import static io.github.kawaiicakes.clothing.ClothingRegistry.CLOTHING_SERIALIZER;
 import static net.minecraft.world.item.DyeableLeatherItem.TAG_COLOR;
 
 // TODO: add support for using clothing as ingredients
