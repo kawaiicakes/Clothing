@@ -1,0 +1,17 @@
+{
+  "type": "clothing:clothing_recipe",
+  "key": {
+    "w": {
+      "item": "minecraft:light_blue_wool"
+    }
+  },
+  "pattern": [
+    "w w",
+    "www",
+    "www"
+  ],
+  "result": {
+    "clothing": "clothing:tank_top",
+    "color": 6724056
+  }
+}

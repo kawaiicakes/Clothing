@@ -2,7 +2,7 @@
   "type": "clothing:clothing_recipe",
   "key": {
     "w": {
-      "tag": "minecraft:wool"
+      "item": "minecraft:gray_wool"
     }
   },
   "pattern": [
@@ -11,6 +11,7 @@
     "www"
   ],
   "result": {
-    "clothing": "clothing:tank_top"
+    "clothing": "clothing:tank_top",
+    "color": 5000268
   }
 }

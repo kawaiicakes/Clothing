@@ -249,7 +249,6 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
         return toReturn.build();
     }
 
-    // FIXME: ClothingRecipes don't load when a player connects until a reload is executed
     /**
      * Used mainly for clothing recipes
      * @param entryLocation the {@link ResourceLocation} of the piece of clothing.
@@ -260,9 +259,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
     @NotNull
     public ItemStack getStack(ResourceLocation entryLocation) {
         ImmutableMap<ResourceLocation, ItemStack> stackMap = this.getStacks();
-        return stackMap.containsKey(entryLocation)
-                ? Objects.requireNonNull(stackMap.get(entryLocation))
-                : ItemStack.EMPTY;
+        return Objects.requireNonNull(stackMap.getOrDefault(entryLocation, ItemStack.EMPTY));
     }
 
     /**

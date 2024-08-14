@@ -1,3 +1,18 @@
-// 1.19.2	2024-08-12T13:38:52.0850185	Recipes
+// 1.19.2	2024-08-14T06:12:20.262235	Recipes
 3adf4f2ef7708ea27cb47d2a5163dd0dd44fd880 data/clothing/advancements/recipes/clothing/tank_top.json
-ef8d43fd666ce7863a3a3c1123fc206f69f09471 data/clothing/recipes/tank_top.json
+a5b2cabbab421537e5785f9b380067f021678f16 data/clothing/recipes/tank_top_black.json
+0a5d3f592b41ecba71ec93aa8cfb2534d357170c data/clothing/recipes/tank_top_blue.json
+47d716dd3b48114bb51122af374b3373cdc9aeee data/clothing/recipes/tank_top_brown.json
+2cf8bd064e0655952814054187cc20feb28659b7 data/clothing/recipes/tank_top_cyan.json
+5d076a36f011ca79db9edee3fcf9372e10d882d7 data/clothing/recipes/tank_top_gray.json
+fde8e9ccbc2ac73f8cd102d77aab148e59bc804f data/clothing/recipes/tank_top_green.json
+776c0167fa02ce63c8a36b0680f02b3a8f114b08 data/clothing/recipes/tank_top_light_blue.json
+e76ddb3d7b09e8d73dfe748446076b982cc574ec data/clothing/recipes/tank_top_light_gray.json
+56b338e3c4ef857c87ff8ede3308aa32786c4c1d data/clothing/recipes/tank_top_lime.json
+0534418b8697786d8af22384fa3791bf0904e0c5 data/clothing/recipes/tank_top_magenta.json
+a0bf3f970246d53bf2e12dd903d41d4a8390f927 data/clothing/recipes/tank_top_orange.json
+da04103c8bb65f6ab560ed0cd6f80b3b046b9de8 data/clothing/recipes/tank_top_pink.json
+af7378b84e7e458dd789cdc3dcd801291452be6e data/clothing/recipes/tank_top_purple.json
+da4aeacf580abeb9bb60cbade01d96d5ac0c5dbf data/clothing/recipes/tank_top_red.json
+94931fa63136cef32b285a381123eb4d694b4e4d data/clothing/recipes/tank_top_white.json
+09af06947f1dbfcffbfc7b7310390678699d70cc data/clothing/recipes/tank_top_yellow.json
