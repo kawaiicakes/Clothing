@@ -84,9 +84,9 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
         RenderSystem.setShaderTexture(0, overlayLocation);
 
         poseStack.pushPose();
-        poseStack.translate((float) x + 0.5F, y, 0.0D);
-        poseStack.scale(0.20F, 0.20F, 1.0F);
-        blit(poseStack, 0, 0, 0, 0, 64, 64, 64, 64);
+        poseStack.translate((x + 0.5F) + 0.15F, y + 0.60F, 0.0D);
+        poseStack.scale(0.40F, 0.40F, 1.0F);
+        blit(poseStack, 0, 0, 16, 16, 32, 32, 64, 64);
         poseStack.popPose();
 
         RenderSystem.setShaderTexture(0, BG_LOCATION);

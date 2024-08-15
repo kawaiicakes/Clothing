@@ -106,7 +106,8 @@ public class ClothingItemModelGenerator extends ItemModelProvider {
 
                     this.getBuilderWithNamespace(overlayLocation.getNamespace(), overlayName)
                             .parent(GENERATED)
-                            .texture("layer0", overlayName);
+                            .texture("layer0", "item/clothing/overlays/empty")
+                            .texture("layer1", overlayName);
                 }
         );
     }

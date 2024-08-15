@@ -1,10 +1,10 @@
-// 1.19.2	2024-08-13T12:35:16.028828	Item Models: clothing
+// 1.19.2	2024-08-15T09:19:15.3721817	Item Models: clothing
 1893bdb22d6424dbc476e476c0a8dca6ac41f7a4 assets/clothing/models/item/baked_hat.json
 cb25516e33d173dc6ae330adc0c4b91b96513193 assets/clothing/models/item/baked_pants.json
 62cf2df5283a34a86c78e1f1bc7e1a646d755f2d assets/clothing/models/item/baked_shirt.json
 59d9ea4892452f5bb0125f087b8581a333de0ad4 assets/clothing/models/item/baked_shoes.json
-c8a88b76e88e9457cbd736f6bfc7c6a761c52b0f assets/clothing/models/item/clothing/overlays/oppai.json
-80a51f9f15d0246326ee1b68e01ebf2c5fa1082e assets/clothing/models/item/clothing/overlays/ouch.json
+d2f70f3b90df480f0f3ad113fb122ca5cb97ca26 assets/clothing/models/item/clothing/overlays/oppai.json
+661b7cc382a69ea331ffeb53b8eb66798b37eeba assets/clothing/models/item/clothing/overlays/ouch.json
 58bc76291ac7ed2d8776d13ad380e7dbf7a24503 assets/clothing/models/item/clothing/tank_top.json
 6136a8720ffa1a02aefbcc3c44454b44a0bcf2d9 assets/clothing/models/item/generic_hat.json
 5d21ccd037c18d477191535b11837050b0cf95aa assets/clothing/models/item/generic_pants.json

@@ -1,6 +1,7 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "clothing:item/clothing/overlays/oppai"
+    "layer0": "clothing:item/clothing/overlays/empty",
+    "layer1": "clothing:item/clothing/overlays/oppai"
   }
 }

@@ -57,7 +57,6 @@ public class ClothingItemRenderer extends BlockEntityWithoutLevelRenderer {
 
         ItemRenderer itemRenderer = Minecraft.getInstance().getItemRenderer();
 
-        // FIXME: overlays in item model should not be dyed with the base model
         for (BakedModel modelForPass : baseModel.getRenderPasses(pStack, false)) {
             for (RenderType renderType : modelForPass.getRenderTypes(pStack, false)) {
                 VertexConsumer vertexConsumer = ItemRenderer.getFoilBuffer(
