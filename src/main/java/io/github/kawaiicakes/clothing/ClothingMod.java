@@ -213,12 +213,14 @@ public class ClothingMod
             event.register(ClothingItemModel.Loader.ID, ClothingItemModel.Loader.INSTANCE);
         }
 
+        /**
+         * Note: The models here are registered again in the event of a resource pack swap. No extra magic needed here.
+         */
         @SubscribeEvent
         public static void onModelRegistration(ModelEvent.RegisterAdditional event) {
             Collection<Collection<ResourceLocation>> lists = new ArrayList<>();
             ResourceManager manager = Minecraft.getInstance().getResourceManager();
 
-            // TODO: investigate whether models are baked again if an in-game resource pack reload changes them
             String[] locations = {
                     "models/clothing",
                     "models/item/clothing",
