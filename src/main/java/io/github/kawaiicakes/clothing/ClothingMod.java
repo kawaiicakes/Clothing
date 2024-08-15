@@ -19,6 +19,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.ModelEvent;
 import net.minecraftforge.client.event.RegisterColorHandlersEvent;
@@ -184,8 +185,18 @@ public class ClothingMod
         ClothingRegistry.registerCauldronInteractions();
     }
 
-    @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+    @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
     public static class ClientEvents {
+        @SubscribeEvent
+        public static void onClientPlayerNetworkEvent(ClientPlayerNetworkEvent event) {
+            if (event instanceof ClientPlayerNetworkEvent.Clone) return;
+
+            ClothingItemModel.Baked.flushModelCaches();
+        }
+    }
+
+    @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+    public static class ClientModEvents {
         @SubscribeEvent
         public static void onRegisterItemColorHandlers(RegisterColorHandlersEvent.Item event) {
             event.register(

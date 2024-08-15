@@ -64,6 +64,13 @@ public class ClothingItemRenderer extends BlockEntityWithoutLevelRenderer {
                         pBuffer, renderType, true, pStack.hasFoil()
                 );
 
+                /*
+                    it seems upon preliminary examination that the tint index corresponds to the layer of a texture
+                    in an item model. the vanilla colour handlers in ItemColors are used to indicate what colour to
+                    return given an item and a tint index; for any value not the base layer (indicated as i > 0),
+                    white will be returned, thus permitting things like potions to have a coloured base (layer0)
+                    and a non-coloured glass bottle (layer1)
+                 */
                 itemRenderer.renderModelLists(
                         modelForPass, pStack, pPackedLight, pPackedOverlay, pPoseStack, vertexConsumer
                 );

@@ -69,9 +69,13 @@ public class ClothingItemModel implements IUnbakedGeometry<ClothingItemModel> {
     }
 
     public static class Baked<T extends BakedModel> extends BakedModelWrapper<T> {
-        // TODO: I don't expect this will update itself on resource reload. Make sure to add a way to flush
         protected static Map<ResourceLocation, BakedModel> MODEL_CACHE = new HashMap<>();
         protected static Map<Integer, List<BakedModel>> MODEL_LIST_CACHE = new HashMap<>();
+
+        public static void flushModelCaches() {
+            MODEL_CACHE = new HashMap<>();
+            MODEL_LIST_CACHE = new HashMap<>();
+        }
 
         protected static BakedModel get(ResourceLocation modelLocation) {
             return MODEL_CACHE.computeIfAbsent(
