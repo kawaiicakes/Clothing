@@ -93,15 +93,13 @@ public class ClothingItemModel implements IUnbakedGeometry<ClothingItemModel> {
                                     "Passed ItemStack '" + clothingStack + "' is not a ClothingItem!"
                             );
 
-                        ModelManager manager = Minecraft.getInstance().getModelManager();
-
-                        BakedModel missingModel = manager.getModel(ModelBakery.MISSING_MODEL_LOCATION);
+                        BakedModel missingModel = get(ModelBakery.MISSING_MODEL_LOCATION);
 
                         List<BakedModel> toReturn = new ArrayList<>();
 
                         ResourceLocation baseLocation
                                 = ClothingItemRenderer.baseModelLocation(clothing.getClothingName(clothingStack));
-                        BakedModel baseModel = manager.getModel(baseLocation);
+                        BakedModel baseModel = get(baseLocation);
 
                         if (baseModel.equals(missingModel)) {
                             LOGGER.error("Base clothing model '{}' does not exist!", baseLocation);
@@ -117,7 +115,7 @@ public class ClothingItemModel implements IUnbakedGeometry<ClothingItemModel> {
                             ResourceLocation overlay = overlays[j];
                             ResourceLocation overlayLocation = ClothingItemRenderer.overlayModelLocation(overlay);
 
-                            BakedModel overlayModel = manager.getModel(overlayLocation);
+                            BakedModel overlayModel = get(overlayLocation);
 
                             if (overlayModel.equals(missingModel)) {
                                 LOGGER.error("Overlay item model '{}' does not exist!", overlayLocation);
