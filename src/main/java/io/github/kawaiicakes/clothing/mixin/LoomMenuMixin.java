@@ -1,31 +1,37 @@
 package io.github.kawaiicakes.clothing.mixin;
 
 import com.google.common.collect.ImmutableList;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.common.LoomMenuOverlayGetter;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
+import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Container;
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.*;
-import net.minecraft.world.item.*;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.world.item.BannerItem;
+import net.minecraft.world.item.DyeItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.entity.BannerPattern;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-// FIXME: weird ass glitch where banners only work in looms after interacting with the stacks (but not emptying them)
+// FIXME: NEW bug where clothing doesn't automatically display the overlay selection unless dye is put in; at which point
+// overlays are invisible and clicking on one crashes the game
 // TODO: overlay pattern: banner pattern but allows access to otherwise unobtainable overlays (also allows op'd/creative players to force overlays onto clothing that normally shouldn't work)
 // TODO: new thread item, allowed to be placed in dye slot if a clothing item is present
 @Mixin(LoomMenu.class)
@@ -61,6 +67,8 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
     @Mutable
     @Shadow
     DataSlot selectedBannerPatternIndex;
+
+    @Shadow private List<Holder<BannerPattern>> selectablePatterns;
 
     @Unique
     protected List<OverlayDefinitionLoader.OverlayDefinition> clothing$selectableOverlays = List.of();
@@ -150,125 +158,158 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
         }
     }
 
-    @Inject(
-            at = @At("TAIL"),
-            method = "<init>(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/inventory/ContainerLevelAccess;)V"
+    /**
+     * Allows checking for slot validity for both banners and clothing items.
+     * @param obj the object being checked against in the {@code instanceof} call.
+     * @param original the original result of the {@code instanceof} call.
+     */
+    @WrapOperation(
+            method = "quickMoveStack",
+            constant = @Constant(classValue = BannerItem.class)
     )
-    private void init(int pContainerId, Inventory pPlayerInventory, ContainerLevelAccess pAccess, CallbackInfo ci) {
-        Slot bannerSlot = new Slot(this.inputContainer, 0, 13, 26) {
-            public boolean mayPlace(@NotNull ItemStack stack) {
-                Item item = stack.getItem();
-                return item instanceof BannerItem || item instanceof ClothingItem<?>;
-            }
-        };
-        this.bannerSlot = bannerSlot;
-        this.slots.set(0, bannerSlot);
+    private boolean quickMoveStackInstanceOfBannerItem(Object obj, Operation<Boolean> original) {
+        return original.call(obj) || obj instanceof ClothingItem<?>;
     }
 
-    // Rather than overwrite the whole thing, I'm just gonna run the logic twice in case another mod modifies the target
-    @Inject(
-            method = "quickMoveStack",
+    /**
+     * Calls to {@link ItemStack#isEmpty()} will always return false if the banner slot has a clothing item in it. The
+     * goal of this is to allow {@link #slotsChanged(Container)} at L181 to execute logic for clothing items even if
+     * the dye slot is empty.
+     * @param original the result of calling {@link ItemStack#getItem()}.
+     * @return true if the banner slot has a {@link ClothingItem} in it.
+     */
+    @ModifyExpressionValue(
+            method = "slotsChanged",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/core/NonNullList;get(I)Ljava/lang/Object;",
-                    shift = At.Shift.AFTER
-            ),
-            cancellable = true
+                    target = "Lnet/minecraft/world/item/ItemStack;isEmpty()Z"
+            )
     )
-    private void quickMoveStack(Player player, int index, CallbackInfoReturnable<ItemStack> ci) {
-        Slot slotFromMixin = this.slots.get(index);
+    private boolean slotsChangedCheckForNonEmpty(boolean original) {
+        if (!this.bannerSlot.getItem().isEmpty() && this.bannerSlot.getItem().getItem() instanceof ClothingItem<?>)
+            return false;
 
-        if (slotFromMixin.hasItem() && index != this.resultSlot.index) {
-            ItemStack itemstack1B = slotFromMixin.getItem();
-
-            if (index != this.dyeSlot.index && index != this.bannerSlot.index && index != this.patternSlot.index) {
-                if (itemstack1B.getItem() instanceof ClothingItem<?>) {
-                    if (
-                            !this.moveItemStackTo(
-                                    itemstack1B,
-                                    this.bannerSlot.index,
-                                    this.bannerSlot.index + 1,
-                                    false
-                            )
-                    ) {
-                        ci.setReturnValue(ItemStack.EMPTY);
-                        ci.cancel();
-                    }
-                }
-            }
-        }
+        return original;
     }
 
+    /**
+     * This injected block will only execute if there is a clothing item in the banner slot. It's called prior to
+     * {@link LoomMenu#broadcastChanges()} so as to "replace" operations that the original Loom logic performed.
+     * @param container the {@link Container} in which the slots are changing.
+     * @param ci callback info
+     */
     @Inject(
             method = "slotsChanged",
-            at = @At(value = "HEAD"),
-            cancellable = true
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/world/inventory/LoomMenu;broadcastChanges()V",
+                    shift = At.Shift.BEFORE
+            )
     )
-    private void slotsChanged(Container container, CallbackInfo ci) {
-        if (
-                !this.bannerSlot.getItem().isEmpty()
-                        && this.bannerSlot.getItem().getItem() instanceof ClothingItem<?>
-        ) {
-            ItemStack clothingStack = this.bannerSlot.getItem();
+    private void slotsChangedDoClothingLogic(Container container, CallbackInfo ci) {
+        if (this.bannerSlot.getItem().isEmpty() || !(this.bannerSlot.getItem().getItem() instanceof ClothingItem<?>))
+            return;
 
-            int i = this.selectedBannerPatternIndex.get();
-            boolean validOverlayIndex = this.clothing$isValidOverlayIndex(i);
+        this.selectablePatterns = List.of();
 
-            List<OverlayDefinitionLoader.OverlayDefinition> oldList = this.clothing$selectableOverlays;
-            this.clothing$selectableOverlays = this.getClothing$selectableOverlays(clothingStack);
+        ItemStack clothingStack = this.bannerSlot.getItem();
 
-            final OverlayDefinitionLoader.OverlayDefinition overlay;
+        List<OverlayDefinitionLoader.OverlayDefinition> oldList = this.clothing$selectableOverlays;
+        this.clothing$selectableOverlays = this.getClothing$selectableOverlays(clothingStack);
 
-            if (this.clothing$selectableOverlays.size() == 1) {
-                this.selectedBannerPatternIndex.set(0);
-                overlay = this.clothing$selectableOverlays.get(0);
-            } else if (!validOverlayIndex) {
-                this.selectedBannerPatternIndex.set(-1);
+        int i = this.selectedBannerPatternIndex.get();
+        boolean validOverlayIndex = this.clothing$isValidOverlayIndex(i);
+
+        OverlayDefinitionLoader.OverlayDefinition overlay;
+
+        if (this.clothing$selectableOverlays.size() == 1) {
+            this.selectedBannerPatternIndex.set(0);
+            overlay = this.clothing$selectableOverlays.get(0);
+        } else if (!validOverlayIndex) {
+            this.selectedBannerPatternIndex.set(-1);
+            overlay = null;
+        } else {
+            OverlayDefinitionLoader.OverlayDefinition overlay1 = oldList.get(i);
+            int j = this.clothing$selectableOverlays.indexOf(overlay1);
+            if (j != -1) {
+                overlay = overlay1;
+                this.selectedBannerPatternIndex.set(j);
+            } else {
                 overlay = null;
-            } else {
-                OverlayDefinitionLoader.OverlayDefinition overlay1 = oldList.get(i);
-                int j = this.clothing$selectableOverlays.indexOf(overlay1);
-                if (j != -1) {
-                    overlay = overlay1;
-                    this.selectedBannerPatternIndex.set(j);
-                } else {
-                    overlay = null;
-                    this.selectedBannerPatternIndex.set(-1);
-                }
+                this.selectedBannerPatternIndex.set(-1);
             }
+        }
 
-            if (overlay != null || !this.dyeSlot.getItem().isEmpty()) {
-                    this.clothing$setupClothingResultSlot(overlay);
-            } else {
-                this.resultSlot.set(ItemStack.EMPTY);
-            }
-
-            this.broadcastChanges();
-            ci.cancel();
+        if (overlay != null || !this.dyeSlot.getItem().isEmpty()) {
+            this.clothing$setupClothingResultSlot(overlay);
         } else {
             this.resultSlot.set(ItemStack.EMPTY);
-            this.clothing$selectableOverlays = List.of();
-            this.selectedBannerPatternIndex.set(-1);
         }
     }
 
+    /**
+     * Adds bits handling clothing into the {@code else} bit of the if-block to "reset" the Loom, as in the original
+     * method.
+     * @param container the {@link Container} in which the slots are changing.
+     * @param ci callback info
+     */
     @Inject(
-            method = "clickMenuButton",
-            at = @At(value = "HEAD"),
-            cancellable = true
+            method = "slotsChanged",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Ljava/util/List;of()Ljava/util/List;",
+                    shift = At.Shift.AFTER
+            )
     )
-    private void clickMenuButton(Player pPlayer, int pId, CallbackInfoReturnable<Boolean> cir) {
-        if (
-                pId >= 0
-                        && pId < this.clothing$selectableOverlays.size()
-                        && !this.bannerSlot.getItem().isEmpty()
-                        && this.bannerSlot.getItem().getItem() instanceof ClothingItem<?>
-        ) {
-            this.selectedBannerPatternIndex.set(pId);
+    private void slotsChangedWipeClothing(Container container, CallbackInfo ci) {
+        this.clothing$selectableOverlays = List.of();
+    }
+
+    /**
+     * Allows for execution of different logic in {@link #clickMenuButton(Player, int)} if the banner slot has a
+     * clothing item in it.
+     * @param original the result of calling {@link ItemStack#getItem()}.
+     * @return The size of {@link #clothing$selectableOverlays} if the banner slot has a {@link ClothingItem} in it.
+     */
+    @ModifyExpressionValue(
+            method = "clickMenuButton",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Ljava/util/List;size()I"
+            )
+    )
+    private int clickMenuButtonCheckForOverlays(int original) {
+        if (!this.bannerSlot.getItem().isEmpty() && this.bannerSlot.getItem().getItem() instanceof ClothingItem<?>)
+            return this.clothing$selectableOverlays.size();
+
+        return original;
+    }
+
+    /**
+     * Rather than immediately setting up the result slot, the original method is only called if the item in the banner
+     * slot is not a clothing item.
+     * @param instance the {@link LoomMenu} instance this is being called in
+     * @param dyeColor the argument being passed to {@link LoomMenu#setupResultSlot(Holder)}
+     * @param original the reference to the original {@link LoomMenu#setupResultSlot(Holder)} call
+     * @param pPlayer the argument passed to {@code instance}
+     * @param pId the argument passed to {@code instance}
+     */
+    @WrapOperation(
+            method = "clickMenuButton",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/world/inventory/LoomMenu;setupResultSlot(Lnet/minecraft/core/Holder;)V"
+            )
+    )
+    private void clickMenuButtonSetupResultSlot(
+            LoomMenu instance, Holder<BannerPattern> dyeColor, Operation<Void> original, Player pPlayer, int pId
+    ) {
+        if (!this.bannerSlot.getItem().isEmpty() && this.bannerSlot.getItem().getItem() instanceof ClothingItem<?>) {
             this.clothing$setupClothingResultSlot(this.clothing$selectableOverlays.get(pId));
-            cir.setReturnValue(true);
-            cir.cancel();
+            return;
         }
+
+        original.call(instance, dyeColor);
     }
 
     private LoomMenuMixin(@Nullable MenuType<?> pMenuType, int pContainerId) {

@@ -5,6 +5,7 @@
   "refmap": "clothing.refmap.json",
   "mixins": [
     "LivingEntityMixin",
+    "LoomMenu$3Mixin",
     "LoomMenuMixin"
   ],
   "client": [
