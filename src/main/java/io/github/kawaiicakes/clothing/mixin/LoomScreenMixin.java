@@ -15,6 +15,7 @@ import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.common.LoomMenuOverlayGetter;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -218,6 +219,23 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
     }
 
     /**
+     * Chooses the appropriate value to return when querying the number of selectable elements there are to click
+     */
+    @ModifyExpressionValue(
+            method = "renderBg",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Ljava/util/List;size()I"
+            )
+    )
+    private int renderBgListSize(int original) {
+        if (this.clothing$displayOverlays)
+            return ((LoomMenuOverlayGetter) this.menu).getClothing$selectableOverlays().size();
+
+        return original;
+    }
+
+    /**
      * Caches an important local for later access since locals cannot be accessed from {@link WrapOperation}
      */
     @Inject(
@@ -261,6 +279,25 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
         int offset = this.displayPatterns ? pUOffset : 14;
 
         original.call(instance, poseStack, pX, pY, offset, pVOffset, pUWidth, pVHeight);
+    }
+
+    /**
+     * This is a bit of a hacky way to stop an {@link ArrayIndexOutOfBoundsException} from being thrown when
+     * {@link #renderBg(PoseStack, float, int, int)} at L154 attempts to parse the arguments being passed to the
+     * original {@code Operation}. This results in an exception since the banner patterns are expected to be empty when
+     * a piece of clothing goes in. Returning null would ordinarily be problematic, but since the original operation
+     * should not be called in the event that a null value is passed to it to begin with, this should be fine.
+     * @see LoomMenuMixin#clickMenuButtonPreventArrayOutOfBoundsException(LoomMenu, Operation)
+     */
+    @WrapOperation(
+            method = "renderBg",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Ljava/util/List;get(I)Ljava/lang/Object;"
+            )
+    )
+    private <E> E renderBgPreventArrayOutOfBoundsException(List<E> instance, int index, Operation<E> original) {
+        return instance.isEmpty() ? null : original.call(instance, index);
     }
 
     /**
@@ -416,8 +453,7 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
         ItemStack clothingStack = this.menu.getBannerSlot().getItem();
 
         this.clothing$displayOverlays = !clothingStack.isEmpty()
-                && clothingStack.getItem() instanceof ClothingItem<?>
-                && !((LoomMenuOverlayGetter) this.menu).getClothing$selectableOverlays().isEmpty();
+                && clothingStack.getItem() instanceof GenericClothingItem;
 
         original.call(instance, value && !(clothingStack.getItem() instanceof ClothingItem<?>));
     }
