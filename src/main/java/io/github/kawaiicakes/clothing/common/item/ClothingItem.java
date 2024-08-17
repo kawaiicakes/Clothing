@@ -41,6 +41,7 @@ import java.util.function.Consumer;
 
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 
+// TODO: the default colour given by a clothing entry is reflected in #hasCustomColor
 // TODO: add fallbacks everywhere necessary so clothing with fucked up NBT doesn't just break the game. A Source engine ERROR model would be nice for baked models that can't be found too
 /**
  * Each implementation of this will likely represent an item that renders as one model type (e.g. JSON, OBJ). The

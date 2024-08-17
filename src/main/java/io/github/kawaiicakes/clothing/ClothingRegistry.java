@@ -106,6 +106,7 @@ public class ClothingRegistry {
             )
     );
 
+    // TODO: add sounds when cleaning clothing with water or bleach
     public static final RegistryObject<LayeredCauldronBlock> BLEACH_CAULDRON = BLOCK_REGISTRY.register(
             "bleach_cauldron",
             () -> new LayeredCauldronBlock(
