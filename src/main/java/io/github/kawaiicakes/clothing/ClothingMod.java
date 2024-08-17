@@ -46,6 +46,8 @@ import java.util.Collection;
 
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.BASE_MODEL_DATA;
 
+// TODO: add JEI compat for new loom recipes
+// TODO: add new crafting type/"dye vial", allows crafting any dye colour from (automatically generated) inputs
 @Mod(ClothingMod.MOD_ID)
 public class ClothingMod
 {

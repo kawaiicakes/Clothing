@@ -54,6 +54,7 @@ public class ClothingRegistry {
     public static final DeferredRegister<Fluid> FLUID_REGISTRY
             = DeferredRegister.create(ForgeRegistries.FLUIDS, MOD_ID);
 
+    // TODO: finish bleach; assets, properties, crafting, etc.
     public static final Map<Item, CauldronInteraction> BLEACH = CauldronInteraction.newInteractionMap();
 
     public static final RegistryObject<FluidType> BLEACH_FLUID_TYPE = FLUID_TYPE_REGISTRY.register(

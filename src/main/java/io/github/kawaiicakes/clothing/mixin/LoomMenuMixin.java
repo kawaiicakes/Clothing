@@ -31,7 +31,7 @@ import java.util.Collections;
 import java.util.List;
 
 // TODO: overlay pattern: banner pattern but allows access to otherwise unobtainable overlays (also allows op'd/creative players to force overlays onto clothing that normally shouldn't work)
-// TODO: new thread item, allowed to be placed in dye slot if a clothing item is present
+// TODO: new thread item, allowed to be placed in dye slot if a clothing item is present. Required to apply an overlay; can be coloured to confer that colour to the overlay
 @Mixin(LoomMenu.class)
 public abstract class LoomMenuMixin extends AbstractContainerMenu implements LoomMenuOverlayGetter {
     @Unique

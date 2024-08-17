@@ -73,7 +73,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
         return InteractionResult.sidedSuccess(false);
     };
 
-    // TODO: consider allowing multiple layers when rendering generic clothing
+    // TODO: allow multiple layers when rendering generic clothing (also merge baked with generic tbh)
     public GenericClothingItem(EquipmentSlot pSlot) {
         super(pSlot);
     }
@@ -97,6 +97,12 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
         return toReturn;
     }
 
+    /*
+        TODO: allow users to define lore in clothing entry that is able to be displayed.
+
+        TODO: overlays should only display if tooltip flag is advanced since the item model displays them now.
+        Include the base texture names, colours for each overlay, and the colour(s) for the base piece of clothing
+     */
     @Override
     @ParametersAreNonnullByDefault
     public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
