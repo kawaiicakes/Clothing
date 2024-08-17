@@ -6,6 +6,7 @@ import io.github.kawaiicakes.clothing.client.model.ClothingItemModel;
 import io.github.kawaiicakes.clothing.client.model.GenericDefinitions;
 import io.github.kawaiicakes.clothing.common.data.*;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.SpoolItem;
 import io.github.kawaiicakes.clothing.common.network.ClothingPackets;
 import io.github.kawaiicakes.clothing.common.resources.BakedClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
@@ -207,6 +208,11 @@ public class ClothingMod
                             return pTintIndex > 0 ? pTintIndex : ((ClothingItem<?>) pStack.getItem()).getColor(pStack);
                         },
                     ClothingRegistry.getAll()
+            );
+
+            event.register(
+                    (pStack, pTintIndex) -> pTintIndex > 0 ? 0xFFFFFF : ((SpoolItem) pStack.getItem()).getColor(pStack),
+                    ClothingRegistry.SPOOL.get()
             );
         }
 

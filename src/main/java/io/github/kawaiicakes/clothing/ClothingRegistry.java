@@ -2,6 +2,8 @@ package io.github.kawaiicakes.clothing;
 
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.ClothingTabs;
+import io.github.kawaiicakes.clothing.common.item.SpoolItem;
 import io.github.kawaiicakes.clothing.common.item.impl.BakedModelClothingItem;
 import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.recipe.ClothingRecipe;
@@ -9,7 +11,6 @@ import net.minecraft.core.cauldron.CauldronInteraction;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.BucketItem;
-import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeSerializer;
@@ -102,7 +103,7 @@ public class ClothingRegistry {
                     (new Item.Properties())
                             .craftRemainder(BUCKET)
                             .stacksTo(1)
-                            .tab(CreativeModeTab.TAB_MISC)
+                            .tab(ClothingTabs.CLOTHING_TAB_MISC)
             )
     );
 
@@ -112,6 +113,10 @@ public class ClothingRegistry {
             () -> new LayeredCauldronBlock(
                     BlockBehaviour.Properties.copy(CAULDRON), precipitation -> false, BLEACH
             )
+    );
+
+    public static final RegistryObject<SpoolItem> SPOOL = ITEM_REGISTRY.register(
+            "spool", () -> new SpoolItem(new Item.Properties().tab(ClothingTabs.CLOTHING_TAB_MISC))
     );
 
     public static final RegistryObject<GenericClothingItem> GENERIC_HAT

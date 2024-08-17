@@ -69,7 +69,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
                 ArmorMaterials.LEATHER,
                 pSlot,
                 new Properties()
-                        .tab(ClothingTab.CLOTHING_TAB)
+                        .tab(ClothingTabs.CLOTHING_TAB)
                         .stacksTo(1)
         );
         this.initializeClientClothingRenderManager();

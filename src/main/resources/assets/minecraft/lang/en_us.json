@@ -1,5 +1,9 @@
 {
   "itemGroup.clothing": "Clothing!",
+  "itemGroup.clothing_misc": "Clothing Stuff!",
 
-  "item.modifiers.clothing.overlays": "Applied overlays:"
+  "item.modifiers.clothing.overlays": "Applied overlays:",
+
+  "item.clothing.bleach_bucket": "Bleach Bucket",
+  "item.clothing.spool": "Spool"
 }
