@@ -26,12 +26,12 @@ import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-// FIXME: NEW bug where clothing doesn't automatically display the overlay selection unless dye is put in; at which point
-// overlays are invisible and clicking on one crashes the game
+// FIXME: clothing doesn't automatically display the overlay selection unless dye is put in. Yet, they appear to be clickable still
 // TODO: overlay pattern: banner pattern but allows access to otherwise unobtainable overlays (also allows op'd/creative players to force overlays onto clothing that normally shouldn't work)
 // TODO: new thread item, allowed to be placed in dye slot if a clothing item is present
 @Mixin(LoomMenu.class)
@@ -283,6 +283,39 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
             return this.clothing$selectableOverlays.size();
 
         return original;
+    }
+
+    /**
+     * This is a bit of a hacky way to stop an {@link ArrayIndexOutOfBoundsException} from being thrown when
+     * {@link #clickMenuButtonSetupResultSlot(LoomMenu, Holder, Operation, Player, int)} attempts to parse the
+     * arguments being passed to the original {@code Operation}. This results in an exception since the banner patterns
+     * are expected to be empty when a piece of clothing goes in. Returning null would ordinarily be problematic,
+     * but since the original operation should not be called in the event that a null value is passed to it to begin
+     * with, this should be fine.
+     */
+    @WrapOperation(
+            method = "clickMenuButton",
+            at = @At(
+                    value = "FIELD",
+                    target = "Lnet/minecraft/world/inventory/LoomMenu;selectablePatterns:Ljava/util/List;"
+            )
+    )
+    private List<Holder<BannerPattern>> clickMenuButtonPreventArrayOutOfBoundsException(
+            LoomMenu instance, Operation<List<Holder<BannerPattern>>> original
+    ) {
+        List<Holder<BannerPattern>> toReturn = original.call(instance);
+
+        if (toReturn.isEmpty()) {
+            List<Holder<BannerPattern>> nullList = new ArrayList<>();
+
+            for (int i = 0; i < this.clothing$selectableOverlays.size(); i++) {
+                nullList.add(null);
+            }
+
+            toReturn = nullList;
+        }
+
+        return toReturn;
     }
 
     /**
