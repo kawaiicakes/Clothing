@@ -1,11 +1,15 @@
 package io.github.kawaiicakes.clothing.mixin;
 
+import com.llamalad7.mixinextras.expression.Definition;
+import com.llamalad7.mixinextras.expression.Expression;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.common.LoomMenuOverlayGetter;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.SpoolItem;
 import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import net.minecraft.core.Holder;
@@ -31,7 +35,8 @@ import java.util.Collections;
 import java.util.List;
 
 // TODO: overlay pattern: banner pattern but allows access to otherwise unobtainable overlays (also allows op'd/creative players to force overlays onto clothing that normally shouldn't work)
-// TODO: Spool is allowed to be placed in dye slot if a clothing item is present. Required to apply an overlay; can be coloured to confer that colour to the overlay
+
+// TODO: Spool is allowed to be placed in dye slot. Fix parts of menu/screen that use the dye slot accordingly. Spool is required to apply an overlay; can be coloured to confer that colour to the overlay
 @Mixin(LoomMenu.class)
 public abstract class LoomMenuMixin extends AbstractContainerMenu implements LoomMenuOverlayGetter {
     @Unique
@@ -106,48 +111,53 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
     private void clothing$setupClothingResultSlot(OverlayDefinitionLoader.OverlayDefinition overlay) {
         ItemStack clothingStack = this.bannerSlot.getItem();
         ItemStack dyeStack = this.dyeSlot.getItem();
-        ItemStack outputStack = ItemStack.EMPTY;
+        ItemStack outputStack;
 
         if (
-                !clothingStack.isEmpty()
-                        && clothingStack.getItem() instanceof ClothingItem<?> clothingItem
+                clothingStack.isEmpty()
+                        || !(clothingStack.getItem() instanceof ClothingItem<?>)
+                        || dyeStack.isEmpty()
+        ) return;
+
+        outputStack = clothingStack.copy();
+        outputStack.setCount(1);
+
+        if (dyeStack.getItem() instanceof DyeItem dyeItem) {
+            List<DyeItem> dyeColor = Collections.singletonList(dyeItem);
+            ClothingItem.dyeClothing(outputStack, dyeColor);
+        }
+
+        if (
+                clothingStack.getItem() instanceof GenericClothingItem genericClothingItem
+                        && overlay != null
+                        && dyeStack.getItem() instanceof SpoolItem
         ) {
-            outputStack = clothingStack.copy();
-            outputStack.setCount(1);
+            ResourceLocation[] existingOverlays = genericClothingItem.getOverlays(outputStack);
+            List<ResourceLocation> overlayList = Arrays.asList(existingOverlays);
 
-            if (!dyeStack.isEmpty()) {
-                List<DyeItem> dyeColor = Collections.singletonList(((DyeItem) dyeStack.getItem()));
-                ClothingItem.dyeClothing(outputStack, dyeColor);
-            }
+            if (overlayList.isEmpty()) {
+                genericClothingItem.setOverlays(outputStack, new ResourceLocation[]{overlay.name()});
+            } else if (!overlayList.get(0).equals(overlay.name())) {
+                ResourceLocation[] newOverlays;
 
-            if (clothingItem instanceof GenericClothingItem genericClothingItem && overlay != null) {
-                ResourceLocation[] existingOverlays = genericClothingItem.getOverlays(outputStack);
-                List<ResourceLocation> overlayList = Arrays.asList(existingOverlays);
-
-                if (overlayList.isEmpty()) {
-                    genericClothingItem.setOverlays(outputStack, new ResourceLocation[]{overlay.name()});
-                } else if (!overlayList.get(0).equals(overlay.name())) {
-                    ResourceLocation[] newOverlays;
-
-                    if (overlayList.contains(overlay.name())) {
-                        int existingIndex = overlayList.indexOf(overlay.name());
-                        newOverlays = new ResourceLocation[existingOverlays.length];
-                        for (int i = 1; i < existingOverlays.length; i++) {
-                            if (i <= existingIndex) {
-                                newOverlays[i] = existingOverlays[i - 1];
-                            } else {
-                                newOverlays[i] = existingOverlays[i];
-                            }
+                if (overlayList.contains(overlay.name())) {
+                    int existingIndex = overlayList.indexOf(overlay.name());
+                    newOverlays = new ResourceLocation[existingOverlays.length];
+                    for (int i = 1; i < existingOverlays.length; i++) {
+                        if (i <= existingIndex) {
+                            newOverlays[i] = existingOverlays[i - 1];
+                        } else {
+                            newOverlays[i] = existingOverlays[i];
                         }
-                    } else {
-                        newOverlays = new ResourceLocation[existingOverlays.length + 1];
-                        System.arraycopy(existingOverlays, 0, newOverlays, 1, existingOverlays.length);
                     }
-
-                    newOverlays[0] = overlay.name();
-
-                    genericClothingItem.setOverlays(outputStack, newOverlays);
+                } else {
+                    newOverlays = new ResourceLocation[existingOverlays.length + 1];
+                    System.arraycopy(existingOverlays, 0, newOverlays, 1, existingOverlays.length);
                 }
+
+                newOverlays[0] = overlay.name();
+
+                genericClothingItem.setOverlays(outputStack, newOverlays);
             }
         }
 
@@ -170,24 +180,16 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
     }
 
     /**
-     * Calls to {@link ItemStack#isEmpty()} will always return false if the banner slot has a clothing item in it. The
-     * goal of this is to allow {@link #slotsChanged(Container)} at L181 to execute logic for clothing items even if
-     * the dye slot is empty.
-     * @param original the result of calling {@link ItemStack#getItem()}.
-     * @return true if the banner slot has a {@link ClothingItem} in it.
+     * Allows checking for slot validity for both dye and spool items.
+     * @param obj the object being checked against in the {@code instanceof} call.
+     * @param original the original result of the {@code instanceof} call.
      */
-    @ModifyExpressionValue(
-            method = "slotsChanged",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/world/item/ItemStack;isEmpty()Z"
-            )
+    @WrapOperation(
+            method = "quickMoveStack",
+            constant = @Constant(classValue = DyeItem.class)
     )
-    private boolean slotsChangedCheckForNonEmpty(boolean original) {
-        if (!this.bannerSlot.getItem().isEmpty() && this.bannerSlot.getItem().getItem() instanceof ClothingItem<?>)
-            return false;
-
-        return original;
+    private boolean quickMoveStackInstanceOfDyeItem(Object obj, Operation<Boolean> original) {
+        return original.call(obj) || obj instanceof SpoolItem;
     }
 
     /**
@@ -205,8 +207,7 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
             )
     )
     private void slotsChangedDoClothingLogic(Container container, CallbackInfo ci) {
-        if (this.bannerSlot.getItem().isEmpty() || !(this.bannerSlot.getItem().getItem() instanceof ClothingItem<?>))
-            return;
+        if (!(this.bannerSlot.getItem().getItem() instanceof ClothingItem<?>)) return;
 
         this.selectablePatterns = List.of();
 
@@ -238,11 +239,38 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
             }
         }
 
-        if (overlay != null || !this.dyeSlot.getItem().isEmpty()) {
+        if (overlay != null || this.dyeSlot.getItem().getItem() instanceof DyeItem) {
             this.clothing$setupClothingResultSlot(overlay);
         } else {
             this.resultSlot.set(ItemStack.EMPTY);
         }
+    }
+
+    /**
+     * Adds a check prior to setting up the result slot to see if the dye slot has a dye item in it; not a spool
+     */
+    @Definition(id = "holder", local = @Local(type = Holder.class))
+    @Expression("holder != null")
+    @ModifyExpressionValue(method = "slotsChanged", at = @At("MIXINEXTRAS:EXPRESSION"))
+    private boolean slotsChangedModifySetupResultSlotLogic(boolean original) {
+        return original && !(this.dyeSlot.getItem().getItem() instanceof SpoolItem);
+    }
+
+    /**
+     * Adds a check prior to setting up the result slot to see if the dye slot has a dye item in it; not a spool.
+     * Duplicated methods because the itemstack in the dye slot might be out of sync and thus return true
+     * in instances where it shouldn't
+     */
+    @ModifyExpressionValue(
+            method = "setupResultSlot",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/world/item/ItemStack;isEmpty()Z",
+                    ordinal = 1
+            )
+    )
+    private boolean setupResultSlotModifyLogic(boolean original) {
+        return original && !(this.dyeSlot.getItem().getItem() instanceof SpoolItem);
     }
 
     /**
@@ -285,11 +313,11 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
 
     /**
      * This is a bit of a hacky way to stop an {@link ArrayIndexOutOfBoundsException} from being thrown when
-     * {@link #clickMenuButtonSetupResultSlot(LoomMenu, Holder, Operation, Player, int)} attempts to parse the
-     * arguments being passed to the original {@code Operation}. This results in an exception since the banner patterns
-     * are expected to be empty when a piece of clothing goes in. Returning null would ordinarily be problematic,
-     * but since the original operation should not be called in the event that a null value is passed to it to begin
-     * with, this should be fine.
+     * {@link #clickMenuButtonModifySetupResultSlotLogic(LoomMenu, Holder, Operation, Player, int)} attempts to parse
+     * the arguments being passed to the original {@code Operation}. This results in an exception since the banner
+     * patterns are expected to be empty when a piece of clothing goes in. Returning null would ordinarily be
+     * problematic, but since the original operation should not be called in the event that a null value is passed to
+     * it to begin with, this should be fine.
      */
     @WrapOperation(
             method = "clickMenuButton",
@@ -318,7 +346,7 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
 
     /**
      * Rather than immediately setting up the result slot, the original method is only called if the item in the banner
-     * slot is not a clothing item.
+     * slot is not a clothing item AND the dye slot does not have a spool in it.
      * @param instance the {@link LoomMenu} instance this is being called in
      * @param dyeColor the argument being passed to {@link LoomMenu#setupResultSlot(Holder)}
      * @param original the reference to the original {@link LoomMenu#setupResultSlot(Holder)} call
@@ -332,13 +360,15 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
                     target = "Lnet/minecraft/world/inventory/LoomMenu;setupResultSlot(Lnet/minecraft/core/Holder;)V"
             )
     )
-    private void clickMenuButtonSetupResultSlot(
+    private void clickMenuButtonModifySetupResultSlotLogic(
             LoomMenu instance, Holder<BannerPattern> dyeColor, Operation<Void> original, Player pPlayer, int pId
     ) {
         if (!this.bannerSlot.getItem().isEmpty() && this.bannerSlot.getItem().getItem() instanceof ClothingItem<?>) {
             this.clothing$setupClothingResultSlot(this.clothing$selectableOverlays.get(pId));
             return;
         }
+
+        if (this.dyeSlot.getItem().getItem() instanceof SpoolItem) return;
 
         original.call(instance, dyeColor);
     }
