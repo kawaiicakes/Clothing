@@ -12,12 +12,16 @@ import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.cauldron.CauldronInteraction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -40,6 +44,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
+import static net.minecraft.core.cauldron.CauldronInteraction.DYED_ITEM;
 
 // TODO: the default colour given by a clothing entry is reflected in #hasCustomColor
 // TODO: add fallbacks everywhere necessary so clothing with fucked up NBT doesn't just break the game. A Source engine ERROR model would be nice for baked models that can't be found too
@@ -61,6 +66,18 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     public static final String MAX_DAMAGE_KEY = "durability";
 
     public static final ResourceLocation BASE_MODEL_DATA = new ResourceLocation(MOD_ID, "base_model_data");
+
+    public static final CauldronInteraction NEW_DYED_ITEM = (pBlockState, pLevel, pPos, pPlayer, pHand, pStack) -> {
+        InteractionResult result = DYED_ITEM.interact(pBlockState, pLevel, pPos, pPlayer, pHand, pStack);
+
+        if (result.equals(InteractionResult.sidedSuccess(false))) {
+            pLevel.playSound(
+                    null, pPos, SoundEvents.GENERIC_SPLASH, SoundSource.BLOCKS, 1.0F, 1.0F
+            );
+        }
+
+        return result;
+    };
 
     private Object clientClothingRenderManager;
 

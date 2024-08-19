@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
+import static io.github.kawaiicakes.clothing.common.item.ClothingItem.NEW_DYED_ITEM;
 import static net.minecraft.core.cauldron.CauldronInteraction.*;
 import static net.minecraft.world.item.Items.BUCKET;
 import static net.minecraft.world.level.block.Blocks.CAULDRON;
@@ -107,7 +108,6 @@ public class ClothingRegistry {
             )
     );
 
-    // TODO: add sounds when cleaning clothing with water or bleach
     public static final RegistryObject<LayeredCauldronBlock> BLEACH_CAULDRON = BLOCK_REGISTRY.register(
             "bleach_cauldron",
             () -> new LayeredCauldronBlock(
@@ -228,7 +228,7 @@ public class ClothingRegistry {
         }
 
         for (Item item : getAll()) {
-            WATER.put(item, DYED_ITEM);
+            WATER.put(item, NEW_DYED_ITEM);
 
             if (!(item instanceof GenericClothingItem)) continue;
 

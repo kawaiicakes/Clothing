@@ -23,6 +23,8 @@ import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -67,7 +69,9 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
             System.arraycopy(originalOverlays, 1, newOverlays, 0, newLength);
 
         generic.setOverlays(pStack, newOverlays);
-
+        pLevel.playSound(
+                null, pBlockPos, SoundEvents.GENERIC_SPLASH, SoundSource.BLOCKS, 1.0F, 1.0F
+        );
         LayeredCauldronBlock.lowerFillLevel(pBlockState, pLevel, pBlockPos);
 
         return InteractionResult.sidedSuccess(false);
