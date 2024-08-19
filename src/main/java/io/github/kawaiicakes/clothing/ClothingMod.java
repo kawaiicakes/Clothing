@@ -1,6 +1,8 @@
 package io.github.kawaiicakes.clothing;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.logging.LogUtils;
+import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.client.model.ClothingItemModel;
 import io.github.kawaiicakes.clothing.client.model.GenericDefinitions;
@@ -12,13 +14,19 @@ import io.github.kawaiicakes.clothing.common.resources.BakedClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
+import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.EntityRenderersEvent;
@@ -40,7 +48,10 @@ import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent;
 import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
+import top.theillusivec4.curios.api.SlotContext;
 import top.theillusivec4.curios.api.SlotTypePreset;
+import top.theillusivec4.curios.api.client.CuriosRendererRegistry;
+import top.theillusivec4.curios.api.client.ICurioRenderer;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -260,6 +271,53 @@ public class ClothingMod
                     CURIOS_LOADED ? "[Clothing] Curios successfully detected during client setup."
                             : "[Clothing] Curios was not detected during client setup."
             );
+
+            if (!CURIOS_LOADED) return;
+
+            ICurioRenderer renderer = new ICurioRenderer() {
+                @Override
+                public <T extends LivingEntity, M extends EntityModel<T>> void render(
+                        ItemStack stack,
+                        SlotContext slotContext,
+                        PoseStack matrixStack,
+                        RenderLayerParent<T, M> renderLayerParent,
+                        MultiBufferSource renderTypeBuffer,
+                        int light,
+                        float limbSwing, float limbSwingAmount,
+                        float partialTicks, float ageInTicks,
+                        float netHeadYaw, float headPitch
+                ) {
+                    if (!(stack.getItem() instanceof ClothingItem<?> clothingItem)) return;
+                    if (!(renderLayerParent instanceof LivingEntityRenderer<T,M> parent)) return;
+
+                    HumanoidClothingLayer<?, ?, ?> layer = (HumanoidClothingLayer<?, ?, ?>) parent.layers.stream()
+                            .filter(l -> l instanceof HumanoidClothingLayer<?,?,?>)
+                            .findAny()
+                            .orElseThrow();
+
+                    Object obj = clothingItem.getClientClothingRenderManager();
+
+                    if (!(obj instanceof ClientClothingRenderManager renderManager)) return;
+
+                    // FIXME: param "pLivingEntity" should either be removed or should somehow actually reflect the entity this is being rendered on
+
+                    renderManager.render(
+                            layer,
+                            stack,
+                            matrixStack,
+                            renderTypeBuffer,
+                            light,
+                            null,
+                            limbSwing, limbSwingAmount,
+                            partialTicks, ageInTicks,
+                            netHeadYaw, headPitch
+                    );
+                }
+            };
+
+            for (Item clothing : ClothingRegistry.getAll()) {
+                CuriosRendererRegistry.register(clothing, () -> renderer);
+            }
         }
 
         @SubscribeEvent
