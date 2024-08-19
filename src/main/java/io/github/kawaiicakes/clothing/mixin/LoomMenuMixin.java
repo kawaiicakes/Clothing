@@ -249,7 +249,7 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
     /**
      * Adds a check prior to setting up the result slot to see if the dye slot has a dye item in it; not a spool
      */
-    @Definition(id = "holder", local = @Local(type = Holder.class))
+    @Definition(id = "holder", local = @Local(type = Holder.class, ordinal = 0))
     @Expression("holder != null")
     @ModifyExpressionValue(method = "slotsChanged", at = @At("MIXINEXTRAS:EXPRESSION"))
     private boolean slotsChangedModifySetupResultSlotLogic(boolean original) {
