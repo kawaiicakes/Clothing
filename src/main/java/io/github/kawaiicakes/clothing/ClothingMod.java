@@ -16,10 +16,14 @@ import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.particle.DripParticle;
+import net.minecraft.client.particle.Particle;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.item.ItemProperties;
+import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -28,10 +32,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.ModelEvent;
-import net.minecraftforge.client.event.RegisterColorHandlersEvent;
+import net.minecraftforge.client.event.*;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.data.ExistingFileHelper;
 import net.minecraftforge.data.event.GatherDataEvent;
@@ -47,6 +48,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent;
 import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import top.theillusivec4.curios.api.SlotContext;
 import top.theillusivec4.curios.api.SlotTypePreset;
@@ -56,6 +58,8 @@ import top.theillusivec4.curios.api.client.ICurioRenderer;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import static io.github.kawaiicakes.clothing.ClothingRegistry.BLEACH_CAULDRON;
+import static io.github.kawaiicakes.clothing.ClothingRegistry.DRIPPING_BLEACH;
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.BASE_MODEL_DATA;
 
 // TODO: add JEI compat for new loom recipes
@@ -212,6 +216,29 @@ public class ClothingMod
     @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientModEvents {
         @SubscribeEvent
+        public static void onRegisterParticles(RegisterParticleProvidersEvent event) {
+            event.register(
+                    DRIPPING_BLEACH.get(),
+                    (spriteSet) -> new DripParticle.WaterHangProvider(spriteSet) {
+                        @Override
+                        public Particle createParticle(
+                                @NotNull SimpleParticleType pType, @NotNull ClientLevel pLevel,
+                                double pX, double pY, double pZ,
+                                double pXSpeed, double pYSpeed, double pZSpeed
+                        ) {
+                            Particle toReturn
+                                    = super.createParticle(pType, pLevel, pX, pY, pZ, pXSpeed, pYSpeed, pZSpeed);
+
+                            assert toReturn != null;
+                            toReturn.setColor(0.88F, 0.98F, 0.75F);
+
+                            return toReturn;
+                        }
+                    }
+            );
+        }
+
+        @SubscribeEvent
         public static void onRegisterItemColorHandlers(RegisterColorHandlersEvent.Item event) {
             event.register(
                         (pStack, pTintIndex) -> {
@@ -224,6 +251,14 @@ public class ClothingMod
             event.register(
                     (pStack, pTintIndex) -> pTintIndex > 0 ? 0xFFFFFF : ((SpoolItem) pStack.getItem()).getColor(pStack),
                     ClothingRegistry.SPOOL.get()
+            );
+        }
+
+        @SubscribeEvent
+        public static void onRegisterBlockColorHandlers(RegisterColorHandlersEvent.Block event) {
+            event.register(
+                    (pState, pLevel, pPos, pTintIndex) -> 0xE2FABE,
+                    BLEACH_CAULDRON.get()
             );
         }
 

@@ -1,6 +1,7 @@
 package io.github.kawaiicakes.clothing;
 
 import com.mojang.logging.LogUtils;
+import io.github.kawaiicakes.clothing.common.fluid.BleachFluid;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.item.ClothingTabs;
 import io.github.kawaiicakes.clothing.common.item.SpoolItem;
@@ -8,6 +9,8 @@ import io.github.kawaiicakes.clothing.common.item.impl.BakedModelClothingItem;
 import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.recipe.ClothingRecipe;
 import net.minecraft.core.cauldron.CauldronInteraction;
+import net.minecraft.core.particles.ParticleType;
+import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.BucketItem;
@@ -16,17 +19,18 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.LayeredCauldronBlock;
+import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.FlowingFluid;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraft.world.level.material.WaterFluid;
-import net.minecraftforge.common.SoundActions;
+import net.minecraft.world.level.material.Material;
+import net.minecraft.world.level.material.MaterialColor;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fluids.FluidType;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -46,52 +50,55 @@ public class ClothingRegistry {
 
     public static final DeferredRegister<RecipeSerializer<?>> SERIALIZER_REGISTRY
             = DeferredRegister.create(ForgeRegistries.RECIPE_SERIALIZERS, MOD_ID);
+
     public static final DeferredRegister<Item> CLOTHING_REGISTRY
             = DeferredRegister.create(ForgeRegistries.ITEMS, MOD_ID);
-    public static final DeferredRegister<Item> ITEM_REGISTRY = DeferredRegister.create(ForgeRegistries.ITEMS, MOD_ID);
+
+    public static final DeferredRegister<Item> ITEM_REGISTRY
+            = DeferredRegister.create(ForgeRegistries.ITEMS, MOD_ID);
+
     public static final DeferredRegister<Block> BLOCK_REGISTRY
             = DeferredRegister.create(ForgeRegistries.BLOCKS, MOD_ID);
+
     public static final DeferredRegister<FluidType> FLUID_TYPE_REGISTRY
             = DeferredRegister.create(ForgeRegistries.Keys.FLUID_TYPES, MOD_ID);
+
     public static final DeferredRegister<Fluid> FLUID_REGISTRY
             = DeferredRegister.create(ForgeRegistries.FLUIDS, MOD_ID);
 
-    // TODO: finish bleach; assets, properties, crafting, etc.
+    public static final DeferredRegister<ParticleType<?>> PARTICLE_REGISTRY
+            = DeferredRegister.create(ForgeRegistries.PARTICLE_TYPES, MOD_ID);
+
+    public static final RegistryObject<SimpleParticleType> DRIPPING_BLEACH
+            = PARTICLE_REGISTRY.register("dripping_bleach", () -> new SimpleParticleType(false));
+
+    // TODO: bleach crafting
     public static final Map<Item, CauldronInteraction> BLEACH = CauldronInteraction.newInteractionMap();
 
     public static final RegistryObject<FluidType> BLEACH_FLUID_TYPE = FLUID_TYPE_REGISTRY.register(
             "bleach",
-            () -> new FluidType(FluidType.Properties.create()
-                    .descriptionId("block.clothing.bleach")
-                    .fallDistanceModifier(0F)
-                    .canExtinguish(true)
-                    .canConvertToSource(false)
-                    .supportsBoating(true)
-                    .sound(SoundActions.BUCKET_FILL, SoundEvents.BUCKET_FILL)
-                    .sound(SoundActions.BUCKET_EMPTY, SoundEvents.BUCKET_EMPTY)
-                    .sound(SoundActions.FLUID_VAPORIZE, SoundEvents.FIRE_EXTINGUISH)
-                    .canHydrate(true)
-            )
+            () -> BleachFluid.TYPE
     );
 
-    public static final RegistryObject<Fluid> BLEACH_FLUID = FLUID_REGISTRY.register(
+    public static final RegistryObject<FlowingFluid> BLEACH_FLUID = FLUID_REGISTRY.register(
             "bleach",
-            () -> new WaterFluid.Source() {
-                @Override
-                public @NotNull FluidType getFluidType() {
-                    return BLEACH_FLUID_TYPE.get();
-                }
-            }
+            BleachFluid.Source::new
     );
 
-    public static final RegistryObject<Fluid> BLEACH_FLUID_FLOWING = FLUID_REGISTRY.register(
+    public static final RegistryObject<FlowingFluid> BLEACH_FLUID_FLOWING = FLUID_REGISTRY.register(
             "flowing_bleach",
-            () -> new WaterFluid.Flowing() {
-                @Override
-                public @NotNull FluidType getFluidType() {
-                    return BLEACH_FLUID_TYPE.get();
-                }
-            }
+            BleachFluid.Flowing::new
+    );
+
+    public static final Material BLEACH_MATERIAL
+            = (new Material.Builder(MaterialColor.NONE)).noCollider().nonSolid().replaceable().liquid().build();
+
+    public static final RegistryObject<LiquidBlock> LEGACY_BLEACH_BLOCK = BLOCK_REGISTRY.register(
+            "bleach",
+            () -> new LiquidBlock(
+                    BLEACH_FLUID,
+                    BlockBehaviour.Properties.of(BLEACH_MATERIAL).noCollission().strength(100.0F).noLootTable()
+            )
     );
 
     public static final RegistryObject<ClothingRecipe.Serializer> CLOTHING_SERIALIZER
@@ -206,6 +213,7 @@ public class ClothingRegistry {
         BLOCK_REGISTRY.register(bus);
         FLUID_TYPE_REGISTRY.register(bus);
         FLUID_REGISTRY.register(bus);
+        PARTICLE_REGISTRY.register(bus);
     }
 
     @ApiStatus.Internal
