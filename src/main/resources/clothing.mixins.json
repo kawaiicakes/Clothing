@@ -6,7 +6,8 @@
   "mixins": [
     "LivingEntityMixin",
     "LoomMenu$3Mixin",
-    "LoomMenuMixin"
+    "LoomMenuMixin",
+    "PotionUtilsMixin"
   ],
   "client": [
     "HumanoidArmorLayerMixin",

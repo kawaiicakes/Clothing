@@ -5,5 +5,9 @@
   "item.modifiers.clothing.overlays": "Applied overlays:",
 
   "item.clothing.bleach_bucket": "Bleach Bucket",
-  "item.clothing.spool": "Spool"
+  "item.clothing.spool": "Spool",
+  "item.minecraft.potion.effect.bleach": "Bleach Bottle",
+  "item.minecraft.splash_potion.effect.bleach": "Throwable Bleach Bottle",
+  "item.minecraft.lingering_potion.effect.bleach": "Aerosolizing Bleach Bottle",
+  "item.minecraft.tipped_arrow.effect.bleach": "Bleach-Tipped Arrow"
 }

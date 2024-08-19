@@ -8,23 +8,34 @@ import io.github.kawaiicakes.clothing.common.item.SpoolItem;
 import io.github.kawaiicakes.clothing.common.item.impl.BakedModelClothingItem;
 import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.recipe.ClothingRecipe;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.cauldron.CauldronInteraction;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.stats.Stats;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.item.BucketItem;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.Items;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.*;
+import net.minecraft.world.item.alchemy.Potion;
+import net.minecraft.world.item.alchemy.PotionUtils;
 import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.LayeredCauldronBlock;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.material.FlowingFluid;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Material;
 import net.minecraft.world.level.material.MaterialColor;
+import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fluids.FluidType;
 import net.minecraftforge.registries.DeferredRegister;
@@ -69,10 +80,12 @@ public class ClothingRegistry {
     public static final DeferredRegister<ParticleType<?>> PARTICLE_REGISTRY
             = DeferredRegister.create(ForgeRegistries.PARTICLE_TYPES, MOD_ID);
 
+    public static final DeferredRegister<Potion> POTION_REGISTRY
+            = DeferredRegister.create(ForgeRegistries.POTIONS, MOD_ID);
+
     public static final RegistryObject<SimpleParticleType> DRIPPING_BLEACH
             = PARTICLE_REGISTRY.register("dripping_bleach", () -> new SimpleParticleType(false));
 
-    // TODO: bleach crafting
     public static final Map<Item, CauldronInteraction> BLEACH = CauldronInteraction.newInteractionMap();
 
     public static final RegistryObject<FluidType> BLEACH_FLUID_TYPE = FLUID_TYPE_REGISTRY.register(
@@ -115,11 +128,38 @@ public class ClothingRegistry {
             )
     );
 
+    public static final RegistryObject<Potion> BLEACH_POTION = POTION_REGISTRY.register(
+            "bleach",
+            () -> new Potion(
+                    new MobEffectInstance(MobEffects.HARM, 1, 3),
+                    new MobEffectInstance(MobEffects.POISON, 7200, 2),
+                    new MobEffectInstance(MobEffects.WEAKNESS, 7200, 2),
+                    new MobEffectInstance(MobEffects.BLINDNESS, 7200)
+            ) {
+                @Override
+                public boolean allowedInCreativeTab(Item item, CreativeModeTab tab, boolean isDefaultTab) {
+                    return tab.equals(ClothingTabs.CLOTHING_TAB_MISC);
+                }
+
+                @Override
+                public boolean isFoil(ItemStack stack) {
+                    return false;
+                }
+            }
+    );
+
     public static final RegistryObject<LayeredCauldronBlock> BLEACH_CAULDRON = BLOCK_REGISTRY.register(
             "bleach_cauldron",
             () -> new LayeredCauldronBlock(
                     BlockBehaviour.Properties.copy(CAULDRON), precipitation -> false, BLEACH
-            )
+            ) {
+                @Override
+                public ItemStack getCloneItemStack(
+                        BlockState state, HitResult target, BlockGetter level, BlockPos pos, Player player
+                ) {
+                    return Items.CAULDRON.getDefaultInstance();
+                }
+            }
     );
 
     public static final RegistryObject<SpoolItem> SPOOL = ITEM_REGISTRY.register(
@@ -214,6 +254,7 @@ public class ClothingRegistry {
         FLUID_TYPE_REGISTRY.register(bus);
         FLUID_REGISTRY.register(bus);
         PARTICLE_REGISTRY.register(bus);
+        POTION_REGISTRY.register(bus);
     }
 
     @ApiStatus.Internal
@@ -242,5 +283,110 @@ public class ClothingRegistry {
 
             ClothingRegistry.BLEACH.put(item, GenericClothingItem.GENERIC_CLOTHING);
         }
+
+        CauldronInteraction emptyPotion = EMPTY.get(Items.POTION);
+        EMPTY.put(
+                Items.POTION,
+                (blockState, level, blockPos, player, interactionHand, itemStack) -> {
+                    if (PotionUtils.getPotion(itemStack).equals(BLEACH_POTION.get())) {
+                        if (level.isClientSide) return InteractionResult.sidedSuccess(true);
+
+                        Item item = itemStack.getItem();
+                        player.setItemInHand(
+                                interactionHand,
+                                ItemUtils.createFilledResult(itemStack, player, new ItemStack(Items.GLASS_BOTTLE))
+                        );
+                        player.awardStat(Stats.USE_CAULDRON);
+                        player.awardStat(Stats.ITEM_USED.get(item));
+                        level.setBlockAndUpdate(blockPos, BLEACH_CAULDRON.get().defaultBlockState());
+                        level.playSound(
+                                null,
+                                blockPos,
+                                SoundEvents.BOTTLE_EMPTY, SoundSource.BLOCKS,
+                                1.0F, 1.0F
+                        );
+                        level.gameEvent(null, GameEvent.FLUID_PLACE, blockPos);
+
+                        return InteractionResult.sidedSuccess(false);
+                    }
+
+                    return emptyPotion.interact(blockState, level, blockPos, player, interactionHand, itemStack);
+                }
+        );
+
+        BLEACH.put(
+                Items.BUCKET,
+                (blockState, level, blockPos, player, interactionHand, itemStack) ->
+                        fillBucket(
+                                blockState,
+                                level,
+                                blockPos,
+                                player,
+                                interactionHand,
+                                itemStack,
+                                new ItemStack(BLEACH_BUCKET.get()),
+                                (blockState1) ->
+                                        blockState1.getValue(LayeredCauldronBlock.LEVEL) == 3, SoundEvents.BUCKET_FILL
+                        )
+        );
+
+        BLEACH.put(
+                Items.GLASS_BOTTLE,
+                (blockState, level, blockPos, player, interactionHand, itemStack) -> {
+                    if (!level.isClientSide) {
+                        Item item = itemStack.getItem();
+                        player.setItemInHand(
+                                interactionHand,
+                                ItemUtils.createFilledResult(
+                                        itemStack,
+                                        player,
+                                        PotionUtils.setPotion(new ItemStack(Items.POTION), BLEACH_POTION.get())
+                                )
+                        );
+                        player.awardStat(Stats.USE_CAULDRON);
+                        player.awardStat(Stats.ITEM_USED.get(item));
+                        LayeredCauldronBlock.lowerFillLevel(blockState, level, blockPos);
+                        level.playSound(
+                                null,
+                                blockPos,
+                                SoundEvents.BOTTLE_FILL, SoundSource.BLOCKS,
+                                1.0F, 1.0F
+                        );
+                        level.gameEvent(null, GameEvent.FLUID_PICKUP, blockPos);
+                    }
+
+                    return InteractionResult.sidedSuccess(level.isClientSide);
+                }
+        );
+
+        BLEACH.put(
+                Items.POTION,
+                (blockState, level, blockPos, player, hand, itemStack) -> {
+                    if (blockState.getValue(LayeredCauldronBlock.LEVEL) != 3
+                            && PotionUtils.getPotion(itemStack) == BLEACH_POTION.get()) {
+
+                        if (!level.isClientSide) {
+                            player.setItemInHand(
+                                    hand,
+                                    ItemUtils.createFilledResult(itemStack, player, new ItemStack(Items.GLASS_BOTTLE))
+                            );
+                            player.awardStat(Stats.USE_CAULDRON);
+                            player.awardStat(Stats.ITEM_USED.get(itemStack.getItem()));
+                            level.setBlockAndUpdate(blockPos, blockState.cycle(LayeredCauldronBlock.LEVEL));
+                            level.playSound(
+                                    null,
+                                    blockPos,
+                                    SoundEvents.BOTTLE_EMPTY, SoundSource.BLOCKS,
+                                    1.0F, 1.0F
+                            );
+                            level.gameEvent(null, GameEvent.FLUID_PLACE, blockPos);
+                        }
+
+                        return InteractionResult.sidedSuccess(level.isClientSide);
+                    } else {
+                        return InteractionResult.PASS;
+                    }
+                }
+        );
     }
 }
