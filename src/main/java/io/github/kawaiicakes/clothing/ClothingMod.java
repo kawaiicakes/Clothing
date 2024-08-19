@@ -200,6 +200,7 @@ public class ClothingMod
 
     @SubscribeEvent
     public void onLoadComplete(FMLLoadCompleteEvent event) {
+        ClothingRegistry.registerBrewingRecipes();
         ClothingRegistry.registerCauldronInteractions();
     }
 

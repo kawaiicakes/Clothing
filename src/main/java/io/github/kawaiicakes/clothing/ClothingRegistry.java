@@ -12,9 +12,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.cauldron.CauldronInteraction;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.particles.SimpleParticleType;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -22,7 +24,10 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.item.alchemy.Potion;
+import net.minecraft.world.item.alchemy.PotionBrewing;
 import net.minecraft.world.item.alchemy.PotionUtils;
+import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
@@ -54,6 +59,7 @@ import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.NEW_DYED_ITEM;
 import static net.minecraft.core.cauldron.CauldronInteraction.*;
 import static net.minecraft.world.item.Items.BUCKET;
+import static net.minecraft.world.item.alchemy.PotionBrewing.POTION_MIXES;
 import static net.minecraft.world.level.block.Blocks.CAULDRON;
 
 public class ClothingRegistry {
@@ -126,6 +132,10 @@ public class ClothingRegistry {
                             .stacksTo(1)
                             .tab(ClothingTabs.CLOTHING_TAB_MISC)
             )
+    );
+
+    public static final TagKey<Item> BLEACH_INGREDIENT_TAG = TagKey.create(
+                    ForgeRegistries.ITEMS.getRegistryKey(), new ResourceLocation(MOD_ID, "bleach_precursor")
     );
 
     public static final RegistryObject<Potion> BLEACH_POTION = POTION_REGISTRY.register(
@@ -255,6 +265,18 @@ public class ClothingRegistry {
         FLUID_REGISTRY.register(bus);
         PARTICLE_REGISTRY.register(bus);
         POTION_REGISTRY.register(bus);
+    }
+
+    @ApiStatus.Internal
+    public static void registerBrewingRecipes() {
+        POTION_MIXES.add(
+                new PotionBrewing.Mix<>(
+                        ForgeRegistries.POTIONS,
+                        Potions.THICK,
+                        Ingredient.of(BLEACH_INGREDIENT_TAG),
+                        BLEACH_POTION.get()
+                )
+        );
     }
 
     @ApiStatus.Internal
