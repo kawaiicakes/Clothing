@@ -141,7 +141,7 @@ public class ClothingRecipe extends ShapedRecipe {
 
             CompoundTag mergedProperties = new CompoundTag();
             if (defaultStackForEntry.getItem() instanceof ClothingItem<?> clothingItem)
-                mergedProperties = clothingItem.getClothingPropertyTag(defaultStackForEntry);
+                mergedProperties = clothingItem.getClothingPropertiesTag(defaultStackForEntry);
 
             String[] pissKeys = forbiddenKeys();
 

@@ -299,13 +299,13 @@ public class ClothingEntryGenerator implements DataProvider {
         public JsonObject serializeToJson() {
             final ItemStack defaultStack = this.clothingItem.getDefaultInstance();
 
-            final CompoundTag defaultStackTag = this.clothingItem.getClothingPropertyTag(defaultStack).copy();
-            final CompoundTag clothingStackTag = this.clothingItem.getClothingPropertyTag(this.clothingStack).copy();
+            final CompoundTag defaultStackTag = this.clothingItem.getClothingPropertiesTag(defaultStack).copy();
+            final CompoundTag clothingStackTag = this.clothingItem.getClothingPropertiesTag(this.clothingStack).copy();
 
             final CompoundTag tagForSerialization = new CompoundTag();
 
             for (String key : clothingStackTag.getAllKeys()) {
-                if (key.equals(CLOTHING_NAME_KEY) || key.equals(BASE_MODEL_DATA_NBT_KEY)) continue;
+                if (key.equals(CLOTHING_NAME_KEY)) continue;
 
                 Tag clothingTag = clothingStackTag.get(key);
                 Tag defaultTag = defaultStackTag.get(key);
@@ -371,10 +371,6 @@ public class ClothingEntryGenerator implements DataProvider {
                     && this.clothingStack.equals(builder.clothingStack, false)
                     && this.slotForItem.equals(builder.slotForItem)
                     && this.id.equals(builder.id);
-        }
-
-        public int hashCodeForBaseModelData() {
-            return this.clothingItem.getBaseModelData(this.clothingStack);
         }
     }
 }

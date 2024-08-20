@@ -50,7 +50,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 import static net.minecraft.core.cauldron.CauldronInteraction.DYED_ITEM;
 
 // TODO: the default colour given by a clothing entry is reflected in #hasCustomColor
@@ -68,12 +67,9 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     public static final String CLOTHING_NAME_KEY = "name";
     public static final String CLOTHING_SLOT_NBT_KEY = "slot";
     public static final String CLOTHING_LORE_NBT_KEY = "lore";
-    public static final String BASE_MODEL_DATA_NBT_KEY = "BaseModelData";
     public static final String ATTRIBUTES_KEY = "attributes";
     public static final String EQUIP_SOUND_KEY = "equip_sound";
     public static final String MAX_DAMAGE_KEY = "durability";
-
-    public static final ResourceLocation BASE_MODEL_DATA = new ResourceLocation(MOD_ID, "base_model_data");
 
     public static final CauldronInteraction NEW_DYED_ITEM = (pBlockState, pLevel, pPos, pPlayer, pHand, pStack) -> {
         InteractionResult result = DYED_ITEM.interact(pBlockState, pLevel, pPos, pPlayer, pHand, pStack);
@@ -106,42 +102,11 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
      * @return the recommended root NBT {@link CompoundTag} for clothing properties.
      */
     @NotNull
-    public CompoundTag getClothingPropertyTag(ItemStack itemStack) {
+    public CompoundTag getClothingPropertiesTag(ItemStack itemStack) {
         if (!(itemStack.getItem() instanceof ClothingItem)) throw new IllegalArgumentException(
                 "Item of passed stack '" + itemStack + "' is not a ClothingItem instance!"
         );
         return itemStack.getOrCreateTag().getCompound(CLOTHING_PROPERTY_NBT_KEY);
-    }
-
-    public boolean hasClothingPropertyTag(ItemStack itemStack) {
-        if (!(itemStack.getItem() instanceof ClothingItem<?>)) return false;
-        if (itemStack.getTag() == null) return false;
-        CompoundTag stackTag = itemStack.getTag();
-        return stackTag.contains(CLOTHING_PROPERTY_NBT_KEY)
-                && stackTag.get(CLOTHING_PROPERTY_NBT_KEY) instanceof CompoundTag;
-    }
-
-    /**
-     * Sets the custom model data integer for the passed {@link ItemStack}; used by an
-     * {@link net.minecraft.client.renderer.block.model.ItemOverride} to determine what base texture to use for the
-     * item model.
-     * @param itemStack an {@link ItemStack} version of this.
-     * @param modelData the hashcode representing the model file to point to as an {@code int}. How this hashcode is
-     *                  obtained depends on implementation.
-     */
-    public void setBaseModelData(ItemStack itemStack, int modelData) {
-        this.getClothingPropertyTag(itemStack).putInt(BASE_MODEL_DATA_NBT_KEY, modelData);
-    }
-
-    /**
-     * Returns the custom model data integer from the passed {@link ItemStack}; used for creating an
-     * {@link net.minecraft.client.renderer.block.model.ItemOverride} for
-     * {@link net.minecraft.client.renderer.item.ItemProperties#TAG_CUSTOM_MODEL_DATA}.
-     * @param itemStack an {@link ItemStack} version of this.
-     * @return the {@code int} custom model data item property used for model overrides.
-     */
-    public int getBaseModelData(ItemStack itemStack) {
-        return this.getClothingPropertyTag(itemStack).getInt(BASE_MODEL_DATA_NBT_KEY);
     }
 
     /**
@@ -177,11 +142,11 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
 
     @Override
     public int getMaxDamage(ItemStack stack) {
-        return this.getClothingPropertyTag(stack).getInt(MAX_DAMAGE_KEY);
+        return this.getClothingPropertiesTag(stack).getInt(MAX_DAMAGE_KEY);
     }
 
     public void setMaxDamage(ItemStack stack, int durability) {
-        this.getClothingPropertyTag(stack).putInt(MAX_DAMAGE_KEY, durability);
+        this.getClothingPropertiesTag(stack).putInt(MAX_DAMAGE_KEY, durability);
     }
 
     /**
@@ -262,11 +227,11 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     public abstract String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type);
 
     public ResourceLocation getClothingName(ItemStack itemStack) {
-        return new ResourceLocation(this.getClothingPropertyTag(itemStack).getString(CLOTHING_NAME_KEY));
+        return new ResourceLocation(this.getClothingPropertiesTag(itemStack).getString(CLOTHING_NAME_KEY));
     }
 
     public void setClothingName(ItemStack itemStack, ResourceLocation name) {
-        this.getClothingPropertyTag(itemStack).putString(CLOTHING_NAME_KEY, name.toString());
+        this.getClothingPropertiesTag(itemStack).putString(CLOTHING_NAME_KEY, name.toString());
     }
 
     /**
@@ -275,7 +240,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
      * @param itemStack the {@link ItemStack} representing this
      */
     public EquipmentSlot getSlot(ItemStack itemStack) {
-        return EquipmentSlot.byName(this.getClothingPropertyTag(itemStack).getString(CLOTHING_SLOT_NBT_KEY));
+        return EquipmentSlot.byName(this.getClothingPropertiesTag(itemStack).getString(CLOTHING_SLOT_NBT_KEY));
     }
 
     /**
@@ -290,11 +255,11 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
      * @see ClothingEntryLoader#entryContainsSlotDeclaration(JsonObject)
      */
     public void setSlot(ItemStack itemStack, EquipmentSlot slot) {
-        this.getClothingPropertyTag(itemStack).putString(CLOTHING_SLOT_NBT_KEY, slot.getName());
+        this.getClothingPropertiesTag(itemStack).putString(CLOTHING_SLOT_NBT_KEY, slot.getName());
     }
 
     public List<Component> getClothingLore(ItemStack stack) {
-        ListTag loreTag = this.getClothingPropertyTag(stack).getList(CLOTHING_LORE_NBT_KEY, Tag.TAG_STRING);
+        ListTag loreTag = this.getClothingPropertiesTag(stack).getList(CLOTHING_LORE_NBT_KEY, Tag.TAG_STRING);
 
         return deserializeLore(loreTag);
     }
@@ -306,7 +271,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
             loreList.add(StringTag.valueOf(Component.Serializer.toJson(component)));
         }
 
-        this.getClothingPropertyTag(stack).put(CLOTHING_LORE_NBT_KEY, loreList);
+        this.getClothingPropertiesTag(stack).put(CLOTHING_LORE_NBT_KEY, loreList);
     }
 
     @Override
@@ -325,7 +290,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
 
     @Override
     public boolean hasCustomColor(@NotNull ItemStack pStack) {
-        CompoundTag root = this.getClothingPropertyTag(pStack);
+        CompoundTag root = this.getClothingPropertiesTag(pStack);
         return root.contains(TAG_COLOR, 99) && root.getInt(TAG_COLOR) != 0xFFFFFF;
     }
 
@@ -403,7 +368,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
             clothingAttributesTag.put(attributeLocation.toString(), modifierEntries);
         }
 
-        this.getClothingPropertyTag(stack).put(ATTRIBUTES_KEY, clothingAttributesTag);
+        this.getClothingPropertiesTag(stack).put(ATTRIBUTES_KEY, clothingAttributesTag);
     }
 
     @Override
@@ -412,7 +377,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
 
         ImmutableMultimap.Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
 
-        CompoundTag clothingAttributesTag = this.getClothingPropertyTag(stack).getCompound(ATTRIBUTES_KEY);
+        CompoundTag clothingAttributesTag = this.getClothingPropertiesTag(stack).getCompound(ATTRIBUTES_KEY);
 
         for (Attribute attribute : ForgeRegistries.ATTRIBUTES.getValues()) {
             ResourceLocation attributeLocation = ForgeRegistries.ATTRIBUTES.getKey(attribute);
@@ -448,12 +413,12 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     }
 
     public void setEquipSound(ItemStack stack, ResourceLocation location) {
-        this.getClothingPropertyTag(stack).putString(EQUIP_SOUND_KEY, location.toString());
+        this.getClothingPropertiesTag(stack).putString(EQUIP_SOUND_KEY, location.toString());
     }
 
     public SoundEvent getEquipSound(ItemStack stack) {
         ResourceLocation equipSoundLocation = new ResourceLocation(
-                this.getClothingPropertyTag(stack).getString(EQUIP_SOUND_KEY)
+                this.getClothingPropertiesTag(stack).getString(EQUIP_SOUND_KEY)
         );
 
         SoundEvent equipSound = ForgeRegistries.SOUND_EVENTS.getValue(equipSoundLocation);

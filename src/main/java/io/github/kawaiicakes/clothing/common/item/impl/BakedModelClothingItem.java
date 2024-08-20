@@ -52,7 +52,7 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
      *                  the body part the baked model will render to.
      */
     public @NotNull Map<ModelPartReference, ResourceLocation> getModelPartLocations(ItemStack itemStack) {
-        CompoundTag modelPartTag = this.getClothingPropertyTag(itemStack).getCompound(MODEL_PARENTS_KEY);
+        CompoundTag modelPartTag = this.getClothingPropertiesTag(itemStack).getCompound(MODEL_PARENTS_KEY);
 
         Map<ModelPartReference, ResourceLocation> toReturn = new HashMap<>(modelPartTag.size());
 
@@ -71,28 +71,7 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
             modelPartMap.putString(entry.getKey().getSerializedName(), entry.getValue().toString());
         }
 
-        this.getClothingPropertyTag(itemStack).put(MODEL_PARENTS_KEY, modelPartMap);
-
-        if (!(this.getClothingPropertyTag(itemStack).get(MODEL_PARENTS_KEY) instanceof CompoundTag modelPartTag))
-            throw new IllegalArgumentException("ItemStack has invalid tag type for model part key!");
-
-        /*
-            this is to ensure that the tag is always iterated through in the same order; setting a consistent hashcode
-            for CustomModelData requires a deterministic understanding of the iteration order
-         */
-        Set<String> keys = modelPartTag.getAllKeys();
-        ArrayList<ResourceLocation> locationList = new ArrayList<>(keys.size());
-        for (ModelPartReference partReference : ModelPartReference.values()) {
-            if (!keys.contains(partReference.getSerializedName())) continue;
-            if (!(modelPartTag.get(partReference.getSerializedName()) instanceof StringTag modelLocation))
-                throw new IllegalArgumentException();
-
-            locationList.add(
-                    new ResourceLocation(modelLocation.toString())
-            );
-        }
-
-        this.setBaseModelData(itemStack, locationList.hashCode());
+        this.getClothingPropertiesTag(itemStack).put(MODEL_PARENTS_KEY, modelPartMap);
     }
 
     public ModelPartReference defaultModelPart() {
@@ -119,7 +98,7 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
      */
     @Nullable
     public ResourceLocation getModelPartLocation(ItemStack itemStack, ModelPartReference modelPartReference) {
-        String location = this.getClothingPropertyTag(itemStack)
+        String location = this.getClothingPropertiesTag(itemStack)
                 .getCompound(MODEL_PARENTS_KEY)
                 .getString(modelPartReference.getSerializedName());
         return location.isEmpty() ? null : new ResourceLocation(location);

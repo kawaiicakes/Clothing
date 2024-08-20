@@ -137,7 +137,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      * @see HumanoidClothingLayer#modelForLayer(ModelStrata)
      */
     public ModelStrata getGenericLayerForRender(ItemStack itemStack) {
-        String strataString = this.getClothingPropertyTag(itemStack).getString(MODEL_LAYER_NBT_KEY);
+        String strataString = this.getClothingPropertiesTag(itemStack).getString(MODEL_LAYER_NBT_KEY);
         return ModelStrata.byName(strataString);
     }
 
@@ -147,7 +147,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      * @see HumanoidClothingLayer#modelForLayer(ModelStrata)
      */
     public void setGenericLayerForRender(ItemStack itemStack, ModelStrata modelStrata) {
-        this.getClothingPropertyTag(itemStack).putString(MODEL_LAYER_NBT_KEY, modelStrata.getSerializedName());
+        this.getClothingPropertiesTag(itemStack).putString(MODEL_LAYER_NBT_KEY, modelStrata.getSerializedName());
     }
 
     /**
@@ -155,7 +155,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      * @return the {@link String} pointing to the location of the texture folder.
      */
     public ResourceLocation getTextureLocation(ItemStack itemStack) {
-        return new ResourceLocation(this.getClothingPropertyTag(itemStack).getString(TEXTURE_LOCATION_NBT_KEY));
+        return new ResourceLocation(this.getClothingPropertiesTag(itemStack).getString(TEXTURE_LOCATION_NBT_KEY));
     }
 
     /**
@@ -163,11 +163,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      * @param textureLocation the {@link String} pointing to the location of the texture folder.
      */
     public void setTextureLocation(ItemStack itemStack, ResourceLocation textureLocation) {
-        this.getClothingPropertyTag(itemStack).putString(TEXTURE_LOCATION_NBT_KEY, textureLocation.toString());
-
-        int texHash = this.getDescriptionId(itemStack).hashCode();
-
-        this.setBaseModelData(itemStack, texHash);
+        this.getClothingPropertiesTag(itemStack).putString(TEXTURE_LOCATION_NBT_KEY, textureLocation.toString());
     }
 
     /**
@@ -175,7 +171,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      * @return the array of {@link String}s whose values point to the overlay textures.
      */
     public ResourceLocation[] getOverlays(ItemStack itemStack) {
-        ListTag listTag = this.getClothingPropertyTag(itemStack).getList(OVERLAY_NBT_KEY, Tag.TAG_STRING);
+        ListTag listTag = this.getClothingPropertiesTag(itemStack).getList(OVERLAY_NBT_KEY, Tag.TAG_STRING);
         ResourceLocation[] toReturn = new ResourceLocation[listTag.size()];
         for (int i = 0; i < listTag.size(); i++) {
             if (!(listTag.get(i) instanceof StringTag stringTag)) throw new RuntimeException();
@@ -195,7 +191,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
             overlayTag.add(StringTag.valueOf(overlay.toString()));
         }
 
-        this.getClothingPropertyTag(itemStack).put(OVERLAY_NBT_KEY, overlayTag);
+        this.getClothingPropertiesTag(itemStack).put(OVERLAY_NBT_KEY, overlayTag);
     }
 
     /**
@@ -204,7 +200,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      * correspond to what body parts the clothing will visibly render on.
      */
     public ModelPartReference[] getPartsForVisibility(ItemStack itemStack) {
-        ListTag partList = this.getClothingPropertyTag(itemStack).getList(PART_VISIBILITY_KEY, Tag.TAG_STRING);
+        ListTag partList = this.getClothingPropertiesTag(itemStack).getList(PART_VISIBILITY_KEY, Tag.TAG_STRING);
 
         ModelPartReference[] toReturn = new ModelPartReference[partList.size()];
         for (int i = 0; i < partList.size(); i++) {
@@ -226,7 +222,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
             partList.add(StringTag.valueOf(part.getSerializedName()));
         }
 
-        this.getClothingPropertyTag(itemStack).put(PART_VISIBILITY_KEY, partList);
+        this.getClothingPropertiesTag(itemStack).put(PART_VISIBILITY_KEY, partList);
     }
 
     /**

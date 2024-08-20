@@ -22,7 +22,6 @@ import net.minecraft.client.particle.Particle;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
-import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.resources.ResourceLocation;
@@ -60,7 +59,6 @@ import java.util.Collection;
 
 import static io.github.kawaiicakes.clothing.ClothingRegistry.BLEACH_CAULDRON;
 import static io.github.kawaiicakes.clothing.ClothingRegistry.DRIPPING_BLEACH;
-import static io.github.kawaiicakes.clothing.common.item.ClothingItem.BASE_MODEL_DATA;
 
 // TODO: add JEI compat for new loom recipes
 // TODO: add new crafting type/"dye vial", allows crafting any dye colour from (automatically generated) inputs
@@ -398,26 +396,6 @@ public class ClothingMod
                 }
             } catch (RuntimeException e) {
                 LOGGER.error("Error adding layer to player!", e);
-            }
-        }
-
-        @SubscribeEvent
-        public static void onBakingCompleted(ModelEvent.BakingCompleted event) {
-            ClothingItem<?>[] clothingItems = ClothingRegistry.getAll();
-            if (clothingItems == null) {
-                LOGGER.error("Clothing has not been registered yet!");
-                clothingItems = new ClothingItem<?>[0];
-            }
-
-            for (ClothingItem<?> clothingItem : clothingItems) {
-                ItemProperties.register(
-                        clothingItem,
-                        BASE_MODEL_DATA,
-                        (pStack, pLevel, pEntity, pSeed) -> {
-                            if (!clothingItem.hasClothingPropertyTag(pStack)) return 0;
-                            return clothingItem.getBaseModelData(pStack);
-                        }
-                );
             }
         }
     }
