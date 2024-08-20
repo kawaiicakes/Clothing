@@ -16,6 +16,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -32,6 +33,7 @@ import org.slf4j.Logger;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -61,6 +63,7 @@ public class ClothingEntryGenerator implements DataProvider {
         GenericClothingBuilder.shirt(new ResourceLocation(MOD_ID, "tank_top"))
                 .addModifier(Attributes.ARMOR, 40.00, AttributeModifier.Operation.ADDITION)
                 .setDurability(300)
+                .addLoreLine("{\"type\":\"text\", \"text\": \"Woah! You go, big guy!\"}")
                 .save(clothingBuilderConsumer);
     }
 
@@ -214,6 +217,15 @@ public class ClothingEntryGenerator implements DataProvider {
 
         public void save(Consumer<ClothingBuilder<?>> clothingBuilderConsumer) {
             clothingBuilderConsumer.accept(this);
+        }
+
+        public ClothingBuilder<T> addLoreLine(String loreAsJsonString) {
+            List<Component> appended = this.clothingItem.getClothingLore(this.clothingStack);
+
+            appended.add(Component.Serializer.fromJson(loreAsJsonString));
+
+            this.clothingItem.setClothingLore(this.clothingStack, appended);
+            return this;
         }
 
         public ClothingBuilder<T> setColor(int color) {

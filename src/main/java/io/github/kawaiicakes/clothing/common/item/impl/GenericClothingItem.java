@@ -101,16 +101,14 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
         return toReturn;
     }
 
-    /*
-        TODO: allow users to define lore in clothing entry that is able to be displayed.
-
-        TODO: overlays should only display if tooltip flag is advanced since the item model displays them now.
-        Include the base texture names, colours for each overlay, and the colour(s) for the base piece of clothing
-     */
+    // TODO: adv tooltip: colours for each overlay, and the colour(s) for the base piece of clothing (in super)
     @Override
     @ParametersAreNonnullByDefault
     public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
         super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
+
+        if (!pIsAdvanced.isAdvanced()) return;
+
         ResourceLocation[] overlayNames = this.getOverlays(pStack);
 
         if (overlayNames.length == 0) return;
@@ -118,15 +116,12 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
         pTooltipComponents.add(Component.empty());
         pTooltipComponents.add(
                 Component.translatable("item.modifiers.clothing.overlays")
-                        .withStyle(ChatFormatting.UNDERLINE)
-                        .withStyle(ChatFormatting.BOLD)
-                        .withStyle(ChatFormatting.DARK_AQUA)
+                        .withStyle(ChatFormatting.GRAY)
         );
         for (ResourceLocation overlayName : overlayNames) {
             pTooltipComponents.add(
                     Component.literal(overlayName.toString())
-                            .withStyle(ChatFormatting.ITALIC)
-                            .withStyle(ChatFormatting.AQUA)
+                            .withStyle(ChatFormatting.BLUE)
             );
         }
     }

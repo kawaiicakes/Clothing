@@ -2,6 +2,8 @@ package io.github.kawaiicakes.clothing.common.item;
 
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
@@ -9,13 +11,16 @@ import io.github.kawaiicakes.clothing.client.ClothingItemRenderer;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.cauldron.CauldronInteraction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -27,6 +32,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.*;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import net.minecraftforge.fml.loading.FMLEnvironment;
@@ -37,6 +43,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -60,6 +67,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     public static final String CLOTHING_PROPERTY_NBT_KEY = "ClothingProperties";
     public static final String CLOTHING_NAME_KEY = "name";
     public static final String CLOTHING_SLOT_NBT_KEY = "slot";
+    public static final String CLOTHING_LORE_NBT_KEY = "lore";
     public static final String BASE_MODEL_DATA_NBT_KEY = "BaseModelData";
     public static final String ATTRIBUTES_KEY = "attributes";
     public static final String EQUIP_SOUND_KEY = "equip_sound";
@@ -161,6 +169,8 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         this.setMaxDamage(toReturn, 0);
 
         this.setEquipSound(toReturn, this.material.getEquipSound().getLocation());
+
+        this.setClothingLore(toReturn, List.of());
 
         return toReturn;
     }
@@ -283,6 +293,22 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         this.getClothingPropertyTag(itemStack).putString(CLOTHING_SLOT_NBT_KEY, slot.getName());
     }
 
+    public List<Component> getClothingLore(ItemStack stack) {
+        ListTag loreTag = this.getClothingPropertyTag(stack).getList(CLOTHING_LORE_NBT_KEY, Tag.TAG_STRING);
+
+        return deserializeLore(loreTag);
+    }
+
+    public void setClothingLore(ItemStack stack, List<Component> components) {
+        ListTag loreList = new ListTag();
+
+        for (Component component : components) {
+            loreList.add(StringTag.valueOf(Component.Serializer.toJson(component)));
+        }
+
+        this.getClothingPropertyTag(stack).put(CLOTHING_LORE_NBT_KEY, loreList);
+    }
+
     @Override
     public int getColor(@NotNull ItemStack pStack) {
         try {
@@ -309,6 +335,43 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     }
 
     @Override
+    @ParametersAreNonnullByDefault
+    public void appendHoverText(
+            ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced
+    ) {
+        super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
+
+        List<Component> lore = this.getClothingLore(pStack);
+
+        if (!lore.isEmpty()) {
+            pTooltipComponents.addAll(lore);
+        }
+
+        if (!pIsAdvanced.isAdvanced()) return;
+
+        pTooltipComponents.add(Component.empty());
+        pTooltipComponents.add(
+                Component.translatable("item.modifiers.clothing.name")
+                        .withStyle(ChatFormatting.GRAY)
+        );
+        pTooltipComponents.add(
+                Component.literal(this.getClothingName(pStack).toString())
+                        .withStyle(ChatFormatting.BLUE)
+        );
+
+        pTooltipComponents.add(Component.empty());
+        pTooltipComponents.add(
+                Component.translatable("item.modifiers.clothing.color")
+                        .withStyle(ChatFormatting.GRAY)
+        );
+        String colorAsString = "#" + Integer.toHexString(this.getColor(pStack)).toUpperCase();
+        pTooltipComponents.add(
+                Component.literal(colorAsString)
+                        .withStyle(ChatFormatting.BLUE)
+        );
+    }
+
+    @Override
     public @NotNull String getDescriptionId(@NotNull ItemStack pStack) {
         final String original = super.getDescriptionId(pStack);
         final ResourceLocation clothingLocation = this.getClothingName(pStack);
@@ -319,8 +382,6 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
 
     /**
      * This overwrites the attributes completely
-     * @param stack
-     * @param modifiers
      */
     public void setAttributeModifiers(ItemStack stack, Multimap<Attribute, AttributeModifier> modifiers) {
         CompoundTag clothingAttributesTag = new CompoundTag();
@@ -441,10 +502,38 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         );
     }
 
+    public static List<Component> deserializeLore(JsonArray loreJson) {
+        List<Component> toReturn = new ArrayList<>(loreJson.size());
+
+        try {
+            for (JsonElement element : loreJson) {
+                toReturn.add(Component.Serializer.fromJson(element.getAsJsonPrimitive().getAsString()));
+            }
+        } catch (Exception e) {
+            LOGGER.error("Unable to parse clothing lore!", e);
+            toReturn = List.of();
+        }
+
+        return toReturn;
+    }
+
+    public static List<Component> deserializeLore(ListTag loreTag) {
+        List<Component> toReturn = new ArrayList<>(loreTag.size());
+
+        try {
+            for (Tag componentTag : loreTag) {
+                toReturn.add(Component.Serializer.fromJson(componentTag.getAsString()));
+            }
+        } catch (Exception e) {
+            LOGGER.error("Unable to parse clothing lore!", e);
+            toReturn = List.of();
+        }
+
+        return toReturn;
+    }
+
     /**
      * Mirror of {@link DyeableLeatherItem#dyeArmor(ItemStack, List)} but actually mutates the passed {@code stack}
-     * @param stack
-     * @param dyeItems
      */
     public static void dyeClothing(ItemStack stack, List<DyeItem> dyeItems) {
         int[] colors = new int[3];

@@ -278,7 +278,8 @@ public class ClothingRecipe extends ShapedRecipe {
                     MODEL_LAYER_NBT_KEY,
                     TEXTURE_LOCATION_NBT_KEY,
                     PART_VISIBILITY_KEY,
-                    MODEL_PARENTS_KEY
+                    MODEL_PARENTS_KEY,
+                    CLOTHING_LORE_NBT_KEY
             };
         }
     }

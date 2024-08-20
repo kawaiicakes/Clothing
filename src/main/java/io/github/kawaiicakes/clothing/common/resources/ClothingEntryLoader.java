@@ -11,6 +11,7 @@ import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
@@ -95,6 +96,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
             Multimap<Attribute, AttributeModifier> modifiers;
             int durability;
             ResourceLocation equipSoundLocation;
+            List<Component> lore;
 
             try {
                 slot = EquipmentSlot.byName(topElement.getAsJsonPrimitive(CLOTHING_SLOT_NBT_KEY).getAsString());
@@ -114,6 +116,10 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
                 equipSoundLocation = topElement.has(EQUIP_SOUND_KEY)
                         ? new ResourceLocation(topElement.getAsJsonPrimitive(EQUIP_SOUND_KEY).getAsString())
                         : SoundEvents.ARMOR_EQUIP_LEATHER.getLocation();
+
+                lore = topElement.has(CLOTHING_LORE_NBT_KEY)
+                        ? deserializeLore(topElement.getAsJsonArray(CLOTHING_LORE_NBT_KEY))
+                        : List.of();
             } catch (Exception e) {
                 LOGGER.error("Error deserializing clothing entry!", e);
                 throw e;
@@ -125,6 +131,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
             clothingItem.setAttributeModifiers(clothingStack, modifiers);
             clothingItem.setMaxDamage(clothingStack, durability);
             clothingItem.setEquipSound(clothingStack, equipSoundLocation);
+            clothingItem.setClothingLore(clothingStack, lore);
         };
     }
 
