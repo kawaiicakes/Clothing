@@ -6,7 +6,6 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.common.LoomMenuOverlayGetter;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
-import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
@@ -84,10 +83,8 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
     @Unique
     public List<OverlayDefinitionLoader.OverlayDefinition> getClothing$selectableOverlays(ItemStack stack) {
         try {
-            if (!(stack.getItem() instanceof ClothingItem<?> clothingItem))
+            if (!(stack.getItem() instanceof ClothingItem))
                 throw new IllegalArgumentException("Passed stack '" + stack + "' is not a clothing item!");
-
-            if (!(clothingItem instanceof GenericClothingItem)) return List.of();
 
             if (stack.isEmpty()) return List.of();
 
@@ -110,7 +107,7 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
 
         if (
                 !clothingStack.isEmpty()
-                        && clothingStack.getItem() instanceof ClothingItem<?> clothingItem
+                        && clothingStack.getItem() instanceof ClothingItem clothingItem
         ) {
             outputStack = clothingStack.copy();
             outputStack.setCount(1);
@@ -120,12 +117,12 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
                 ClothingItem.dyeClothing(outputStack, dyeColor);
             }
 
-            if (clothingItem instanceof GenericClothingItem genericClothingItem && overlay != null) {
-                ResourceLocation[] existingOverlays = genericClothingItem.getOverlays(outputStack);
+            if (overlay != null) {
+                ResourceLocation[] existingOverlays = clothingItem.getOverlays(outputStack);
                 List<ResourceLocation> overlayList = Arrays.asList(existingOverlays);
 
                 if (overlayList.isEmpty()) {
-                    genericClothingItem.setOverlays(outputStack, new ResourceLocation[]{overlay.name()});
+                    clothingItem.setOverlays(outputStack, new ResourceLocation[]{overlay.name()});
                 } else if (!overlayList.get(0).equals(overlay.name())) {
                     ResourceLocation[] newOverlays;
 
@@ -146,7 +143,7 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
 
                     newOverlays[0] = overlay.name();
 
-                    genericClothingItem.setOverlays(outputStack, newOverlays);
+                    clothingItem.setOverlays(outputStack, newOverlays);
                 }
             }
         }
@@ -166,7 +163,7 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
             constant = @Constant(classValue = BannerItem.class)
     )
     private boolean quickMoveStackInstanceOfBannerItem(Object obj, Operation<Boolean> original) {
-        return original.call(obj) || obj instanceof ClothingItem<?>;
+        return original.call(obj) || obj instanceof ClothingItem;
     }
 
     /**
@@ -184,7 +181,7 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
             )
     )
     private boolean slotsChangedCheckForNonEmpty(boolean original) {
-        if (!this.bannerSlot.getItem().isEmpty() && this.bannerSlot.getItem().getItem() instanceof ClothingItem<?>)
+        if (!this.bannerSlot.getItem().isEmpty() && this.bannerSlot.getItem().getItem() instanceof ClothingItem)
             return false;
 
         return original;
@@ -205,7 +202,7 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
             )
     )
     private void slotsChangedDoClothingLogic(Container container, CallbackInfo ci) {
-        if (this.bannerSlot.getItem().isEmpty() || !(this.bannerSlot.getItem().getItem() instanceof ClothingItem<?>))
+        if (this.bannerSlot.getItem().isEmpty() || !(this.bannerSlot.getItem().getItem() instanceof ClothingItem))
             return;
 
         this.selectablePatterns = List.of();
@@ -277,7 +274,7 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
             )
     )
     private int clickMenuButtonCheckForOverlays(int original) {
-        if (!this.bannerSlot.getItem().isEmpty() && this.bannerSlot.getItem().getItem() instanceof ClothingItem<?>)
+        if (!this.bannerSlot.getItem().isEmpty() && this.bannerSlot.getItem().getItem() instanceof ClothingItem)
             return this.clothing$selectableOverlays.size();
 
         return original;
@@ -335,7 +332,7 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
     private void clickMenuButtonSetupResultSlot(
             LoomMenu instance, Holder<BannerPattern> dyeColor, Operation<Void> original, Player pPlayer, int pId
     ) {
-        if (!this.bannerSlot.getItem().isEmpty() && this.bannerSlot.getItem().getItem() instanceof ClothingItem<?>) {
+        if (!this.bannerSlot.getItem().isEmpty() && this.bannerSlot.getItem().getItem() instanceof ClothingItem) {
             this.clothing$setupClothingResultSlot(this.clothing$selectableOverlays.get(pId));
             return;
         }

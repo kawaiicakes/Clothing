@@ -20,6 +20,6 @@ public class LoomMenu$3Mixin {
             constant = @Constant(classValue = BannerItem.class)
     )
     private boolean mayPlaceHandler(Object object, Operation<Boolean> original) {
-        return original.call(object) || object instanceof ClothingItem<?>;
+        return original.call(object) || object instanceof ClothingItem;
     }
 }

@@ -29,7 +29,7 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
     protected ImmutableList<OverlayDefinition> overlays;
 
     public OverlayDefinitionLoader() {
-        super(GSON, "clothing/generic/overlays");
+        super(GSON, "clothing/overlays");
 
         INSTANCE = this;
     }
@@ -222,7 +222,7 @@ public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
         }
 
         public boolean isValidEntry(ItemStack stack) {
-            if (!(stack.getItem() instanceof ClothingItem<?> clothingItem)) return false;
+            if (!(stack.getItem() instanceof ClothingItem clothingItem)) return false;
 
             ResourceLocation clothingName = clothingItem.getClothingName(stack);
 

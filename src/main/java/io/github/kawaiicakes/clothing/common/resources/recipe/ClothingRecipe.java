@@ -6,9 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
-import io.github.kawaiicakes.clothing.common.resources.BakedClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
-import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -34,10 +32,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-import static io.github.kawaiicakes.clothing.common.item.ClothingItem.*;
-import static io.github.kawaiicakes.clothing.common.item.impl.BakedModelClothingItem.MODEL_PARENTS_KEY;
-import static io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem.*;
 import static io.github.kawaiicakes.clothing.ClothingRegistry.CLOTHING_SERIALIZER;
+import static io.github.kawaiicakes.clothing.common.item.ClothingItem.*;
 import static net.minecraft.world.item.DyeableLeatherItem.TAG_COLOR;
 
 /*
@@ -110,18 +106,9 @@ public class ClothingRecipe extends ShapedRecipe {
         }
 
         public static ItemStack getItemStack(JsonObject json) {
-            boolean isGenericEntry
-                    = GsonHelper.getAsString(json, "type", "generic").equals("generic");
-
             ResourceLocation entryName = new ResourceLocation(GsonHelper.getAsString(json, "clothing"));
 
-            ItemStack defaultStackForEntry;
-
-            if (isGenericEntry) {
-                defaultStackForEntry = GenericClothingEntryLoader.getInstance().getStack(entryName);
-            } else {
-                defaultStackForEntry = BakedClothingEntryLoader.getInstance().getStack(entryName);
-            }
+            ItemStack defaultStackForEntry = ClothingEntryLoader.getInstance().getStack(entryName);
 
             CompoundTag stackAsNbt = new CompoundTag();
 
@@ -140,7 +127,7 @@ public class ClothingRecipe extends ShapedRecipe {
             assert stackTag != null;
 
             CompoundTag mergedProperties = new CompoundTag();
-            if (defaultStackForEntry.getItem() instanceof ClothingItem<?> clothingItem)
+            if (defaultStackForEntry.getItem() instanceof ClothingItem clothingItem)
                 mergedProperties = clothingItem.getClothingPropertiesTag(defaultStackForEntry);
 
             String[] pissKeys = forbiddenKeys();
@@ -160,7 +147,7 @@ public class ClothingRecipe extends ShapedRecipe {
                 stackTag.put(key, Objects.requireNonNull(miscNbt.get(key)));
             }
 
-            CompoundTag declaredClothingProperties = getProperties(isGenericEntry, mergedProperties, json);
+            CompoundTag declaredClothingProperties = getProperties(mergedProperties, json);
 
             for (String key : declaredClothingProperties.getAllKeys()) {
                 mergedProperties.put(key, Objects.requireNonNull(declaredClothingProperties.get(key)));
@@ -179,7 +166,7 @@ public class ClothingRecipe extends ShapedRecipe {
         }
 
         @NotNull
-        public static CompoundTag getProperties(boolean isGeneric, CompoundTag mergedProperties, JsonObject json) {
+        public static CompoundTag getProperties(CompoundTag mergedProperties, JsonObject json) {
             mergedProperties = mergedProperties.copy();
 
             CompoundTag toReturn = new CompoundTag();
@@ -188,6 +175,7 @@ public class ClothingRecipe extends ShapedRecipe {
             CompoundTag attributes;
             String equipSound;
             int maxDamage;
+            ListTag overlays;
 
             try {
                 color = json.has(TAG_COLOR)
@@ -206,6 +194,10 @@ public class ClothingRecipe extends ShapedRecipe {
                         ? json.getAsJsonPrimitive(MAX_DAMAGE_KEY).getAsInt()
                         : mergedProperties.getInt(MAX_DAMAGE_KEY);
 
+                overlays = json.has(OVERLAY_NBT_KEY)
+                        ? overlaysFromJson(json.getAsJsonArray(OVERLAY_NBT_KEY))
+                        : new ListTag();
+
                 if (maxDamage <= 0)
                     throw new IllegalArgumentException("Recipe declares impossible durability of " + maxDamage +"!");
 
@@ -220,20 +212,6 @@ public class ClothingRecipe extends ShapedRecipe {
             toReturn.put(ATTRIBUTES_KEY, attributes);
             toReturn.putString(EQUIP_SOUND_KEY, equipSound);
             toReturn.putInt(MAX_DAMAGE_KEY, maxDamage);
-
-            if (!isGeneric) return toReturn;
-
-            ListTag overlays;
-
-            try {
-                overlays = json.has(OVERLAY_NBT_KEY)
-                        ? overlaysFromJson(json.getAsJsonArray(OVERLAY_NBT_KEY))
-                        : new ListTag();
-            } catch (Exception e) {
-                LOGGER.error("Unable to write clothing properties for recipe!");
-                return toReturn;
-            }
-
             toReturn.put(OVERLAY_NBT_KEY, overlays);
 
             return toReturn;

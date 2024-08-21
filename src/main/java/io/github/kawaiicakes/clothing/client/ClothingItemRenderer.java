@@ -3,7 +3,6 @@ package io.github.kawaiicakes.clothing.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
-import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -48,11 +47,9 @@ public class ClothingItemRenderer extends BlockEntityWithoutLevelRenderer {
             int pPackedLight,
             int pPackedOverlay
     ) {
-        if (!(pStack.getItem() instanceof ClothingItem<?> clothingItem)) return;
+        if (!(pStack.getItem() instanceof ClothingItem clothingItem)) return;
 
-        ResourceLocation baseModelLocation = baseModelLocation(
-                clothingItem instanceof GenericClothingItem, clothingItem.getSlot()
-        );
+        ResourceLocation baseModelLocation = entryModelLocation(clothingItem.getSlot());
         BakedModel baseModel = Minecraft.getInstance().getModelManager().getModel(baseModelLocation);
 
         ItemRenderer itemRenderer = Minecraft.getInstance().getItemRenderer();
@@ -77,19 +74,18 @@ public class ClothingItemRenderer extends BlockEntityWithoutLevelRenderer {
         }
     }
 
-    public static ResourceLocation baseModelLocation(boolean isGeneric, EquipmentSlot slot) {
-        String prefix = isGeneric ? "generic" : "baked";
-        String suffix = switch (slot) {
-            case HEAD -> "hat";
-            case LEGS -> "pants";
-            case FEET -> "shoes";
-            default -> "shirt";
+    public static ResourceLocation entryModelLocation(EquipmentSlot slot) {
+        String piece = switch (slot) {
+            case HEAD -> "generic_hat";
+            case LEGS -> "generic_pants";
+            case FEET -> "generic_shoes";
+            default -> "generic_shirt";
         };
 
-        return new ModelResourceLocation(new ResourceLocation(MOD_ID, prefix + "_" + suffix), "inventory");
+        return new ModelResourceLocation(new ResourceLocation(MOD_ID, piece), "inventory");
     }
 
-    public static ResourceLocation baseModelLocation(ResourceLocation entryLocation) {
+    public static ResourceLocation entryModelLocation(ResourceLocation entryLocation) {
         return new ResourceLocation(entryLocation.getNamespace(), "item/clothing/" + entryLocation.getPath());
     }
 

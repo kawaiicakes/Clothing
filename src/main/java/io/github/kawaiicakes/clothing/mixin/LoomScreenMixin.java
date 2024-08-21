@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -11,11 +12,9 @@ import com.mojang.datafixers.util.Pair;
 import com.mojang.logging.LogUtils;
 import com.mojang.math.Quaternion;
 import com.mojang.math.Vector3f;
-import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.common.LoomMenuOverlayGetter;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
-import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -33,7 +32,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.LoomMenu;
-import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -47,7 +45,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -97,7 +94,7 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
     private void clothing$renderClothingPreview(
             float partialTick, int pPosX, int pPosY, int pScale, float pMouseX, float pMouseY
     ) {
-        if (!(this.clothing$previewClothing.getItem() instanceof ClothingItem<?> clothingItem)) return;
+        if (!(this.clothing$previewClothing.getItem() instanceof ClothingItem)) return;
 
         PoseStack posestack = RenderSystem.getModelViewStack();
         posestack.pushPose();
@@ -116,23 +113,19 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
 
         assert Minecraft.getInstance().player != null;
 
-        if (clothingItem.getClientClothingRenderManager() instanceof ClientClothingRenderManager renderer) {
-            MultiBufferSource.BufferSource buffer = Minecraft.getInstance().renderBuffers().bufferSource();
+        MultiBufferSource.BufferSource buffer = Minecraft.getInstance().renderBuffers().bufferSource();
 
-            renderer.render(
-                    this.clothing$humanoidClothingLayer, this.clothing$previewClothing,
-                    posestack1, buffer,
-                    Minecraft.getInstance()
-                            .getEntityRenderDispatcher()
-                            .getPackedLightCoords(Minecraft.getInstance().player, partialTick),
-                    Minecraft.getInstance().player,
-                    0.0F, 0.0F,
-                    partialTick, 0.0F,
-                    0.0F, 0.0F
-            );
+        this.clothing$humanoidClothingLayer.renderClothingFromItemStack(this.clothing$previewClothing,
+                posestack1, buffer,
+                Minecraft.getInstance()
+                        .getEntityRenderDispatcher()
+                        .getPackedLightCoords(Minecraft.getInstance().player, partialTick),
+                0.0F, 0.0F,
+                partialTick, 0.0F,
+                0.0F, 0.0F
+        );
 
-            buffer.endBatch();
-        }
+        buffer.endBatch();
 
         posestack.popPose();
         RenderSystem.applyModelViewMatrix();
@@ -244,14 +237,12 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
                     value = "INVOKE",
                     target = "net/minecraft/client/gui/screens/inventory/LoomScreen.renderPattern (Lnet/minecraft/core/Holder;II)V",
                     shift = At.Shift.BEFORE
-            ),
-            locals = LocalCapture.CAPTURE_FAILHARD
+            )
     )
     private void renderBgCacheSelectedElement(
             PoseStack pPoseStack, float pPartialTick, int pX, int pY,
             CallbackInfo ci,
-            int i, int j, Slot slot, Slot slot1, Slot slot2, Slot slot3,
-            int k, int k2, int l2, List<?> list, int l, int i1, int j1, int k1
+            @Local(ordinal = 10) int k1
     ) {
         this.clothing$selectedRowElement = k1;
     }
@@ -386,7 +377,7 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
             )
     )
     private Item containerChangedCastWrapper(Item original) {
-        if (this.menu.getResultSlot().getItem().getItem() instanceof ClothingItem<?>)
+        if (this.menu.getResultSlot().getItem().getItem() instanceof ClothingItem)
             return WHITE_BANNER;
         return original;
     }
@@ -429,7 +420,7 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
     ) {
         if (
                 !this.menu.getBannerSlot().getItem().isEmpty()
-                        && this.menu.getBannerSlot().getItem().getItem() instanceof ClothingItem<?>
+                        && this.menu.getBannerSlot().getItem().getItem() instanceof ClothingItem
         ) return null;
 
         return original;
@@ -453,9 +444,9 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
         ItemStack clothingStack = this.menu.getBannerSlot().getItem();
 
         this.clothing$displayOverlays = !clothingStack.isEmpty()
-                && clothingStack.getItem() instanceof GenericClothingItem;
+                && clothingStack.getItem() instanceof ClothingItem;
 
-        original.call(instance, value && !(clothingStack.getItem() instanceof ClothingItem<?>));
+        original.call(instance, value && !(clothingStack.getItem() instanceof ClothingItem));
     }
 
     /**
@@ -468,7 +459,7 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
         int modifiedReturn
                 = Mth.positiveCeilDiv(((LoomMenuOverlayGetter) this.menu).getClothing$selectableOverlays().size(), 4);
 
-        if (!this.bannerStack.isEmpty() && this.bannerStack.getItem() instanceof ClothingItem<?>)
+        if (!this.bannerStack.isEmpty() && this.bannerStack.getItem() instanceof ClothingItem)
             return modifiedReturn;
 
         int toReturn = original.call();

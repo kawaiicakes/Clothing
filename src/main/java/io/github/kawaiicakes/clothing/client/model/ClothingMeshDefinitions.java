@@ -32,12 +32,12 @@ import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
  * This class takes care of registering {@link LayerDefinition}s, similarly to
  * {@link net.minecraft.client.model.geom.LayerDefinitions} but tries not to cache anything and does a lot of
  * the "heavy lifting" so that {@link io.github.kawaiicakes.clothing.ClothingMod} doesn't need 10,000,000,000 imports.
- * I doubt a modder would need to access the {@link ModelLayerLocation}s of the generic layers anyway, but their names
+ * I doubt a modder would need to access the {@link ModelLayerLocation}s of the mesh layers anyway, but their names
  * are generated in {@link #registerLayers(EntityRenderersEvent.RegisterLayerDefinitions)} and
  * {@link #generateModelLayerLocation(String, float)} if you are curious.
  */
 @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
-public class GenericDefinitions {
+public class ClothingMeshDefinitions {
     protected static Logger LOGGER = LogUtils.getLogger();
 
     public static float[] cubeDeformations() {

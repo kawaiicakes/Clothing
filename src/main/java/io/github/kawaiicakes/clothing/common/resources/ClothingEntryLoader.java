@@ -7,6 +7,7 @@ import com.google.common.collect.Multimap;
 import com.google.gson.*;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.JsonOps;
+import io.github.kawaiicakes.clothing.ClothingRegistry;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
@@ -33,63 +34,45 @@ import org.slf4j.Logger;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.*;
 
+import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.*;
 import static net.minecraft.world.item.DyeableLeatherItem.TAG_COLOR;
 
 /**
  * This class is a {@link SimpleJsonResourceReloadListener} that pretty heavily abstracts stuff related to Minecraft
- * datapack loading. Its purpose is to load data entries for the clothing item {@link T} to appropriate
+ * datapack loading. Its purpose is to load data entries for clothing items to appropriate
  * {@link ItemStack}s in the creative menu. This data is held on the server solely to be sent to connecting clients,
  * where the data is finally used.
- * <br><br>
- * Implementations of this class should use a singleton pattern and return the instance in
- * {@link ClothingItem#loaderForType()}.
- * @param <T> The {@link ClothingItem} that data entries are being read for.
  */
-public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends SimpleJsonResourceReloadListener {
+public class ClothingEntryLoader extends SimpleJsonResourceReloadListener {
     protected static final Logger LOGGER = LogUtils.getLogger();
     protected static final Gson GSON = (new GsonBuilder()).setPrettyPrinting().disableHtmlEscaping().create();
+    protected static ClothingEntryLoader INSTANCE;
 
-    private static final Map<String, ClothingEntryLoader<?>> LOADERS = new HashMap<>();
-
-    protected ImmutableMap<ResourceLocation, NbtStackInitializer<T>> stackEntries = ImmutableMap.of();
+    protected ImmutableMap<ResourceLocation, NbtStackInitializer> stackEntries = ImmutableMap.of();
     protected ImmutableMap<ResourceLocation, ItemStack> stacks = ImmutableMap.of();
-    protected final String subDirectory;
 
-    /**
-     * @param pSubDirectory the {@code String} for the folder name the data entries will be found in.
-     */
-    protected ClothingEntryLoader(String pSubDirectory) {
-        super(GSON, "clothing/" + pSubDirectory);
-        this.subDirectory = pSubDirectory;
-        LOADERS.put(this.getName(), this);
+    protected ClothingEntryLoader() {
+        super(GSON, "clothing");
     }
 
-    public static @Nullable ClothingEntryLoader<?> getLoader(String pSubDirectory) {
-        return LOADERS.get(pSubDirectory);
+    public static ClothingEntryLoader getInstance() {
+        if (INSTANCE == null) {
+            INSTANCE = new ClothingEntryLoader();
+        }
+
+        return INSTANCE;
     }
 
     /**
-     * Implementations return an instance of the functional interface {@link NbtStackInitializer}, which ultimately
+     * Returns an instance of the functional interface {@link NbtStackInitializer}, which ultimately
      * ends up writing the appropriate {@link ItemStack}s to the creative menu.
      * @param entryId the {@link ResourceLocation} representing the file name of this entry.
      * @param topElement the {@link JsonObject} holding the serialized JSON data of the entry.
-     * @return the {@link NbtStackInitializer} specifically written to load {@link ItemStack}s for the item of
-     * {@link T}.
+     * @return the {@link NbtStackInitializer} specifically written to load {@link ItemStack}s for the item.
      */
     @NotNull
-    public abstract NbtStackInitializer<T> deserializeFromJson(ResourceLocation entryId, JsonObject topElement);
-
-    /**
-     * Indicates what items are registered for {@link T} of the implementation. Used to verify slots when adding items
-     * in {@link ClothingItem#fillItemCategory(CreativeModeTab, NonNullList)}.
-     * @return an array of {@link T} containing all the registered instances of {@link T}.
-     * @see #getStacks(ClothingItem)
-     */
-    public abstract T[] clothingItemsForLoader();
-
-    @NotNull
-    public NbtStackInitializer<T> defaultDeserialization(ResourceLocation entryId, JsonObject topElement) {
+    public NbtStackInitializer deserializeFromJson(ResourceLocation entryId, JsonObject topElement) {
         return (clothingItem, clothingStack) -> {
             EquipmentSlot slot;
             int color;
@@ -97,6 +80,13 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
             int durability;
             ResourceLocation equipSoundLocation;
             List<Component> lore;
+
+            ModelStrata layer;
+            ResourceLocation textureLocation;
+            ResourceLocation[] overlays;
+            ClothingItem.ModelPartReference[] parts;
+
+            Map<ClothingItem.ModelPartReference, ResourceLocation> models;
 
             try {
                 slot = EquipmentSlot.byName(topElement.getAsJsonPrimitive(CLOTHING_SLOT_NBT_KEY).getAsString());
@@ -120,6 +110,54 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
                 lore = topElement.has(CLOTHING_LORE_NBT_KEY)
                         ? deserializeLore(topElement.getAsJsonArray(CLOTHING_LORE_NBT_KEY))
                         : List.of();
+
+                layer = topElement.has("render_layer")
+                        ? ModelStrata.byName(
+                        topElement.getAsJsonPrimitive("render_layer").getAsString()
+                )
+                        : clothingItem.getModelStrata(clothingStack);
+
+                textureLocation = topElement.has("texture")
+                        ? new ResourceLocation(topElement.getAsJsonPrimitive("texture").getAsString())
+                        : new ResourceLocation(MOD_ID, "default");
+                if (textureLocation.getPath().isEmpty()) new ResourceLocation(MOD_ID, "default");
+
+                overlays = topElement.has("overlays") ? Arrays.stream(
+                                collapseJsonArrayToStringArray(topElement.getAsJsonArray("overlays")))
+                        .filter(Objects::nonNull)
+                        .map(ResourceLocation::new)
+                        .toArray(ResourceLocation[]::new)
+                        : new ResourceLocation[0];
+
+                parts = topElement.has("part_visibility")
+                        ? Arrays.stream(
+                                collapseJsonArrayToStringArray(
+                                        topElement.getAsJsonArray("part_visibility")
+                                )
+                        )
+                        .map(ClothingItem.ModelPartReference::byName)
+                        .toArray(ClothingItem.ModelPartReference[]::new)
+                        : clothingItem.defaultPartVisibility();
+
+                Map<ClothingItem.ModelPartReference, ResourceLocation> errorModel = new HashMap<>();
+                errorModel.put(
+                        clothingItem.defaultModelPart(), new ResourceLocation("clothing:error")
+                );
+
+                // I want exceptions logged
+                models = errorModel;
+                if (topElement.has("models")) {
+                    JsonObject modelObject = topElement.getAsJsonObject("models");
+                    Map<ClothingItem.ModelPartReference, ResourceLocation> deserialized = new HashMap<>();
+                    for (String key : modelObject.keySet()) {
+                        ClothingItem.ModelPartReference byName = ClothingItem.ModelPartReference.byName(key);
+                        ResourceLocation modelLocation
+                                = new ResourceLocation(modelObject.getAsJsonPrimitive(key).getAsString());
+
+                        deserialized.put(byName, modelLocation);
+                    }
+                    models = deserialized;
+                }
             } catch (Exception e) {
                 LOGGER.error("Error deserializing clothing entry!", e);
                 throw e;
@@ -132,6 +170,13 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
             clothingItem.setMaxDamage(clothingStack, durability);
             clothingItem.setEquipSound(clothingStack, equipSoundLocation);
             clothingItem.setClothingLore(clothingStack, lore);
+
+            clothingItem.setModelStrata(clothingStack, layer);
+            clothingItem.setTextureLocation(clothingStack, textureLocation);
+            clothingItem.setOverlays(clothingStack, overlays);
+            clothingItem.setPartsForVisibility(clothingStack, parts);
+
+            clothingItem.setModelPartLocations(clothingStack, models);
         };
     }
 
@@ -211,9 +256,10 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
 
         ImmutableMap.Builder<ResourceLocation, ItemStack> stackMapBuilder = ImmutableMap.builder();
 
-        for (T clothingItem : this.clothingItemsForLoader()) {
-            for (Map.Entry<ResourceLocation, NbtStackInitializer<T>> entry : this.stackEntries.entrySet()) {
+        for (ClothingItem clothingItem : ClothingRegistry.getAll()) {
+            for (Map.Entry<ResourceLocation, NbtStackInitializer> entry : this.stackEntries.entrySet()) {
                 try {
+                    assert clothingItem != null;
                     ItemStack generated = clothingItem.getDefaultInstance();
                     entry.getValue().writeToStack(clothingItem, generated);
                     if (generated.equals(clothingItem.getDefaultInstance())) continue;
@@ -239,11 +285,11 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
     /**
      * Returns the {@link ItemStack}s from {@link #stacks} filtered down to those stacks whose slot is equal to the
      * slot of the passed instance. Used for {@link ClothingItem#fillItemCategory(CreativeModeTab, NonNullList)}.
-     * @param clothingItemInstance the {@link T} instance to obtain stacks for.
+     * @param clothingItemInstance the clothing item instance to return stacks for.
      * @return an {@link ImmutableList} with no null elements containing the {@link ItemStack}s belonging to the passed
      *          clothing item.
      */
-    public ImmutableList<ItemStack> getStacks(T clothingItemInstance) {
+    public ImmutableList<ItemStack> getStacks(ClothingItem clothingItemInstance) {
         ImmutableList.Builder<ItemStack> toReturn = ImmutableList.builder();
 
         toReturn.addAll(
@@ -285,7 +331,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
      * {@link NbtStackInitializer}. Its key corresponds to the entry's file name; including its namespace.
      * @see net.minecraftforge.event.AddReloadListenerEvent
      */
-    public void setEntries(ImmutableMap<ResourceLocation, NbtStackInitializer<T>> clothingMap) {
+    public void setEntries(ImmutableMap<ResourceLocation, NbtStackInitializer> clothingMap) {
         this.stackEntries = ImmutableMap.copyOf(clothingMap);
         // forces a regeneration of the stacks if previous data exists
         this.stacks = ImmutableMap.of();
@@ -299,7 +345,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
     protected void apply(
             Map<ResourceLocation, JsonElement> pObject, ResourceManager pResourceManager, ProfilerFiller pProfiler
     ) {
-        ImmutableMap.Builder<ResourceLocation, NbtStackInitializer<T>> builder
+        ImmutableMap.Builder<ResourceLocation, NbtStackInitializer> builder
                 = ImmutableMap.builder();
 
         for(Map.Entry<ResourceLocation, JsonElement> entry : pObject.entrySet()) {
@@ -316,7 +362,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
 
                 builder.put(
                         entryId,
-                        this.defaultDeserialization(entryId, jsonEntry)
+                        this.deserializeFromJson(entryId, jsonEntry)
                                 .and(this.deserializeFromJson(entryId, jsonEntry))
                 );
 
@@ -328,7 +374,7 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
         this.setEntries(builder.build());
         this.getStacks();
 
-        LOGGER.info("Loaded {} clothing entries in directory {}!", this.stackEntries.size(), this.subDirectory);
+        LOGGER.info("Loaded {} clothing entries!", this.stackEntries.size());
     }
 
     /**

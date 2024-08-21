@@ -6,14 +6,15 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
-import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.ClothingItemRenderer;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
-import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
+import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.cauldron.CauldronInteraction;
 import net.minecraft.nbt.CompoundTag;
@@ -33,23 +34,19 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.api.distmarker.Dist;
+import net.minecraft.world.level.block.LayeredCauldronBlock;
 import net.minecraftforge.client.extensions.common.IClientItemExtensions;
-import net.minecraftforge.fml.loading.FMLEnvironment;
-import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.registries.ForgeRegistries;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import javax.annotation.ParametersAreNullableByDefault;
+import java.util.*;
 import java.util.function.Consumer;
 
+import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 import static net.minecraft.core.cauldron.CauldronInteraction.DYED_ITEM;
 
 // TODO: the default colour given by a clothing entry is reflected in #hasCustomColor
@@ -60,7 +57,7 @@ import static net.minecraft.core.cauldron.CauldronInteraction.DYED_ITEM;
  * clothing. The {@link io.github.kawaiicakes.clothing.client.HumanoidClothingLayer} is reliant on implementations
  * of this class' methods.
  */
-public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem implements DyeableLeatherItem {
+public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
     protected static final Logger LOGGER = LogUtils.getLogger();
 
     public static final String CLOTHING_PROPERTY_NBT_KEY = "ClothingProperties";
@@ -70,6 +67,12 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     public static final String ATTRIBUTES_KEY = "attributes";
     public static final String EQUIP_SOUND_KEY = "equip_sound";
     public static final String MAX_DAMAGE_KEY = "durability";
+    public static final String MODEL_LAYER_NBT_KEY = "modelLayer";
+    public static final String TEXTURE_LOCATION_NBT_KEY = "texture";
+    public static final String OVERLAY_NBT_KEY = "overlays";
+    public static final String PART_VISIBILITY_KEY = "partVisibility";
+    public static final String MODEL_PARENTS_KEY = "modelParents";
+    public static final ResourceLocation DEFAULT_TEXTURE_NBT_KEY = new ResourceLocation(MOD_ID, "default");
 
     public static final CauldronInteraction NEW_DYED_ITEM = (pBlockState, pLevel, pPos, pPlayer, pHand, pStack) -> {
         InteractionResult result = DYED_ITEM.interact(pBlockState, pLevel, pPos, pPlayer, pHand, pStack);
@@ -83,8 +86,30 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         return result;
     };
 
-    private Object clientClothingRenderManager;
+    public static final CauldronInteraction OVERLAY_ITEM
+            = (pBlockState, pLevel, pBlockPos, pPlayer, pHand, pStack) -> {
+        if (!(pStack.getItem() instanceof ClothingItem clothing)) return InteractionResult.PASS;
+        if (clothing.getOverlays(pStack).length == 0) return InteractionResult.PASS;
+        if (pLevel.isClientSide) return InteractionResult.sidedSuccess(true);
 
+        ResourceLocation[] originalOverlays = clothing.getOverlays(pStack);
+
+        int newLength = originalOverlays.length - 1;
+        ResourceLocation[] newOverlays = new ResourceLocation[newLength];
+
+        if (newLength > 0)
+            System.arraycopy(originalOverlays, 1, newOverlays, 0, newLength);
+
+        clothing.setOverlays(pStack, newOverlays);
+        pLevel.playSound(
+                null, pBlockPos, SoundEvents.GENERIC_SPLASH, SoundSource.BLOCKS, 1.0F, 1.0F
+        );
+        LayeredCauldronBlock.lowerFillLevel(pBlockState, pLevel, pBlockPos);
+
+        return InteractionResult.sidedSuccess(false);
+    };
+
+    // TODO: allow multiple layers when rendering meshes
     public ClothingItem(EquipmentSlot pSlot) {
         super(
                 ArmorMaterials.LEATHER,
@@ -93,7 +118,6 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
                         .tab(ClothingTabs.CLOTHING_TAB)
                         .stacksTo(1)
         );
-        this.initializeClientClothingRenderManager();
     }
 
     /**
@@ -111,10 +135,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
 
     /**
      * Returns the default {@link ItemStack} for this. Since it's anticipated that rendering properties are stored in
-     * the stack's {@link CompoundTag}, the top-level NBT structure has been pre-prepared here.
-     * <br><br>
-     * Further implementations should adjust the NBT data as necessary; further reading provides an example.
-     * @see GenericClothingItem#getDefaultInstance()
+     * the stack's {@link CompoundTag}, the NBT structures have been pre-prepared here.
      * @return the default {@link ItemStack} for this.
      */
     @Override
@@ -126,16 +147,20 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
 
         this.setSlot(toReturn, this.getSlot());
         this.setColor(toReturn, 0xFFFFFF);
-
         this.setAttributeModifiers(
                 toReturn,
                 this.getDefaultAttributeModifiers(this.getSlot())
         );
         this.setMaxDamage(toReturn, 0);
-
         this.setEquipSound(toReturn, this.material.getEquipSound().getLocation());
-
         this.setClothingLore(toReturn, List.of());
+
+        this.setModelStrata(toReturn, ModelStrata.forSlot(this.getSlot()));
+        this.setTextureLocation(toReturn, DEFAULT_TEXTURE_NBT_KEY);
+        this.setOverlays(toReturn, new ResourceLocation[]{});
+        this.setPartsForVisibility(toReturn, this.defaultPartVisibility());
+
+        this.setModelPartLocations(toReturn, Map.of());
 
         return toReturn;
     }
@@ -163,34 +188,12 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         if (!this.allowedIn(pCategory)) return;
 
         try {
-            final ClothingEntryLoader<T> loader = this.loaderForType();
-            //noinspection unchecked
-            pItems.addAll(loader.getStacks((T) this));
+            final ClothingEntryLoader loader = ClothingEntryLoader.getInstance();
+            pItems.addAll(loader.getStacks(this));
         } catch (Exception e) {
             LOGGER.error("Unable to generate clothing entries!", e);
         }
     }
-
-    /**
-     * Used by {@link #fillItemCategory(CreativeModeTab, NonNullList)}. Implementations return the singleton
-     * {@link ClothingEntryLoader} that loads clothing entries for that implementation. Do not cache the
-     * return or attempt to mutate it.
-     * @return the singleton {@link ClothingEntryLoader} that loads clothing entries for this.
-     */
-    @NotNull
-    public abstract ClothingEntryLoader<T> loaderForType();
-
-    /**
-     * Implementations essentially provide an instance of {@link ClientClothingRenderManager} to the client-exclusive
-     * part of this item. The {@link ClientClothingRenderManager} is responsible for rendering clothing to a buffer.
-     * How this is done will depend on what type of model is used, thus your own implementations are necessary.
-     * <br><br>
-     * This mod provides implementations of this that will suffice in the majority of use cases.
-     * @see GenericClothingItem#acceptClientClothingRenderManager(Consumer)
-     * @param clothingManager the {@link java.util.function.Supplier} of {@link ClientClothingRenderManager}.
-     *                        Do not implement in this class; use an anonymous class or a separate implementation.
-     */
-    public abstract void acceptClientClothingRenderManager(Consumer<ClientClothingRenderManager> clothingManager);
 
     @Override
     public void initializeClient(Consumer<IClientItemExtensions> consumer) {
@@ -207,24 +210,39 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     /**
      * Overridden Forge method; see super for more details. This method returns a <code>String</code> representing the
      * path to the texture that should be used for this piece of clothing. It's used internally by both Minecraft
-     * and this mod to return the texture for a model. It would be easiest if this was implemented per model type,
-     * so it's left abstract.
-     * <br><br>
-     * It's fine to immediately return null if you aren't relying on the generic models in
-     * {@link io.github.kawaiicakes.clothing.client.HumanoidClothingLayer} or on a similar implementation, since this
-     * method is ultimately used in {@link net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer} for these
-     * purposes.
+     * and this mod to return the texture for a model. Returns the appropriate texture for the mesh of the clothing
+     * item.
      * @param stack  ItemStack for the equipped armor
      * @param entity The entity wearing the clothing
      * @param slot   The slot the clothing is in
-     * @param type   The subtype, can be any {@link net.minecraft.resources.ResourceLocation} corresponding to a
-     *               {@link GenericClothingItem} overlay.
+     * @param type   The {@link String} representation of an overlay name. If non-null, the return will point
+     *               to the location for that overlay.
      * @return The <code>String</code> representing the path to the texture that should be used for this piece of
      *         clothing.
      */
     @Override
-    @Nullable
-    public abstract String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type);
+    @ParametersAreNullableByDefault
+    public String getArmorTexture(@NotNull ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
+        if (type != null) {
+            ResourceLocation overlayLocation = new ResourceLocation(type);
+
+            return String.format(
+                    Locale.ROOT,
+                    "%s:textures/models/clothing/overlays/%s.png",
+                    overlayLocation.getNamespace(),
+                    overlayLocation.getPath()
+            );
+        }
+
+        ResourceLocation textureLocation = this.getTextureLocation(stack);
+
+        return String.format(
+                Locale.ROOT,
+                "%s:textures/models/clothing/%s.png",
+                textureLocation.getNamespace(),
+                textureLocation.getPath()
+        );
+    }
 
     public ResourceLocation getClothingName(ItemStack itemStack) {
         return new ResourceLocation(this.getClothingPropertiesTag(itemStack).getString(CLOTHING_NAME_KEY));
@@ -251,7 +269,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
      * @param itemStack the {@link ItemStack} instance of this; regardless of whether the return of {@link #getSlot()}
      *                  matches what the clothing data entry says.
      * @param slot the {@link EquipmentSlot} which a clothing data entry indicates it is worn on.
-     * @see io.github.kawaiicakes.clothing.common.resources.NbtStackInitializer#writeToStack(Object, ItemStack)
+     * @see io.github.kawaiicakes.clothing.common.resources.NbtStackInitializer#writeToStack(ClothingItem, ItemStack)
      * @see ClothingEntryLoader#entryContainsSlotDeclaration(JsonObject)
      */
     public void setSlot(ItemStack itemStack, EquipmentSlot slot) {
@@ -272,6 +290,144 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         }
 
         this.getClothingPropertiesTag(stack).put(CLOTHING_LORE_NBT_KEY, loreList);
+    }
+
+    /**
+     * @param itemStack the {@code itemStack} representing this.
+     * @return the {@link ModelStrata} indicating which layer the passed stack renders to.
+     * @see HumanoidClothingLayer#modelForLayer(ModelStrata)
+     */
+    public ModelStrata getModelStrata(ItemStack itemStack) {
+        String strataString = this.getClothingPropertiesTag(itemStack).getString(MODEL_LAYER_NBT_KEY);
+        return ModelStrata.byName(strataString);
+    }
+
+    /**
+     * @param itemStack the {@code itemStack} representing this.
+     * @param modelStrata the {@link ModelStrata} indicating which layer the passed stack renders to.
+     * @see HumanoidClothingLayer#modelForLayer(ModelStrata)
+     */
+    public void setModelStrata(ItemStack itemStack, ModelStrata modelStrata) {
+        this.getClothingPropertiesTag(itemStack).putString(MODEL_LAYER_NBT_KEY, modelStrata.getSerializedName());
+    }
+
+    /**
+     * @param itemStack the {@code itemStack} representing this.
+     * @return the {@link String} pointing to the location of the texture folder.
+     */
+    public ResourceLocation getTextureLocation(ItemStack itemStack) {
+        return new ResourceLocation(this.getClothingPropertiesTag(itemStack).getString(TEXTURE_LOCATION_NBT_KEY));
+    }
+
+    /**
+     * @param itemStack the {@code itemStack} representing this.
+     * @param textureLocation the {@link String} pointing to the location of the texture folder.
+     */
+    public void setTextureLocation(ItemStack itemStack, ResourceLocation textureLocation) {
+        this.getClothingPropertiesTag(itemStack).putString(TEXTURE_LOCATION_NBT_KEY, textureLocation.toString());
+    }
+
+    /**
+     * @param itemStack the {@code itemStack} representing this.
+     * @return the array of {@link String}s whose values point to the overlay textures.
+     */
+    public ResourceLocation[] getOverlays(ItemStack itemStack) {
+        ListTag listTag = this.getClothingPropertiesTag(itemStack).getList(OVERLAY_NBT_KEY, Tag.TAG_STRING);
+        ResourceLocation[] toReturn = new ResourceLocation[listTag.size()];
+        for (int i = 0; i < listTag.size(); i++) {
+            if (!(listTag.get(i) instanceof StringTag stringTag)) throw new RuntimeException();
+            toReturn[i] = new ResourceLocation(stringTag.getAsString());
+        }
+        return toReturn;
+    }
+
+    /**
+     * @param itemStack the {@code itemStack} representing this.
+     * @param overlays the array of {@link String}s whose values point to the overlay textures.
+     */
+    public void setOverlays(ItemStack itemStack, ResourceLocation[] overlays) {
+        ListTag overlayTag = new ListTag();
+
+        for (ResourceLocation overlay : overlays) {
+            overlayTag.add(StringTag.valueOf(overlay.toString()));
+        }
+
+        this.getClothingPropertiesTag(itemStack).put(OVERLAY_NBT_KEY, overlayTag);
+    }
+
+    /**
+     * @param itemStack the {@code itemStack} representing this.
+     * @return an array of {@link ModelPartReference} whose elements
+     * correspond to what body parts the clothing will visibly render on.
+     */
+    public ModelPartReference[] getPartsForVisibility(ItemStack itemStack) {
+        ListTag partList = this.getClothingPropertiesTag(itemStack).getList(PART_VISIBILITY_KEY, Tag.TAG_STRING);
+
+        ModelPartReference[] toReturn = new ModelPartReference[partList.size()];
+        for (int i = 0; i < partList.size(); i++) {
+            toReturn[i] = ModelPartReference.byName(partList.getString(i));
+        }
+
+        return toReturn;
+    }
+
+    /**
+     * @param itemStack the {@code itemStack} representing this.
+     * @param slots an array of {@link ModelPartReference} whose
+     *              elements correspond to what body parts the clothing will visibly render on.
+     */
+    public void setPartsForVisibility(ItemStack itemStack, ModelPartReference[] slots) {
+        ListTag partList = new ListTag();
+
+        for (ModelPartReference part : slots) {
+            partList.add(StringTag.valueOf(part.getSerializedName()));
+        }
+
+        this.getClothingPropertiesTag(itemStack).put(PART_VISIBILITY_KEY, partList);
+    }
+
+    /**
+     * This method is used exclusively for setting the default {@link ModelPart} visibility on the meshes as
+     * returned by {@link #getModelStrata(ItemStack)} and
+     * {@link HumanoidClothingLayer#modelForLayer(ModelStrata)}.
+     * @return the array of {@link ModelPartReference} this item will
+     * appear to be worn on.
+     * @see HumanoidArmorLayer#setPartVisibility(HumanoidModel, EquipmentSlot)
+     */
+    @NotNull
+    public ModelPartReference[] defaultPartVisibility() {
+        return switch (this.getSlot()) {
+            case HEAD:
+                yield new ModelPartReference[] {
+                        ModelPartReference.HEAD,
+                        ModelPartReference.HAT
+                };
+            case CHEST:
+                yield new ModelPartReference[] {
+                        ModelPartReference.BODY,
+                        ModelPartReference.RIGHT_ARM,
+                        ModelPartReference.LEFT_ARM
+                };
+            case LEGS:
+                yield new ModelPartReference[] {
+                        ModelPartReference.BODY,
+                        ModelPartReference.RIGHT_LEG,
+                        ModelPartReference.LEFT_LEG
+                };
+            case MAINHAND:
+                yield new ModelPartReference[] {
+                        ModelPartReference.RIGHT_ARM
+                };
+            case OFFHAND:
+                yield new ModelPartReference[] {
+                        ModelPartReference.LEFT_ARM
+                };
+            case FEET:
+                yield new ModelPartReference[] {
+                        ModelPartReference.RIGHT_LEG,
+                        ModelPartReference.LEFT_LEG
+                };
+        };
     }
 
     @Override
@@ -299,6 +455,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         this.setColor(pStack, 0xFFFFFF);
     }
 
+    // TODO: adv tooltip: colours for each overlay, and the colour(s) for the base piece of clothing (in super)
     @Override
     @ParametersAreNonnullByDefault
     public void appendHoverText(
@@ -313,6 +470,21 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         }
 
         if (!pIsAdvanced.isAdvanced()) return;
+
+        ResourceLocation[] overlayNames = this.getOverlays(pStack);
+        if (overlayNames.length != 0) {
+            pTooltipComponents.add(Component.empty());
+            pTooltipComponents.add(
+                    Component.translatable("item.modifiers.clothing.overlays")
+                            .withStyle(ChatFormatting.GRAY)
+            );
+            for (ResourceLocation overlayName : overlayNames) {
+                pTooltipComponents.add(
+                        Component.literal(overlayName.toString())
+                                .withStyle(ChatFormatting.BLUE)
+                );
+            }
+        }
 
         pTooltipComponents.add(Component.empty());
         pTooltipComponents.add(
@@ -437,34 +609,77 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
      */
     @Nullable
     @Override
+    @Deprecated
     public SoundEvent getEquipSound() {
         return null;
     }
 
-    @ApiStatus.Internal
-    public Object getClientClothingRenderManager() {
-        return this.clientClothingRenderManager;
+
+    /**
+     * Indicates the {@link ModelPart}s to which the mapped {@link ResourceLocation} will be rendered using a
+     * {@link ModelPartReference} as a key.
+     * The {@link ItemStack} is included for the implementer's benefit. This method is used to reference model parts 
+     * without explicit references to them in common classes.
+     * @param itemStack the {@link ItemStack} instance of this.
+     * @return          the {@link Map} of key {@link ModelPartReference}s for each {@link ResourceLocation} referencing
+     *                  the body part the baked model will render to.
+     */
+    public @NotNull Map<ModelPartReference, ResourceLocation> getModelPartLocations(ItemStack itemStack) {
+        CompoundTag modelPartTag = this.getClothingPropertiesTag(itemStack).getCompound(MODEL_PARENTS_KEY);
+
+        Map<ModelPartReference, ResourceLocation> toReturn = new HashMap<>(modelPartTag.size());
+
+        for (String part : modelPartTag.getAllKeys()) {
+            if (!(modelPartTag.get(part) instanceof StringTag modelLocation)) throw new IllegalArgumentException();
+            toReturn.put(ModelPartReference.byName(part), new ResourceLocation(modelLocation.toString()));
+        }
+
+        return toReturn;
     }
 
-    @ApiStatus.Internal
-    private void initializeClientClothingRenderManager() {
-        if (!FMLEnvironment.dist.equals(Dist.CLIENT) || FMLLoader.getLaunchHandler().isData()) return;
+    public void setModelPartLocations(ItemStack itemStack, Map<ModelPartReference, ResourceLocation> modelParts) {
+        CompoundTag modelPartMap = new CompoundTag();
 
-        acceptClientClothingRenderManager(
-                clothingManager -> {
-                    /*
-                        necessary since acceptClientClothingRenderManager and this class are expected to be implemented.
-                        As to why this check is done to begin with, I have no clue. Forge does it in its client
-                        extensions, so I'll adopt it
-                     */
-                    //noinspection EqualsBetweenInconvertibleTypes
-                    if (this.equals(clothingManager))
-                        throw new IllegalStateException(
-                                "Don't implement ClientClothingRenderManager in this ClothingItem!"
-                        );
-                    this.clientClothingRenderManager = clothingManager;
-                }
-        );
+        for (Map.Entry<ModelPartReference, ResourceLocation> entry : modelParts.entrySet()) {
+            modelPartMap.putString(entry.getKey().getSerializedName(), entry.getValue().toString());
+        }
+
+        this.getClothingPropertiesTag(itemStack).put(MODEL_PARENTS_KEY, modelPartMap);
+    }
+
+    public ModelPartReference defaultModelPart() {
+        return switch (this.getSlot()) {
+            case MAINHAND -> ModelPartReference.RIGHT_ARM;
+            case OFFHAND -> ModelPartReference.LEFT_ARM;
+            case FEET, LEGS -> ModelPartReference.RIGHT_LEG;
+            case CHEST -> ModelPartReference.BODY;
+            case HEAD -> ModelPartReference.HEAD;
+        };
+    }
+
+    /**
+     * Used to point to the location of the {@link BakedModel}s for render. A baked model is not directly declared
+     * as the return type, as this would cause a {@link ClassNotFoundException} serverside.
+     * <br><br>
+     * @param itemStack the {@link ItemStack} instance of this
+     * @param modelPartReference the {@link ModelPartReference} upon
+     *                           which a model is parented to.
+     * @return the location of the {@link BakedModel} for render.
+     */
+    @Nullable
+    public ResourceLocation getModelPartLocation(ItemStack itemStack, ModelPartReference modelPartReference) {
+        String location = this.getClothingPropertiesTag(itemStack)
+                .getCompound(MODEL_PARENTS_KEY)
+                .getString(modelPartReference.getSerializedName());
+        return location.isEmpty() ? null : new ResourceLocation(location);
+    }
+
+    public void setModelPartLocation(
+            ItemStack itemStack, ModelPartReference modelPartReference, ResourceLocation modelLocation
+    ) {
+        Map<ModelPartReference, ResourceLocation> existing = this.getModelPartLocations(itemStack);
+        existing.put(modelPartReference, modelLocation);
+        this.setModelPartLocations(itemStack, existing);
     }
 
     public static List<Component> deserializeLore(JsonArray loreJson) {
@@ -506,7 +721,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         int j = 0;
 
         Item item = stack.getItem();
-        if (!(item instanceof ClothingItem<?> clothingItem)) return;
+        if (!(item instanceof ClothingItem clothingItem)) return;
 
         if (clothingItem.hasCustomColor(stack)) {
             int k = clothingItem.getColor(stack);
@@ -581,6 +796,45 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
             }
 
             throw new IllegalArgumentException("Invalid model reference '" + pTargetName + "'");
+        }
+    }
+
+    public enum ModelStrata implements StringRepresentable {
+        BASE("base"),
+        INNER("inner"),
+        OUTER("outer"),
+        OVER("over"),
+        OVER_LEG_ARMOR("over_leg_armor"),
+        OVER_ARMOR("over_armor");
+
+        private final String nbtTagID;
+
+        ModelStrata(String nbtTagID) {
+            this.nbtTagID = nbtTagID;
+        }
+
+        public static ModelStrata byName(String pTargetName) {
+            for(ModelStrata modelStrata : values()) {
+                if (modelStrata.getSerializedName().equals(pTargetName)) {
+                    return modelStrata;
+                }
+            }
+
+            throw new IllegalArgumentException("Invalid model name '" + pTargetName + "'");
+        }
+
+        @Override
+        public @NotNull String getSerializedName() {
+            return this.nbtTagID;
+        }
+
+        public static ModelStrata forSlot(EquipmentSlot equipmentSlot) {
+            return switch (equipmentSlot) {
+                case FEET -> INNER;
+                case LEGS -> BASE;
+                case HEAD -> OVER;
+                default -> OUTER;
+            };
         }
     }
 }

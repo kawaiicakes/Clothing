@@ -11,6 +11,5 @@
   "lore": [
     "{\"text\":\"Woah! You go, big guy!\"}"
   ],
-  "slot": "chest",
-  "texture": "clothing:tank_top"
+  "slot": "chest"
 }

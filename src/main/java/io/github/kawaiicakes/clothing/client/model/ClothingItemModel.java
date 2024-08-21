@@ -8,8 +8,6 @@ import com.mojang.datafixers.util.Pair;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.ClothingItemRenderer;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
-import io.github.kawaiicakes.clothing.common.item.impl.BakedModelClothingItem;
-import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.model.BlockModel;
 import net.minecraft.client.renderer.block.model.ItemOverrides;
@@ -88,7 +86,7 @@ public class ClothingItemModel implements IUnbakedGeometry<ClothingItemModel> {
             return MODEL_LIST_CACHE.computeIfAbsent(
                     modelHash,
                     (i) -> {
-                        if (!(clothingStack.getItem() instanceof ClothingItem<?> clothing))
+                        if (!(clothingStack.getItem() instanceof ClothingItem clothing))
                             throw new IllegalArgumentException(
                                     "Passed ItemStack '" + clothingStack + "' is not a ClothingItem!"
                             );
@@ -98,7 +96,7 @@ public class ClothingItemModel implements IUnbakedGeometry<ClothingItemModel> {
                         List<BakedModel> toReturn = new ArrayList<>();
 
                         ResourceLocation baseLocation
-                                = ClothingItemRenderer.baseModelLocation(clothing.getClothingName(clothingStack));
+                                = ClothingItemRenderer.entryModelLocation(clothing.getClothingName(clothingStack));
                         BakedModel baseModel = get(baseLocation);
 
                         if (baseModel.equals(missingModel)) {
@@ -107,9 +105,7 @@ public class ClothingItemModel implements IUnbakedGeometry<ClothingItemModel> {
 
                         toReturn.add(baseModel);
 
-                        if (!(clothingStack.getItem() instanceof GenericClothingItem generic)) return toReturn;
-
-                        ResourceLocation[] overlays = generic.getOverlays(clothingStack);
+                        ResourceLocation[] overlays = clothing.getOverlays(clothingStack);
 
                         for (int j = overlays.length - 1; j >= 0; j--) {
                             ResourceLocation overlay = overlays[j];
@@ -151,18 +147,12 @@ public class ClothingItemModel implements IUnbakedGeometry<ClothingItemModel> {
 
         @Override
         public @NotNull List<BakedModel> getRenderPasses(@NotNull ItemStack itemStack, boolean fabulous) {
-            if (!(itemStack.getItem() instanceof ClothingItem<?> clothingItem)) return List.of();
+            if (!(itemStack.getItem() instanceof ClothingItem clothingItem)) return List.of();
 
             int modelHash;
 
-            if (clothingItem instanceof GenericClothingItem generic) {
-                modelHash = generic.getTextureLocation(itemStack).hashCode()
-                        + Arrays.hashCode(generic.getOverlays(itemStack));
-            } else if (clothingItem instanceof BakedModelClothingItem baked) {
-                modelHash = baked.getModelPartLocations(itemStack).hashCode();
-            } else {
-                throw new IllegalArgumentException("Passed ItemStack '" + itemStack + "' is an unknown ClothingItem!");
-            }
+            modelHash = clothingItem.getTextureLocation(itemStack).hashCode()
+                    + Arrays.hashCode(clothingItem.getOverlays(itemStack));
 
             return getList(modelHash, itemStack);
         }

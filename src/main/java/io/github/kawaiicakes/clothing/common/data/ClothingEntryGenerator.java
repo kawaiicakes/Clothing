@@ -7,8 +7,6 @@ import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.JsonOps;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
-import io.github.kawaiicakes.clothing.common.item.impl.BakedModelClothingItem;
-import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import net.minecraft.data.CachedOutput;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.DataProvider;
@@ -39,28 +37,26 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
-import static io.github.kawaiicakes.clothing.common.item.ClothingItem.*;
 import static io.github.kawaiicakes.clothing.ClothingRegistry.*;
+import static io.github.kawaiicakes.clothing.common.item.ClothingItem.*;
 
 public class ClothingEntryGenerator implements DataProvider {
     protected static final Logger LOGGER = LogUtils.getLogger();
 
     protected final DataGenerator dataGenerator;
     protected final String modId;
-    protected final DataGenerator.PathProvider genericPath;
-    protected final DataGenerator.PathProvider bakedPath;
+    protected final DataGenerator.PathProvider path;
 
     public ClothingEntryGenerator(DataGenerator dataGenerator, String modId) {
         this.dataGenerator = dataGenerator;
         this.modId = modId;
-        this.genericPath = this.dataGenerator.createPathProvider(
-                DataGenerator.Target.DATA_PACK, "clothing/generic"
+        this.path = this.dataGenerator.createPathProvider(
+                DataGenerator.Target.DATA_PACK, "clothing/"
         );
-        this.bakedPath = this.dataGenerator.createPathProvider(DataGenerator.Target.DATA_PACK, "clothing/baked");
     }
 
-    public void buildEntries(Consumer<ClothingBuilder<?>> clothingBuilderConsumer) {
-        GenericClothingBuilder.shirt(new ResourceLocation(MOD_ID, "tank_top"))
+    public void buildEntries(Consumer<ClothingBuilder> clothingBuilderConsumer) {
+        ClothingBuilder.shirt(new ResourceLocation(MOD_ID, "tank_top"))
                 .addModifier(Attributes.ARMOR, 40.00, AttributeModifier.Operation.ADDITION)
                 .setDurability(300)
                 .addLoreLine("{\"type\":\"text\", \"text\": \"Woah! You go, big guy!\"}")
@@ -79,16 +75,7 @@ public class ClothingEntryGenerator implements DataProvider {
                         if (!locations.add(clothingId))
                             throw new IllegalStateException("Duplicate entry " + clothingId);
 
-                        final DataGenerator.PathProvider pathProvider;
-                        if (clothingBuilder instanceof GenericClothingBuilder) {
-                            pathProvider = this.genericPath;
-                        } else if (clothingBuilder instanceof BakedModelClothingBuilder) {
-                            pathProvider = this.bakedPath;
-                        } else {
-                            throw new RuntimeException("Unrecognized builder subclass!");
-                        }
-
-                        final Path entryPath = pathProvider.json(clothingId);
+                        final Path entryPath = this.path.json(clothingId);
 
                         DataProvider.saveStable(pOutput, clothingBuilder.serializeToJson(), entryPath);
                     } catch (IOException | RuntimeException ioexception) {
@@ -103,103 +90,14 @@ public class ClothingEntryGenerator implements DataProvider {
         return "Clothing Entries:" + " mod id - " + this.modId;
     }
 
-    public static class GenericClothingBuilder extends ClothingBuilder<GenericClothingItem> {
-        protected GenericClothingBuilder(GenericClothingItem clothingItem, ResourceLocation name) {
-            super(clothingItem, name);
-            this.setTexture(name);
-        }
-
-        public GenericClothingBuilder setRenderLayer(GenericClothingItem.ModelStrata renderLayer) {
-            this.clothingItem.setGenericLayerForRender(this.clothingStack, renderLayer);
-            return this;
-        }
-
-        public GenericClothingBuilder setTexture(ResourceLocation path) {
-            this.clothingItem.setTextureLocation(this.clothingStack, path);
-            return this;
-        }
-
-        public GenericClothingBuilder setOverlays(ResourceLocation[] paths) {
-            this.clothingItem.setOverlays(this.clothingStack, paths);
-            return this;
-        }
-
-        public GenericClothingBuilder setPartVisibility(ClothingItem.ModelPartReference[] parts) {
-            this.clothingItem.setPartsForVisibility(this.clothingStack, parts);
-            return this;
-        }
-
-        @Override
-        public GenericClothingBuilder setColor(int color) {
-            return (GenericClothingBuilder) super.setColor(color);
-        }
-
-        public static GenericClothingBuilder hat(ResourceLocation name) {
-            return new GenericClothingBuilder(GENERIC_HAT.get(), name);
-        }
-
-        public static GenericClothingBuilder shirt(ResourceLocation name) {
-            return new GenericClothingBuilder(GENERIC_SHIRT.get(), name);
-        }
-
-        public static GenericClothingBuilder pants(ResourceLocation name) {
-            return new GenericClothingBuilder(GENERIC_PANTS.get(), name);
-        }
-
-        public static GenericClothingBuilder shoes(ResourceLocation name) {
-            return new GenericClothingBuilder(GENERIC_SHOES.get(), name);
-        }
-    }
-
-    public static class BakedModelClothingBuilder extends ClothingBuilder<BakedModelClothingItem> {
-        protected BakedModelClothingBuilder(BakedModelClothingItem clothingItem, ResourceLocation name) {
-            super(clothingItem, name);
-        }
-
-        public BakedModelClothingBuilder setModelLocations(
-                Map<ClothingItem.ModelPartReference, ResourceLocation> locations
-        ) {
-            this.clothingItem.setModelPartLocations(this.clothingStack, locations);
-            return this;
-        }
-
-        public BakedModelClothingBuilder setModelLocation(
-                ClothingItem.ModelPartReference parent, ResourceLocation model
-        ) {
-            this.clothingItem.setModelPartLocation(this.clothingStack, parent, model);
-            return this;
-        }
-
-        @Override
-        public BakedModelClothingBuilder setColor(int color) {
-            return (BakedModelClothingBuilder) super.setColor(color);
-        }
-
-        public static BakedModelClothingBuilder hat(ResourceLocation name) {
-            return new BakedModelClothingBuilder(BAKED_HAT.get(), name);
-        }
-
-        public static BakedModelClothingBuilder shirt(ResourceLocation name) {
-            return new BakedModelClothingBuilder(BAKED_SHIRT.get(), name);
-        }
-
-        public static BakedModelClothingBuilder pants(ResourceLocation name) {
-            return new BakedModelClothingBuilder(BAKED_PANTS.get(), name);
-        }
-
-        public static BakedModelClothingBuilder shoes(ResourceLocation name) {
-            return new BakedModelClothingBuilder(BAKED_SHOES.get(), name);
-        }
-    }
-
-    public static abstract class ClothingBuilder<T extends ClothingItem<T>> {
-        protected final T clothingItem;
+    public static class ClothingBuilder {
+        protected final ClothingItem clothingItem;
         protected final ItemStack clothingStack;
         protected final EquipmentSlot slotForItem;
         protected final ResourceLocation id;
         protected boolean defaultAttributes = true;
 
-        protected ClothingBuilder(T clothingItem, ResourceLocation id) {
+        protected ClothingBuilder(ClothingItem clothingItem, ResourceLocation id) {
             this.clothingItem = clothingItem;
             this.clothingStack = this.clothingItem.getDefaultInstance();
             this.id = id;
@@ -215,11 +113,11 @@ public class ClothingEntryGenerator implements DataProvider {
             return this.id;
         }
 
-        public void save(Consumer<ClothingBuilder<?>> clothingBuilderConsumer) {
+        public void save(Consumer<ClothingBuilder> clothingBuilderConsumer) {
             clothingBuilderConsumer.accept(this);
         }
 
-        public ClothingBuilder<T> addLoreLine(String loreAsJsonString) {
+        public ClothingBuilder addLoreLine(String loreAsJsonString) {
             List<Component> appended = this.clothingItem.getClothingLore(this.clothingStack);
 
             appended.add(Component.Serializer.fromJson(loreAsJsonString));
@@ -228,7 +126,7 @@ public class ClothingEntryGenerator implements DataProvider {
             return this;
         }
 
-        public ClothingBuilder<T> setColor(int color) {
+        public ClothingBuilder setColor(int color) {
             this.clothingItem.setColor(this.clothingStack, color);
             return this;
         }
@@ -240,7 +138,7 @@ public class ClothingEntryGenerator implements DataProvider {
          * @param operation
          * @return
          */
-        public ClothingBuilder<T> addModifier(
+        public ClothingBuilder addModifier(
                 Attribute attribute, double amount, AttributeModifier.Operation operation
         ) {
             if (this.defaultAttributes) {
@@ -280,19 +178,69 @@ public class ClothingEntryGenerator implements DataProvider {
          * @param modifiers
          * @return
          */
-        public ClothingBuilder<T> setModifiers(Multimap<Attribute, AttributeModifier> modifiers) {
+        public ClothingBuilder setModifiers(Multimap<Attribute, AttributeModifier> modifiers) {
             this.clothingItem.setAttributeModifiers(this.clothingStack, modifiers);
             return this;
         }
 
-        public ClothingBuilder<T> setDurability(int durability) {
+        public ClothingBuilder setDurability(int durability) {
             this.clothingItem.setMaxDamage(this.clothingStack, durability);
             return this;
         }
 
-        public ClothingBuilder<T> setEquipSound(ResourceLocation soundLocation) {
+        public ClothingBuilder setEquipSound(ResourceLocation soundLocation) {
             this.clothingItem.setEquipSound(this.clothingStack, soundLocation);
             return this;
+        }
+
+        public ClothingBuilder setModelLocations(
+                Map<ClothingItem.ModelPartReference, ResourceLocation> locations
+        ) {
+            this.clothingItem.setModelPartLocations(this.clothingStack, locations);
+            return this;
+        }
+
+        public ClothingBuilder setModelLocation(
+                ClothingItem.ModelPartReference parent, ResourceLocation model
+        ) {
+            this.clothingItem.setModelPartLocation(this.clothingStack, parent, model);
+            return this;
+        }
+
+        public ClothingBuilder setRenderLayer(ModelStrata renderLayer) {
+            this.clothingItem.setModelStrata(this.clothingStack, renderLayer);
+            return this;
+        }
+
+        public ClothingBuilder setTexture(ResourceLocation path) {
+            this.clothingItem.setTextureLocation(this.clothingStack, path);
+            return this;
+        }
+
+        public ClothingBuilder setOverlays(ResourceLocation[] paths) {
+            this.clothingItem.setOverlays(this.clothingStack, paths);
+            return this;
+        }
+
+        public ClothingBuilder setPartVisibility(ClothingItem.ModelPartReference[] parts) {
+            this.clothingItem.setPartsForVisibility(this.clothingStack, parts);
+            return this;
+        }
+
+        public static ClothingBuilder hat(ResourceLocation name) {
+            return new ClothingBuilder(GENERIC_HAT.get(), name);
+        }
+
+        public static ClothingBuilder shirt(ResourceLocation name) {
+            return new ClothingBuilder(GENERIC_SHIRT.get(), name);
+        }
+
+        public static ClothingBuilder pants(ResourceLocation name) {
+            return new ClothingBuilder(GENERIC_PANTS.get(), name);
+        }
+
+        public static ClothingBuilder shoes(ResourceLocation name) {
+            return new ClothingBuilder(GENERIC_SHOES.get(), name);
         }
 
         @Nullable
@@ -366,7 +314,7 @@ public class ClothingEntryGenerator implements DataProvider {
 
         @Override
         public boolean equals(Object obj) {
-            if (!(obj instanceof ClothingBuilder<?> builder)) return false;
+            if (!(obj instanceof ClothingBuilder builder)) return false;
             return this.clothingItem.equals(builder.clothingItem)
                     && this.clothingStack.equals(builder.clothingStack, false)
                     && this.slotForItem.equals(builder.slotForItem)

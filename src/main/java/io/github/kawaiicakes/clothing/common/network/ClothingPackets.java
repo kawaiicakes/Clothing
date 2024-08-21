@@ -60,16 +60,13 @@ public class ClothingPackets {
     }
 
     public static class S2CClothingEntryPacket {
-        protected final String loaderClass;
         protected final Map<ResourceLocation, ItemStack> clothingEntries;
 
-        public S2CClothingEntryPacket(ClothingEntryLoader<?> clothingEntryLoader) {
-            this.loaderClass = clothingEntryLoader.getName();
+        public S2CClothingEntryPacket(ClothingEntryLoader clothingEntryLoader) {
             this.clothingEntries = clothingEntryLoader.getStacks();
         }
 
         public S2CClothingEntryPacket(FriendlyByteBuf buf) {
-            this.loaderClass = buf.readUtf();
             this.clothingEntries = buf.readMap(
                     FriendlyByteBuf::readResourceLocation,
                     FriendlyByteBuf::readItem
@@ -77,7 +74,6 @@ public class ClothingPackets {
         }
 
         public void toBytes(FriendlyByteBuf buf) {
-            buf.writeUtf(this.loaderClass);
             buf.writeMap(
                     this.clothingEntries,
                     FriendlyByteBuf::writeResourceLocation,
@@ -92,10 +88,7 @@ public class ClothingPackets {
                     () -> DistExecutor.unsafeRunWhenOn(
                             Dist.CLIENT,
                             () -> () -> {
-                                ClothingEntryLoader<?> clothingEntryLoader;
-                                clothingEntryLoader = ClothingEntryLoader.getLoader(this.loaderClass);
-                                if (clothingEntryLoader == null) return;
-
+                                ClothingEntryLoader clothingEntryLoader = ClothingEntryLoader.getInstance();
                                 clothingEntryLoader.setStacks(this.clothingEntries);
                             }
                     )

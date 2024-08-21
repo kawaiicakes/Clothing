@@ -5,8 +5,6 @@ import io.github.kawaiicakes.clothing.common.fluid.BleachFluid;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.item.ClothingTabs;
 import io.github.kawaiicakes.clothing.common.item.SpoolItem;
-import io.github.kawaiicakes.clothing.common.item.impl.BakedModelClothingItem;
-import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.recipe.ClothingRecipe;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.cauldron.CauldronInteraction;
@@ -176,22 +174,15 @@ public class ClothingRegistry {
             "spool", () -> new SpoolItem(new Item.Properties().tab(ClothingTabs.CLOTHING_TAB_MISC))
     );
 
-    public static final RegistryObject<GenericClothingItem> GENERIC_HAT
-            = CLOTHING_REGISTRY.register("generic_hat", () -> new GenericClothingItem(EquipmentSlot.HEAD));
-    public static final RegistryObject<GenericClothingItem> GENERIC_SHIRT
-            = CLOTHING_REGISTRY.register("generic_shirt", () -> new GenericClothingItem(EquipmentSlot.CHEST));
-    public static final RegistryObject<GenericClothingItem> GENERIC_PANTS
-            = CLOTHING_REGISTRY.register("generic_pants", () -> new GenericClothingItem(EquipmentSlot.LEGS));
-    public static final RegistryObject<GenericClothingItem> GENERIC_SHOES
-            = CLOTHING_REGISTRY.register("generic_shoes", () -> new GenericClothingItem(EquipmentSlot.FEET));
-    public static final RegistryObject<BakedModelClothingItem> BAKED_HAT
-            = CLOTHING_REGISTRY.register("baked_hat", () -> new BakedModelClothingItem(EquipmentSlot.HEAD));
-    public static final RegistryObject<BakedModelClothingItem> BAKED_SHIRT
-            = CLOTHING_REGISTRY.register("baked_shirt", () -> new BakedModelClothingItem(EquipmentSlot.CHEST));
-    public static final RegistryObject<BakedModelClothingItem> BAKED_PANTS
-            = CLOTHING_REGISTRY.register("baked_pants", () -> new BakedModelClothingItem(EquipmentSlot.LEGS));
-    public static final RegistryObject<BakedModelClothingItem> BAKED_SHOES
-            = CLOTHING_REGISTRY.register("baked_shoes", () -> new BakedModelClothingItem(EquipmentSlot.FEET));
+    public static final RegistryObject<ClothingItem> GENERIC_HAT
+            = CLOTHING_REGISTRY.register("generic_hat", () -> new ClothingItem(EquipmentSlot.HEAD));
+    public static final RegistryObject<ClothingItem> GENERIC_SHIRT
+            = CLOTHING_REGISTRY.register("generic_shirt", () -> new ClothingItem(EquipmentSlot.CHEST));
+    public static final RegistryObject<ClothingItem> GENERIC_PANTS
+            = CLOTHING_REGISTRY.register("generic_pants", () -> new ClothingItem(EquipmentSlot.LEGS));
+    public static final RegistryObject<ClothingItem> GENERIC_SHOES
+            = CLOTHING_REGISTRY.register("generic_shoes", () -> new ClothingItem(EquipmentSlot.FEET));
+
     public static final CauldronInteraction FILL_BLEACH = (pBlockState, pLevel, pBlockPos, pPlayer, pHand, pStack) ->
             CauldronInteraction.emptyBucket(
                     pLevel,
@@ -204,34 +195,13 @@ public class ClothingRegistry {
             );
 
     @Nullable
-    public static List<RegistryObject<Item>> getGeneric() {
+    public static ClothingItem[] getAll() {
         try {
-            List<RegistryObject<Item>> genericClothingItems = new ArrayList<>();
-
-            for (RegistryObject<Item> registryObject : CLOTHING_REGISTRY.getEntries()) {
-                if (!registryObject.isPresent() || !(registryObject.get() instanceof GenericClothingItem))
-                    continue;
-
-                genericClothingItems.add(registryObject);
-            }
-
-            if (genericClothingItems.isEmpty()) throw new RuntimeException("No generic clothing items exist!");
-
-            return genericClothingItems;
-        } catch (RuntimeException e) {
-            LOGGER.error("Error returning Clothing from registry!", e);
-            return null;
-        }
-    }
-
-    @Nullable
-    public static ClothingItem<?>[] getAll() {
-        try {
-            ClothingItem<?>[] toReturn = new ClothingItem<?>[CLOTHING_REGISTRY.getEntries().size()];
+            ClothingItem[] toReturn = new ClothingItem[CLOTHING_REGISTRY.getEntries().size()];
 
             int arbitraryIndexNumber = 0;
             for (RegistryObject<Item> registryObject : CLOTHING_REGISTRY.getEntries()) {
-                toReturn[arbitraryIndexNumber++] = (ClothingItem<?>) registryObject.get();
+                toReturn[arbitraryIndexNumber++] = (ClothingItem) registryObject.get();
             }
 
             return toReturn;
@@ -301,9 +271,9 @@ public class ClothingRegistry {
         for (Item item : getAll()) {
             WATER.put(item, NEW_DYED_ITEM);
 
-            if (!(item instanceof GenericClothingItem)) continue;
+            if (!(item instanceof ClothingItem)) continue;
 
-            ClothingRegistry.BLEACH.put(item, GenericClothingItem.GENERIC_CLOTHING);
+            ClothingRegistry.BLEACH.put(item, ClothingItem.OVERLAY_ITEM);
         }
 
         CauldronInteraction emptyPotion = EMPTY.get(Items.POTION);

@@ -34,7 +34,7 @@ public class ClothingOverlayGenerator implements DataProvider {
         this.fileHelper = fileHelper;
         this.modId = modId;
         this.overlayPath = this.dataGenerator.createPathProvider(
-                DataGenerator.Target.DATA_PACK, "clothing/generic/overlays"
+                DataGenerator.Target.DATA_PACK, "clothing/overlays"
         );
     }
 

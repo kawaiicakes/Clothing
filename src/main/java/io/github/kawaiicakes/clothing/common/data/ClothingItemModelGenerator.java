@@ -70,11 +70,7 @@ public class ClothingItemModelGenerator extends ItemModelProvider {
                 "generic_hat",
                 "generic_shirt",
                 "generic_pants",
-                "generic_shoes",
-                "baked_hat",
-                "baked_shirt",
-                "baked_pants",
-                "baked_shoes"
+                "generic_shoes"
         };
 
         for (String name : items) {
@@ -88,7 +84,7 @@ public class ClothingItemModelGenerator extends ItemModelProvider {
         }
     }
 
-    public void registerBaseClothingModels(ClothingEntryGenerator.ClothingBuilder<?> builder) {
+    public void registerBaseClothingModels(ClothingEntryGenerator.ClothingBuilder builder) {
         ResourceLocation entryLoc = builder.clothingItem.getClothingName(builder.clothingStack);
 
         String entryName = ITEM_CLOTHING_MODEL_PATH + entryLoc.getPath();

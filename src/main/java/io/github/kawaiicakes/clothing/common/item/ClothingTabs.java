@@ -1,6 +1,5 @@
 package io.github.kawaiicakes.clothing.common.item;
 
-import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.DyeableArmorItem;
@@ -16,12 +15,12 @@ public class ClothingTabs {
     public static final CreativeModeTab CLOTHING_TAB = new CreativeModeTab("clothing") {
         @Override
         public @NotNull ItemStack makeIcon() {
-            GenericClothingItem genericClothingItem = GENERIC_SHIRT.get();
-            ItemStack toReturn = genericClothingItem.getDefaultInstance();
+            ClothingItem clothingItem = GENERIC_SHIRT.get();
+            ItemStack toReturn = clothingItem.getDefaultInstance();
 
-            genericClothingItem.setClothingName(toReturn, new ResourceLocation(MOD_ID, "tank_top"));
-            genericClothingItem.setColor(toReturn, 0xFE0253);
-            genericClothingItem.setOverlays(toReturn, new ResourceLocation[]{new ResourceLocation(MOD_ID, "ouch")});
+            clothingItem.setClothingName(toReturn, new ResourceLocation(MOD_ID, "tank_top"));
+            clothingItem.setColor(toReturn, 0xFE0253);
+            clothingItem.setOverlays(toReturn, new ResourceLocation[]{new ResourceLocation(MOD_ID, "ouch")});
 
             return toReturn;
         }

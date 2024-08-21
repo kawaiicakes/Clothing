@@ -2,16 +2,14 @@ package io.github.kawaiicakes.clothing;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.logging.LogUtils;
-import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.client.model.ClothingItemModel;
-import io.github.kawaiicakes.clothing.client.model.GenericDefinitions;
+import io.github.kawaiicakes.clothing.client.model.ClothingMeshDefinitions;
 import io.github.kawaiicakes.clothing.common.data.*;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.item.SpoolItem;
 import io.github.kawaiicakes.clothing.common.network.ClothingPackets;
-import io.github.kawaiicakes.clothing.common.resources.BakedClothingEntryLoader;
-import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
+import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.EntityModel;
@@ -95,8 +93,7 @@ public class ClothingMod
             ClothingEntryLoader#getLoader(String) would always return null in ClothingPackets.
          */
         OverlayDefinitionLoader.getInstance();
-        GenericClothingEntryLoader.getInstance();
-        BakedClothingEntryLoader.getInstance();
+        ClothingEntryLoader.getInstance();
 
         ClothingPackets.register();
     }
@@ -104,22 +101,14 @@ public class ClothingMod
     @SubscribeEvent
     public void onAddReloadListener(AddReloadListenerEvent event) {
         event.addListener(OverlayDefinitionLoader.getInstance());
-        event.addListener(GenericClothingEntryLoader.getInstance());
-        event.addListener(BakedClothingEntryLoader.getInstance());
+        event.addListener(ClothingEntryLoader.getInstance());
     }
 
     @SubscribeEvent
     public void onDatapackSync(OnDatapackSyncEvent event) {
         ClothingPackets.sendToPlayer(
                 new ClothingPackets.S2CClothingEntryPacket(
-                        GenericClothingEntryLoader.getInstance()
-                ),
-                event.getPlayer()
-        );
-
-        ClothingPackets.sendToPlayer(
-                new ClothingPackets.S2CClothingEntryPacket(
-                        BakedClothingEntryLoader.getInstance()
+                        ClothingEntryLoader.getInstance()
                 ),
                 event.getPlayer()
         );
@@ -242,7 +231,7 @@ public class ClothingMod
             event.register(
                         (pStack, pTintIndex) -> {
                             if (pTintIndex == 1) return 0xFFFFFF;
-                            return pTintIndex > 0 ? pTintIndex : ((ClothingItem<?>) pStack.getItem()).getColor(pStack);
+                            return pTintIndex > 0 ? pTintIndex : ((ClothingItem) pStack.getItem()).getColor(pStack);
                         },
                     ClothingRegistry.getAll()
             );
@@ -321,7 +310,6 @@ public class ClothingMod
                         float partialTicks, float ageInTicks,
                         float netHeadYaw, float headPitch
                 ) {
-                    if (!(stack.getItem() instanceof ClothingItem<?> clothingItem)) return;
                     if (!(renderLayerParent instanceof LivingEntityRenderer<T,M> parent)) return;
 
                     HumanoidClothingLayer<?, ?, ?> layer = (HumanoidClothingLayer<?, ?, ?>) parent.layers.stream()
@@ -329,19 +317,10 @@ public class ClothingMod
                             .findAny()
                             .orElseThrow();
 
-                    Object obj = clothingItem.getClientClothingRenderManager();
-
-                    if (!(obj instanceof ClientClothingRenderManager renderManager)) return;
-
-                    // FIXME: param "pLivingEntity" should either be removed or should somehow actually reflect the entity this is being rendered on
-
-                    renderManager.render(
-                            layer,
+                    layer.renderClothingFromItemStack(
                             stack,
-                            matrixStack,
-                            renderTypeBuffer,
+                            matrixStack, renderTypeBuffer,
                             light,
-                            null,
                             limbSwing, limbSwingAmount,
                             partialTicks, ageInTicks,
                             netHeadYaw, headPitch
@@ -355,10 +334,10 @@ public class ClothingMod
         }
 
         @SubscribeEvent
-        public static void addGenericLayers(EntityRenderersEvent.AddLayers event) {
-            for (String entityTypeKey : GenericDefinitions.getEntityTypeKey()) {
+        public static void addMeshLayers(EntityRenderersEvent.AddLayers event) {
+            for (String entityTypeKey : ClothingMeshDefinitions.getEntityTypeKey()) {
                 if (entityTypeKey.equals("minecraft:player") || entityTypeKey.equals("minecraft:player_slim")) continue;
-                GenericDefinitions.addLayerHelper(entityTypeKey, event);
+                ClothingMeshDefinitions.addLayerHelper(entityTypeKey, event);
             }
 
             try {
@@ -374,23 +353,23 @@ public class ClothingMod
                             new HumanoidClothingLayer<>(
                                     playerRenderer,
                                     skinName.equals("default")
-                                            ? GenericDefinitions.getModelForEntityType(p, 0.30F, event)
-                                            : GenericDefinitions.getModelForEntityType(ps, 0.30F, event),
+                                            ? ClothingMeshDefinitions.getModelForEntityType(p, 0.30F, event)
+                                            : ClothingMeshDefinitions.getModelForEntityType(ps, 0.30F, event),
                                     skinName.equals("default")
-                                            ? GenericDefinitions.getModelForEntityType(p, 0.31F, event)
-                                            : GenericDefinitions.getModelForEntityType(ps, 0.31F, event),
+                                            ? ClothingMeshDefinitions.getModelForEntityType(p, 0.31F, event)
+                                            : ClothingMeshDefinitions.getModelForEntityType(ps, 0.31F, event),
                                     skinName.equals("default")
-                                            ? GenericDefinitions.getModelForEntityType(p, 0.32F, event)
-                                            : GenericDefinitions.getModelForEntityType(ps, 0.32F, event),
+                                            ? ClothingMeshDefinitions.getModelForEntityType(p, 0.32F, event)
+                                            : ClothingMeshDefinitions.getModelForEntityType(ps, 0.32F, event),
                                     skinName.equals("default")
-                                            ? GenericDefinitions.getModelForEntityType(p, 0.33F, event)
-                                            : GenericDefinitions.getModelForEntityType(ps, 0.33F, event),
+                                            ? ClothingMeshDefinitions.getModelForEntityType(p, 0.33F, event)
+                                            : ClothingMeshDefinitions.getModelForEntityType(ps, 0.33F, event),
                                     skinName.equals("default")
-                                            ? GenericDefinitions.getModelForEntityType(p, 0.80F, event)
-                                            : GenericDefinitions.getModelForEntityType(ps, 0.80F, event),
+                                            ? ClothingMeshDefinitions.getModelForEntityType(p, 0.80F, event)
+                                            : ClothingMeshDefinitions.getModelForEntityType(ps, 0.80F, event),
                                     skinName.equals("default")
-                                            ? GenericDefinitions.getModelForEntityType(p, 1.30F, event)
-                                            : GenericDefinitions.getModelForEntityType(ps, 1.30F, event)
+                                            ? ClothingMeshDefinitions.getModelForEntityType(p, 1.30F, event)
+                                            : ClothingMeshDefinitions.getModelForEntityType(ps, 1.30F, event)
                             )
                     );
                 }

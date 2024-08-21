@@ -19,7 +19,7 @@ public abstract class LivingEntityMixin extends Entity {
 
     @Inject(method = "playEquipSound", at = @At("HEAD"))
     private void playEquipSound(ItemStack itemstack, CallbackInfo ci) {
-        if (itemstack.getItem() instanceof ClothingItem<?> clothingItem) {
+        if (itemstack.getItem() instanceof ClothingItem clothingItem) {
             this.playSound(clothingItem.getEquipSound(itemstack));
         }
     }
