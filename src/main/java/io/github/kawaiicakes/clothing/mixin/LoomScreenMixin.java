@@ -115,7 +115,9 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
 
         MultiBufferSource.BufferSource buffer = Minecraft.getInstance().renderBuffers().bufferSource();
 
-        this.clothing$humanoidClothingLayer.renderClothingFromItemStack(this.clothing$previewClothing,
+        this.clothing$humanoidClothingLayer.renderClothingFromItemStack(
+                this.clothing$previewClothing,
+                Minecraft.getInstance().player,
                 posestack1, buffer,
                 Minecraft.getInstance()
                         .getEntityRenderDispatcher()

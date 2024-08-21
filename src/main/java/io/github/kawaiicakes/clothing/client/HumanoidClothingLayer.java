@@ -116,6 +116,7 @@ public class HumanoidClothingLayer<
 
             this.renderClothingFromItemStack(
                     stack,
+                    pLivingEntity,
                     pMatrixStack, pBuffer,
                     pPackedLight,
                     pLimbSwing, pLimbSwingAmount,
@@ -128,14 +129,15 @@ public class HumanoidClothingLayer<
     /**
      * Extraction of render logic to new method is to permit per-slot rendering rather than calling
      * {@link #render(PoseStack, MultiBufferSource, int, LivingEntity, float, float, float, float, float, float)}
-     * for each slot if rendering needs to be done by a third party, or if a {@link LivingEntity} is not available.
+     * for each slot if rendering needs to be done by a third party.
      * <br><br>
-     * In particular, this allows for compatibility with Curios API, but will likely come in handy in the future.
+     * In particular, this allows for compatibility with Curios API, but will likely come in handy in the future as
+     * it offers much more flexibility.
      * @param stack the {@link ItemStack} representation of a {@link ClothingItem}.
      */
-    @SuppressWarnings("DataFlowIssue")
     public void renderClothingFromItemStack(
             ItemStack stack,
+            T pEntity,
             PoseStack pMatrixStack, MultiBufferSource pBuffer,
             int pPackedLight,
             float pLimbSwing, float pLimbSwingAmount,
@@ -167,7 +169,7 @@ public class HumanoidClothingLayer<
                 hasGlint,
                 clothingModel,
                 r, g, b, this.getAlpha(
-                        null,
+                        pEntity,
                         stack, clothingItem.getSlot(),
                         pPackedLight,
                         pLimbSwing, pLimbSwingAmount,
@@ -175,7 +177,7 @@ public class HumanoidClothingLayer<
                         pNetHeadYaw, pHeadPitch
                 ),
                 this.getArmorResource(
-                        null, stack, clothingItem.getSlot(), null
+                        pEntity, stack, clothingItem.getSlot(), null
                 )
         );
 
@@ -197,7 +199,7 @@ public class HumanoidClothingLayer<
                             pNetHeadYaw, pHeadPitch
                     ),
                     this.getArmorResource(
-                            null,
+                            pEntity,
                             stack,
                             clothingItem.getSlot(),
                             overlays[j].toString()

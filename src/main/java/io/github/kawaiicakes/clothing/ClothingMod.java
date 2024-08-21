@@ -298,6 +298,7 @@ public class ClothingMod
             if (!CURIOS_LOADED) return;
 
             ICurioRenderer renderer = new ICurioRenderer() {
+                @SuppressWarnings("unchecked")
                 @Override
                 public <T extends LivingEntity, M extends EntityModel<T>> void render(
                         ItemStack stack,
@@ -312,19 +313,27 @@ public class ClothingMod
                 ) {
                     if (!(renderLayerParent instanceof LivingEntityRenderer<T,M> parent)) return;
 
-                    HumanoidClothingLayer<?, ?, ?> layer = (HumanoidClothingLayer<?, ?, ?>) parent.layers.stream()
-                            .filter(l -> l instanceof HumanoidClothingLayer<?,?,?>)
-                            .findAny()
-                            .orElseThrow();
+                    try {
+                        HumanoidClothingLayer<T, ?, ?> layer = (HumanoidClothingLayer<T, ?, ?>) parent.layers.stream()
+                                .filter(l -> l instanceof HumanoidClothingLayer<?, ?, ?>)
+                                .findAny()
+                                .orElseThrow();
 
-                    layer.renderClothingFromItemStack(
-                            stack,
-                            matrixStack, renderTypeBuffer,
-                            light,
-                            limbSwing, limbSwingAmount,
-                            partialTicks, ageInTicks,
-                            netHeadYaw, headPitch
-                    );
+                        layer.renderClothingFromItemStack(
+                                stack,
+                                (T) slotContext.entity(),
+                                matrixStack, renderTypeBuffer,
+                                light,
+                                limbSwing, limbSwingAmount,
+                                partialTicks, ageInTicks,
+                                netHeadYaw, headPitch
+                        );
+                    } catch (ClassCastException e) {
+                        LOGGER.error("Unable to cast entity for HumanoidClothingLayer to appropriate type!", e);
+                    }
+                    catch (Exception e) {
+                        LOGGER.error("Unable to get HumanoidClothingLayer!", e);
+                    }
                 }
             };
 
