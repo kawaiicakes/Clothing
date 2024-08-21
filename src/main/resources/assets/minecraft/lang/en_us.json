@@ -2,6 +2,8 @@
   "itemGroup.clothing": "Clothing!",
   "itemGroup.clothing_misc": "Clothing Stuff!",
 
+  "item.lore.clothing.error": "If you are reading this, please report it to the mod author!",
+
   "item.modifiers.clothing.name": "Clothing Name:",
   "item.modifiers.clothing.color": "Color:",
   "item.modifiers.clothing.overlays": "Applied Overlays:",

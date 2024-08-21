@@ -1,25 +1,22 @@
 package io.github.kawaiicakes.clothing.common.item;
 
-import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.ClothingItemRenderer;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
+import io.github.kawaiicakes.clothing.common.data.ClothingProperties;
 import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
+import io.github.kawaiicakes.clothing.common.resources.NbtStackInitializer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
+import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.cauldron.CauldronInteraction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
@@ -37,18 +34,15 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLLoader;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static net.minecraft.core.cauldron.CauldronInteraction.DYED_ITEM;
 
@@ -57,7 +51,7 @@ import static net.minecraft.core.cauldron.CauldronInteraction.DYED_ITEM;
 /**
  * Each implementation of this will likely represent an item that renders as one model type (e.g. JSON, OBJ). The
  * {@code ClothingItem} simply subclasses {@link ArmorItem} and is made to flexibly create and render pieces of
- * clothing. The {@link io.github.kawaiicakes.clothing.client.HumanoidClothingLayer} is reliant on implementations
+ * clothing. The {@link HumanoidClothingLayer} is reliant on implementations
  * of this class' methods.
  */
 public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem implements DyeableLeatherItem {
@@ -124,17 +118,22 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
         CompoundTag rootTag = new CompoundTag();
         toReturn.getOrCreateTag().put(CLOTHING_PROPERTY_NBT_KEY, rootTag);
 
+        String suffix = switch (this.getSlot()) {
+            case FEET -> "_shoes";
+            case LEGS -> "_pants";
+            case HEAD -> "_hat";
+            default -> "_shirt";
+        };
+
+        this.setClothingName(toReturn, new ResourceLocation("clothing:default" + suffix));
         this.setSlot(toReturn, this.getSlot());
         this.setColor(toReturn, 0xFFFFFF);
-
         this.setAttributeModifiers(
                 toReturn,
                 this.getDefaultAttributeModifiers(this.getSlot())
         );
         this.setMaxDamage(toReturn, 0);
-
-        this.setEquipSound(toReturn, this.material.getEquipSound().getLocation());
-
+        this.setEquipSound(toReturn, this.material.getEquipSound());
         this.setClothingLore(toReturn, List.of());
 
         return toReturn;
@@ -142,11 +141,11 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
 
     @Override
     public int getMaxDamage(ItemStack stack) {
-        return this.getClothingPropertiesTag(stack).getInt(MAX_DAMAGE_KEY);
+        return ClothingProperties.MAX_DAMAGE.readPropertyFromStack(stack);
     }
 
     public void setMaxDamage(ItemStack stack, int durability) {
-        this.getClothingPropertiesTag(stack).putInt(MAX_DAMAGE_KEY, durability);
+        ClothingProperties.MAX_DAMAGE.writePropertyToStack(stack, durability);
     }
 
     /**
@@ -187,7 +186,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
      * <br><br>
      * This mod provides implementations of this that will suffice in the majority of use cases.
      * @see GenericClothingItem#acceptClientClothingRenderManager(Consumer)
-     * @param clothingManager the {@link java.util.function.Supplier} of {@link ClientClothingRenderManager}.
+     * @param clothingManager the {@link Supplier} of {@link ClientClothingRenderManager}.
      *                        Do not implement in this class; use an anonymous class or a separate implementation.
      */
     public abstract void acceptClientClothingRenderManager(Consumer<ClientClothingRenderManager> clothingManager);
@@ -211,13 +210,13 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
      * so it's left abstract.
      * <br><br>
      * It's fine to immediately return null if you aren't relying on the generic models in
-     * {@link io.github.kawaiicakes.clothing.client.HumanoidClothingLayer} or on a similar implementation, since this
-     * method is ultimately used in {@link net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer} for these
+     * {@link HumanoidClothingLayer} or on a similar implementation, since this
+     * method is ultimately used in {@link HumanoidArmorLayer} for these
      * purposes.
      * @param stack  ItemStack for the equipped armor
      * @param entity The entity wearing the clothing
      * @param slot   The slot the clothing is in
-     * @param type   The subtype, can be any {@link net.minecraft.resources.ResourceLocation} corresponding to a
+     * @param type   The subtype, can be any {@link ResourceLocation} corresponding to a
      *               {@link GenericClothingItem} overlay.
      * @return The <code>String</code> representing the path to the texture that should be used for this piece of
      *         clothing.
@@ -227,11 +226,11 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
     public abstract String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type);
 
     public ResourceLocation getClothingName(ItemStack itemStack) {
-        return new ResourceLocation(this.getClothingPropertiesTag(itemStack).getString(CLOTHING_NAME_KEY));
+        return ClothingProperties.NAME.readPropertyFromStack(itemStack);
     }
 
     public void setClothingName(ItemStack itemStack, ResourceLocation name) {
-        this.getClothingPropertiesTag(itemStack).putString(CLOTHING_NAME_KEY, name.toString());
+        ClothingProperties.NAME.writePropertyToStack(itemStack, name);
     }
 
     /**
@@ -240,52 +239,41 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
      * @param itemStack the {@link ItemStack} representing this
      */
     public EquipmentSlot getSlot(ItemStack itemStack) {
-        return EquipmentSlot.byName(this.getClothingPropertiesTag(itemStack).getString(CLOTHING_SLOT_NBT_KEY));
+        return ClothingProperties.SLOT.readPropertyFromStack(itemStack);
     }
 
     /**
      * This should not be freely used. This method exists to allow
-     * {@link io.github.kawaiicakes.clothing.common.resources.NbtStackInitializer}s to easily indicate the slot
+     * {@link NbtStackInitializer}s to easily indicate the slot
      * this piece of clothing is worn on. This ensures that only instances of this whose {@link #getSlot()} returns the
      * slot indicated in the clothing entry gets added to the creative menu.
      * @param itemStack the {@link ItemStack} instance of this; regardless of whether the return of {@link #getSlot()}
      *                  matches what the clothing data entry says.
      * @param slot the {@link EquipmentSlot} which a clothing data entry indicates it is worn on.
-     * @see io.github.kawaiicakes.clothing.common.resources.NbtStackInitializer#writeToStack(Object, ItemStack)
+     * @see NbtStackInitializer#writeToStack(Object, ItemStack)
      * @see ClothingEntryLoader#entryContainsSlotDeclaration(JsonObject)
      */
     public void setSlot(ItemStack itemStack, EquipmentSlot slot) {
-        this.getClothingPropertiesTag(itemStack).putString(CLOTHING_SLOT_NBT_KEY, slot.getName());
+        if (!this.getSlot().equals(slot)) return;
+        ClothingProperties.SLOT.writePropertyToStack(itemStack, slot);
     }
 
     public List<Component> getClothingLore(ItemStack stack) {
-        ListTag loreTag = this.getClothingPropertiesTag(stack).getList(CLOTHING_LORE_NBT_KEY, Tag.TAG_STRING);
-
-        return deserializeLore(loreTag);
+        return ClothingProperties.LORE.readPropertyFromStack(stack);
     }
 
     public void setClothingLore(ItemStack stack, List<Component> components) {
-        ListTag loreList = new ListTag();
-
-        for (Component component : components) {
-            loreList.add(StringTag.valueOf(Component.Serializer.toJson(component)));
-        }
-
-        this.getClothingPropertiesTag(stack).put(CLOTHING_LORE_NBT_KEY, loreList);
+        ClothingProperties.LORE.writePropertyToStack(stack, components);
     }
 
     @Override
     public int getColor(@NotNull ItemStack pStack) {
-        try {
-            return pStack.getOrCreateTag().getCompound(CLOTHING_PROPERTY_NBT_KEY).getInt(TAG_COLOR);
-        } catch (RuntimeException ignored) {
-            return 0xFFFFFF;
-        }
+        return ClothingProperties.COLOR.readPropertyFromStack(pStack);
     }
 
     @Override
     public void setColor(@NotNull ItemStack pStack, int pColor) {
-        pStack.getOrCreateTag().getCompound(CLOTHING_PROPERTY_NBT_KEY).putInt(TAG_COLOR, pColor);
+        ClothingProperties.COLOR.writePropertyToStack(pStack, pColor);
     }
 
     @Override
@@ -349,86 +337,20 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
      * This overwrites the attributes completely
      */
     public void setAttributeModifiers(ItemStack stack, Multimap<Attribute, AttributeModifier> modifiers) {
-        CompoundTag clothingAttributesTag = new CompoundTag();
-
-        for (Map.Entry<Attribute, Collection<AttributeModifier>> entry : modifiers.asMap().entrySet()) {
-            ListTag modifierEntries = new ListTag();
-
-            for (AttributeModifier modifier : entry.getValue()) {
-                modifierEntries.add(modifier.save());
-            }
-
-            ResourceLocation attributeLocation = ForgeRegistries.ATTRIBUTES.getKey(entry.getKey());
-
-            if (attributeLocation == null) {
-                LOGGER.error("Unable to obtain ResourceLocation of Attribute {}!", entry.getKey());
-                continue;
-            }
-
-            clothingAttributesTag.put(attributeLocation.toString(), modifierEntries);
-        }
-
-        this.getClothingPropertiesTag(stack).put(ATTRIBUTES_KEY, clothingAttributesTag);
+        ClothingProperties.ATTRIBUTES.writePropertyToStack(stack, modifiers);
     }
 
     @Override
     public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot slot, ItemStack stack) {
-        if (!this.getSlot().equals(slot)) return super.getAttributeModifiers(slot, stack);
-
-        ImmutableMultimap.Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
-
-        CompoundTag clothingAttributesTag = this.getClothingPropertiesTag(stack).getCompound(ATTRIBUTES_KEY);
-
-        for (Attribute attribute : ForgeRegistries.ATTRIBUTES.getValues()) {
-            ResourceLocation attributeLocation = ForgeRegistries.ATTRIBUTES.getKey(attribute);
-            if (attributeLocation == null) {
-                LOGGER.error("Unable to obtain ResourceLocation of Attribute {}!", attribute);
-                continue;
-            }
-            if (!clothingAttributesTag.contains(attributeLocation.toString())) continue;
-
-            ListTag modifierList = clothingAttributesTag.getList(
-                    attributeLocation.toString(),
-                    Tag.TAG_COMPOUND
-            );
-
-            List<AttributeModifier> attributeModifiers = new ArrayList<>(modifierList.size());
-            for (Tag tag : modifierList) {
-                if (!(tag instanceof CompoundTag compoundTag)) continue;
-
-                AttributeModifier modifier = AttributeModifier.load(compoundTag);
-
-                if (modifier == null) continue;
-
-                attributeModifiers.add(modifier);
-            }
-
-            builder.putAll(
-                    attribute,
-                    attributeModifiers.toArray(AttributeModifier[]::new)
-            );
-        }
-
-        return builder.build();
+        return ClothingProperties.ATTRIBUTES.readPropertyFromStack(stack);
     }
 
-    public void setEquipSound(ItemStack stack, ResourceLocation location) {
-        this.getClothingPropertiesTag(stack).putString(EQUIP_SOUND_KEY, location.toString());
+    public void setEquipSound(ItemStack stack, SoundEvent sound) {
+        ClothingProperties.EQUIP_SOUND.writePropertyToStack(stack, sound);
     }
 
     public SoundEvent getEquipSound(ItemStack stack) {
-        ResourceLocation equipSoundLocation = new ResourceLocation(
-                this.getClothingPropertiesTag(stack).getString(EQUIP_SOUND_KEY)
-        );
-
-        SoundEvent equipSound = ForgeRegistries.SOUND_EVENTS.getValue(equipSoundLocation);
-
-        if (equipSound == null) {
-            equipSound = this.material.getEquipSound();
-            LOGGER.error("No such SoundEvent {}! Falling back on default!", equipSoundLocation);
-        }
-
-        return equipSound;
+        return ClothingProperties.EQUIP_SOUND.readPropertyFromStack(stack);
     }
 
     /**
@@ -465,36 +387,6 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
                     this.clientClothingRenderManager = clothingManager;
                 }
         );
-    }
-
-    public static List<Component> deserializeLore(JsonArray loreJson) {
-        List<Component> toReturn = new ArrayList<>(loreJson.size());
-
-        try {
-            for (JsonElement element : loreJson) {
-                toReturn.add(Component.Serializer.fromJson(element.getAsJsonPrimitive().getAsString()));
-            }
-        } catch (Exception e) {
-            LOGGER.error("Unable to parse clothing lore!", e);
-            toReturn = List.of();
-        }
-
-        return toReturn;
-    }
-
-    public static List<Component> deserializeLore(ListTag loreTag) {
-        List<Component> toReturn = new ArrayList<>(loreTag.size());
-
-        try {
-            for (Tag componentTag : loreTag) {
-                toReturn.add(Component.Serializer.fromJson(componentTag.getAsString()));
-            }
-        } catch (Exception e) {
-            LOGGER.error("Unable to parse clothing lore!", e);
-            toReturn = List.of();
-        }
-
-        return toReturn;
     }
 
     /**
@@ -548,7 +440,7 @@ public abstract class ClothingItem<T extends ClothingItem<?>> extends ArmorItem 
 
     /**
      * {@link ModelPart} and references to {@link HumanoidClothingLayer}s which contain the models from which parts may
-     * come are client-only classes; directly referencing them in {@link net.minecraft.world.item.Item} increases the
+     * come are client-only classes; directly referencing them in {@link Item} increases the
      * chances of serverside crashes due to {@link ClassNotFoundException}s.
      * <br><br>
      * Use this instead to reference {@link ModelPart}s.

@@ -1,23 +1,17 @@
 package io.github.kawaiicakes.clothing.common.resources.recipe;
 
-import com.google.common.collect.ImmutableMultimap;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
+import io.github.kawaiicakes.clothing.common.data.ClothingProperties;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.BakedClothingEntryLoader;
-import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
-import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
@@ -29,15 +23,14 @@ import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import static io.github.kawaiicakes.clothing.ClothingRegistry.CLOTHING_SERIALIZER;
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.*;
 import static io.github.kawaiicakes.clothing.common.item.impl.BakedModelClothingItem.MODEL_PARENTS_KEY;
 import static io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem.*;
-import static io.github.kawaiicakes.clothing.ClothingRegistry.CLOTHING_SERIALIZER;
 import static net.minecraft.world.item.DyeableLeatherItem.TAG_COLOR;
 
 /*
@@ -191,19 +184,21 @@ public class ClothingRecipe extends ShapedRecipe {
 
             try {
                 color = json.has(TAG_COLOR)
-                        ? json.getAsJsonPrimitive(TAG_COLOR).getAsInt()
+                        ? ClothingProperties.COLOR.readPropertyFromJson(json)
                         : mergedProperties.getInt(TAG_COLOR);
 
                 attributes = json.has(ATTRIBUTES_KEY)
-                        ? asNbt(ClothingEntryLoader.deserializeAttributes(json.getAsJsonObject(ATTRIBUTES_KEY)))
+                        ? (CompoundTag) ClothingProperties.ATTRIBUTES.writeToTag(
+                                ClothingProperties.ATTRIBUTES.readPropertyFromJson(json)
+                )
                         : mergedProperties.getCompound(ATTRIBUTES_KEY);
 
                 equipSound = json.has(EQUIP_SOUND_KEY)
-                        ? json.getAsJsonPrimitive(EQUIP_SOUND_KEY).getAsString()
+                        ? ClothingProperties.EQUIP_SOUND.readPropertyFromJson(json).getLocation().toString()
                         : mergedProperties.getString(EQUIP_SOUND_KEY);
 
                 maxDamage = json.has(MAX_DAMAGE_KEY)
-                        ? json.getAsJsonPrimitive(MAX_DAMAGE_KEY).getAsInt()
+                        ? ClothingProperties.MAX_DAMAGE.readPropertyFromJson(json)
                         : mergedProperties.getInt(MAX_DAMAGE_KEY);
 
                 if (maxDamage <= 0)
@@ -226,47 +221,15 @@ public class ClothingRecipe extends ShapedRecipe {
             ListTag overlays;
 
             try {
-                overlays = json.has(OVERLAY_NBT_KEY)
-                        ? overlaysFromJson(json.getAsJsonArray(OVERLAY_NBT_KEY))
-                        : new ListTag();
+                overlays = (ListTag) ClothingProperties.OVERLAYS.writeToTag(
+                        ClothingProperties.OVERLAYS.readPropertyFromJson(json)
+                );
             } catch (Exception e) {
                 LOGGER.error("Unable to write clothing properties for recipe!");
                 return toReturn;
             }
 
             toReturn.put(OVERLAY_NBT_KEY, overlays);
-
-            return toReturn;
-        }
-
-        public static ListTag overlaysFromJson(JsonArray array) {
-            ListTag toReturn = new ListTag();
-            for (JsonElement element : array) {
-                toReturn.add(StringTag.valueOf(element.getAsJsonPrimitive().getAsString()));
-            }
-            return toReturn;
-        }
-
-        @NotNull
-        public static CompoundTag asNbt(ImmutableMultimap<Attribute, AttributeModifier> attributes) {
-            CompoundTag toReturn = new CompoundTag();
-
-            for (Map.Entry<Attribute, Collection<AttributeModifier>> entry : attributes.asMap().entrySet()) {
-                Collection<CompoundTag> valueAsCompounds = entry.getValue()
-                        .stream()
-                        .map(AttributeModifier::save)
-                        .toList();
-
-                ResourceLocation attributeKey = ForgeRegistries.ATTRIBUTES.getKey(entry.getKey());
-                if (attributeKey == null) throw new IllegalArgumentException(
-                        "Passed map contains unknown attribute '" + entry.getKey() + "'!"
-                );
-
-                ListTag valueListTag = new ListTag();
-                valueListTag.addAll(valueAsCompounds);
-
-                toReturn.put(attributeKey.toString(), valueListTag);
-            }
 
             return toReturn;
         }

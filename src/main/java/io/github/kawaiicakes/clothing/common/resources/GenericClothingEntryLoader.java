@@ -1,15 +1,12 @@
 package io.github.kawaiicakes.clothing.common.resources;
 
 import com.google.gson.JsonObject;
+import io.github.kawaiicakes.clothing.common.data.ClothingProperties;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
-import java.util.Objects;
-
-import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 import static io.github.kawaiicakes.clothing.ClothingRegistry.*;
 
 public class GenericClothingEntryLoader extends ClothingEntryLoader<GenericClothingItem> {
@@ -41,34 +38,11 @@ public class GenericClothingEntryLoader extends ClothingEntryLoader<GenericCloth
                     ClothingItem.ModelPartReference[] parts;
 
                     try {
-                        layer = topElement.has("render_layer")
-                                ? GenericClothingItem.ModelStrata.byName(
-                                        topElement.getAsJsonPrimitive("render_layer").getAsString()
-                                    )
-                                : genericClothingItem.getGenericLayerForRender(clothingStack);
-
-                        textureLocation = topElement.has("texture")
-                                ? new ResourceLocation(topElement.getAsJsonPrimitive("texture").getAsString())
-                                : new ResourceLocation(MOD_ID, "default");
-                        if (textureLocation.getPath().isEmpty()) new ResourceLocation(MOD_ID, "default");
-
-                        overlays = topElement.has("overlays") ? Arrays.stream(
-                                collapseJsonArrayToStringArray(topElement.getAsJsonArray("overlays")))
-                                .filter(Objects::nonNull)
-                                .map(ResourceLocation::new)
-                                .toArray(ResourceLocation[]::new)
-                                : new ResourceLocation[0];
-
-                        parts = topElement.has("part_visibility")
-                                ? Arrays.stream(
-                                        collapseJsonArrayToStringArray(
-                                            topElement.getAsJsonArray("part_visibility")
-                                        )
-                                    )
-                                    .map(ClothingItem.ModelPartReference::byName)
-                                    .toArray(ClothingItem.ModelPartReference[]::new)
-                                : genericClothingItem.defaultPartVisibility();
-                    } catch (RuntimeException e) {
+                        layer = ClothingProperties.MODEL_LAYER.readPropertyFromJson(topElement);
+                        textureLocation = ClothingProperties.TEXTURE_LOCATION.readPropertyFromJson(topElement);
+                        overlays = ClothingProperties.OVERLAYS.readPropertyFromJson(topElement);
+                        parts = ClothingProperties.VISIBLE_PARTS.readPropertyFromJson(topElement);
+                    } catch (Exception e) {
                         LOGGER.error("Error deserializing generic clothing data entry!", e);
                         throw e;
                     }

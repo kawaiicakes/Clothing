@@ -2,39 +2,33 @@ package io.github.kawaiicakes.clothing.common.resources;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import com.google.gson.*;
 import com.mojang.logging.LogUtils;
-import com.mojang.serialization.JsonOps;
+import io.github.kawaiicakes.clothing.common.data.ClothingProperties;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import net.minecraft.core.NonNullList;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
-import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.GsonHelper;
-import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.*;
-
-import static io.github.kawaiicakes.clothing.common.item.ClothingItem.*;
-import static net.minecraft.world.item.DyeableLeatherItem.TAG_COLOR;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * This class is a {@link SimpleJsonResourceReloadListener} that pretty heavily abstracts stuff related to Minecraft
@@ -95,31 +89,16 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
             int color;
             Multimap<Attribute, AttributeModifier> modifiers;
             int durability;
-            ResourceLocation equipSoundLocation;
+            SoundEvent equipSoundLocation;
             List<Component> lore;
 
             try {
-                slot = EquipmentSlot.byName(topElement.getAsJsonPrimitive(CLOTHING_SLOT_NBT_KEY).getAsString());
-
-                color = topElement.has(TAG_COLOR)
-                        ? topElement.getAsJsonPrimitive(TAG_COLOR).getAsInt()
-                        : 0xFFFFFF;
-
-                modifiers = topElement.has(ATTRIBUTES_KEY)
-                        ? deserializeAttributes(topElement.getAsJsonObject(ATTRIBUTES_KEY))
-                        : clothingItem.getDefaultAttributeModifiers(slot);
-
-                durability = topElement.has(MAX_DAMAGE_KEY)
-                        ? topElement.getAsJsonPrimitive(MAX_DAMAGE_KEY).getAsInt()
-                        : 0;
-
-                equipSoundLocation = topElement.has(EQUIP_SOUND_KEY)
-                        ? new ResourceLocation(topElement.getAsJsonPrimitive(EQUIP_SOUND_KEY).getAsString())
-                        : SoundEvents.ARMOR_EQUIP_LEATHER.getLocation();
-
-                lore = topElement.has(CLOTHING_LORE_NBT_KEY)
-                        ? deserializeLore(topElement.getAsJsonArray(CLOTHING_LORE_NBT_KEY))
-                        : List.of();
+                slot = ClothingProperties.SLOT.readPropertyFromJson(topElement);
+                color = ClothingProperties.COLOR.readPropertyFromJson(topElement);
+                lore = ClothingProperties.LORE.readPropertyFromJson(topElement);
+                modifiers = ClothingProperties.ATTRIBUTES.readPropertyFromJson(topElement);
+                durability = ClothingProperties.MAX_DAMAGE.readPropertyFromJson(topElement);
+                equipSoundLocation = ClothingProperties.EQUIP_SOUND.readPropertyFromJson(topElement);
             } catch (Exception e) {
                 LOGGER.error("Error deserializing clothing entry!", e);
                 throw e;
@@ -128,68 +107,11 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
             clothingItem.setClothingName(clothingStack, entryId);
             clothingItem.setSlot(clothingStack, slot);
             clothingItem.setColor(clothingStack, color);
+            clothingItem.setClothingLore(clothingStack, lore);
             clothingItem.setAttributeModifiers(clothingStack, modifiers);
             clothingItem.setMaxDamage(clothingStack, durability);
             clothingItem.setEquipSound(clothingStack, equipSoundLocation);
-            clothingItem.setClothingLore(clothingStack, lore);
         };
-    }
-
-    public static ImmutableMultimap<Attribute, AttributeModifier> deserializeAttributes(JsonObject jsonData) {
-        ImmutableMultimap.Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
-
-        try {
-            for (String key : jsonData.keySet()) {
-                Attribute attribute = ForgeRegistries.ATTRIBUTES.getValue(new ResourceLocation(key));
-                if (attribute == null) throw new IllegalArgumentException(
-                        "Passed JSON contains unknown attribute '" + key + "'!"
-                );
-                
-                if (!(jsonData.get(key) instanceof JsonArray jsonArray))
-                    throw new IllegalArgumentException(
-                            "Passed JSON does not contain an array for attribute '" + key + "'!"
-                    );
-
-                List<AttributeModifier> forKey = new ArrayList<>(jsonArray.size());
-
-                int i = 0;
-                for (JsonElement element : jsonArray) {
-                    if (!element.isJsonObject()) throw new IllegalArgumentException(
-                            "Passed JSON has non-object in attribute array for '" + key + "'!"
-                    );
-                    
-                    CompoundTag attributeModifierTag
-                            = (CompoundTag) JsonOps.INSTANCE.convertTo(NbtOps.INSTANCE, element);
-
-                    String attributeName = key + "." + i;
-
-                    UUID slotUUID = Mth.createInsecureUUID(RandomSource.createNewThreadLocalInstance());
-
-                    attributeModifierTag.putUUID(
-                            "UUID",
-                            slotUUID
-                    );
-
-                    attributeModifierTag.putString("Name", attributeName);
-
-                    AttributeModifier modifier = AttributeModifier.load(attributeModifierTag);
-
-                    if (modifier == null) throw new IllegalStateException(
-                            "Unable to load AttributeModifier from tag '" + attributeModifierTag + "'!"
-                    );
-                    
-                    forKey.add(modifier);
-                    i++;
-                }
-
-                builder.putAll(attribute, forKey.toArray(AttributeModifier[]::new));
-            }
-        } catch (Exception e) {
-            LOGGER.error("Error deserializing clothing attributes!", e);
-            throw e;
-        }
-
-        return builder.build();
     }
 
     /**
@@ -354,15 +276,5 @@ public abstract class ClothingEntryLoader<T extends ClothingItem<?>> extends Sim
         }
 
         return true;
-    }
-
-    @Nullable
-    public static String[] collapseJsonArrayToStringArray(JsonArray jsonArray) {
-        String[] toReturn = new String[jsonArray.size()];
-        for (int i = 0; i < jsonArray.size(); i++) {
-            if (!(jsonArray.get(i) instanceof JsonPrimitive primitive)) return null;
-            toReturn[i] = primitive.getAsString();
-        }
-        return toReturn;
     }
 }

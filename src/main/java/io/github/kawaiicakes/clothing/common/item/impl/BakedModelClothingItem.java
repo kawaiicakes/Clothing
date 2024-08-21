@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Vector3f;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
+import io.github.kawaiicakes.clothing.common.data.ClothingProperties;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.BakedClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
@@ -14,8 +15,6 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.StringTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -25,7 +24,9 @@ import net.minecraftforge.client.model.geometry.IGeometryLoader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -52,26 +53,11 @@ public class BakedModelClothingItem extends ClothingItem<BakedModelClothingItem>
      *                  the body part the baked model will render to.
      */
     public @NotNull Map<ModelPartReference, ResourceLocation> getModelPartLocations(ItemStack itemStack) {
-        CompoundTag modelPartTag = this.getClothingPropertiesTag(itemStack).getCompound(MODEL_PARENTS_KEY);
-
-        Map<ModelPartReference, ResourceLocation> toReturn = new HashMap<>(modelPartTag.size());
-
-        for (String part : modelPartTag.getAllKeys()) {
-            if (!(modelPartTag.get(part) instanceof StringTag modelLocation)) throw new IllegalArgumentException();
-            toReturn.put(ModelPartReference.byName(part), new ResourceLocation(modelLocation.toString()));
-        }
-
-        return toReturn;
+        return ClothingProperties.MODEL_PARENTS.readPropertyFromStack(itemStack);
     }
 
     public void setModelPartLocations(ItemStack itemStack, Map<ModelPartReference, ResourceLocation> modelParts) {
-        CompoundTag modelPartMap = new CompoundTag();
-
-        for (Map.Entry<ModelPartReference, ResourceLocation> entry : modelParts.entrySet()) {
-            modelPartMap.putString(entry.getKey().getSerializedName(), entry.getValue().toString());
-        }
-
-        this.getClothingPropertiesTag(itemStack).put(MODEL_PARENTS_KEY, modelPartMap);
+        ClothingProperties.MODEL_PARENTS.writePropertyToStack(itemStack, modelParts);
     }
 
     public ModelPartReference defaultModelPart() {

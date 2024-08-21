@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import io.github.kawaiicakes.clothing.client.ClientClothingRenderManager;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
+import io.github.kawaiicakes.clothing.common.data.ClothingProperties;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.GenericClothingEntryLoader;
@@ -18,9 +19,6 @@ import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.cauldron.CauldronInteraction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
@@ -137,8 +135,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      * @see HumanoidClothingLayer#modelForLayer(ModelStrata)
      */
     public ModelStrata getGenericLayerForRender(ItemStack itemStack) {
-        String strataString = this.getClothingPropertiesTag(itemStack).getString(MODEL_LAYER_NBT_KEY);
-        return ModelStrata.byName(strataString);
+        return ClothingProperties.MODEL_LAYER.readPropertyFromStack(itemStack);
     }
 
     /**
@@ -147,7 +144,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      * @see HumanoidClothingLayer#modelForLayer(ModelStrata)
      */
     public void setGenericLayerForRender(ItemStack itemStack, ModelStrata modelStrata) {
-        this.getClothingPropertiesTag(itemStack).putString(MODEL_LAYER_NBT_KEY, modelStrata.getSerializedName());
+        ClothingProperties.MODEL_LAYER.writePropertyToStack(itemStack, modelStrata);
     }
 
     /**
@@ -155,7 +152,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      * @return the {@link String} pointing to the location of the texture folder.
      */
     public ResourceLocation getTextureLocation(ItemStack itemStack) {
-        return new ResourceLocation(this.getClothingPropertiesTag(itemStack).getString(TEXTURE_LOCATION_NBT_KEY));
+        return ClothingProperties.TEXTURE_LOCATION.readPropertyFromStack(itemStack);
     }
 
     /**
@@ -163,7 +160,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      * @param textureLocation the {@link String} pointing to the location of the texture folder.
      */
     public void setTextureLocation(ItemStack itemStack, ResourceLocation textureLocation) {
-        this.getClothingPropertiesTag(itemStack).putString(TEXTURE_LOCATION_NBT_KEY, textureLocation.toString());
+        ClothingProperties.TEXTURE_LOCATION.writePropertyToStack(itemStack, textureLocation);
     }
 
     /**
@@ -171,13 +168,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      * @return the array of {@link String}s whose values point to the overlay textures.
      */
     public ResourceLocation[] getOverlays(ItemStack itemStack) {
-        ListTag listTag = this.getClothingPropertiesTag(itemStack).getList(OVERLAY_NBT_KEY, Tag.TAG_STRING);
-        ResourceLocation[] toReturn = new ResourceLocation[listTag.size()];
-        for (int i = 0; i < listTag.size(); i++) {
-            if (!(listTag.get(i) instanceof StringTag stringTag)) throw new RuntimeException();
-            toReturn[i] = new ResourceLocation(stringTag.getAsString());
-        }
-        return toReturn;
+        return ClothingProperties.OVERLAYS.readPropertyFromStack(itemStack);
     }
 
     /**
@@ -185,13 +176,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      * @param overlays the array of {@link String}s whose values point to the overlay textures.
      */
     public void setOverlays(ItemStack itemStack, ResourceLocation[] overlays) {
-        ListTag overlayTag = new ListTag();
-
-        for (ResourceLocation overlay : overlays) {
-            overlayTag.add(StringTag.valueOf(overlay.toString()));
-        }
-
-        this.getClothingPropertiesTag(itemStack).put(OVERLAY_NBT_KEY, overlayTag);
+        ClothingProperties.OVERLAYS.writePropertyToStack(itemStack, overlays);
     }
 
     /**
@@ -200,14 +185,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      * correspond to what body parts the clothing will visibly render on.
      */
     public ModelPartReference[] getPartsForVisibility(ItemStack itemStack) {
-        ListTag partList = this.getClothingPropertiesTag(itemStack).getList(PART_VISIBILITY_KEY, Tag.TAG_STRING);
-
-        ModelPartReference[] toReturn = new ModelPartReference[partList.size()];
-        for (int i = 0; i < partList.size(); i++) {
-            toReturn[i] = ModelPartReference.byName(partList.getString(i));
-        }
-
-        return toReturn;
+        return ClothingProperties.VISIBLE_PARTS.readPropertyFromStack(itemStack);
     }
 
     /**
@@ -216,13 +194,7 @@ public class GenericClothingItem extends ClothingItem<GenericClothingItem> {
      *              elements correspond to what body parts the clothing will visibly render on.
      */
     public void setPartsForVisibility(ItemStack itemStack, ModelPartReference[] slots) {
-        ListTag partList = new ListTag();
-
-        for (ModelPartReference part : slots) {
-            partList.add(StringTag.valueOf(part.getSerializedName()));
-        }
-
-        this.getClothingPropertiesTag(itemStack).put(PART_VISIBILITY_KEY, partList);
+        ClothingProperties.VISIBLE_PARTS.writePropertyToStack(itemStack, slots);
     }
 
     /**

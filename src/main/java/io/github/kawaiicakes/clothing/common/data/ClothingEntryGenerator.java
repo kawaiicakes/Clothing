@@ -2,22 +2,17 @@ package io.github.kawaiicakes.clothing.common.data;
 
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
-import com.mojang.serialization.JsonOps;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.item.impl.BakedModelClothingItem;
 import io.github.kawaiicakes.clothing.common.item.impl.GenericClothingItem;
 import net.minecraft.data.CachedOutput;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.DataProvider;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -39,7 +34,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
-import static io.github.kawaiicakes.clothing.common.item.ClothingItem.*;
 import static io.github.kawaiicakes.clothing.ClothingRegistry.*;
 
 public class ClothingEntryGenerator implements DataProvider {
@@ -290,74 +284,22 @@ public class ClothingEntryGenerator implements DataProvider {
             return this;
         }
 
-        public ClothingBuilder<T> setEquipSound(ResourceLocation soundLocation) {
-            this.clothingItem.setEquipSound(this.clothingStack, soundLocation);
+        public ClothingBuilder<T> setEquipSound(SoundEvent sound) {
+            this.clothingItem.setEquipSound(this.clothingStack, sound);
             return this;
         }
 
         @Nullable
         public JsonObject serializeToJson() {
-            final ItemStack defaultStack = this.clothingItem.getDefaultInstance();
-
-            final CompoundTag defaultStackTag = this.clothingItem.getClothingPropertiesTag(defaultStack).copy();
-            final CompoundTag clothingStackTag = this.clothingItem.getClothingPropertiesTag(this.clothingStack).copy();
-
-            final CompoundTag tagForSerialization = new CompoundTag();
-
-            for (String key : clothingStackTag.getAllKeys()) {
-                if (key.equals(CLOTHING_NAME_KEY)) continue;
-
-                Tag clothingTag = clothingStackTag.get(key);
-                Tag defaultTag = defaultStackTag.get(key);
-
-                assert clothingTag != null;
-
-                if (key.equals(CLOTHING_SLOT_NBT_KEY)) {
-                    tagForSerialization.put(key, clothingTag);
-                    continue;
-                }
-
-                if (clothingTag.equals(defaultTag)) continue;
-
-                if (key.equals(ATTRIBUTES_KEY)) {
-                    CompoundTag attributeTag = clothingStackTag.getCompound(ATTRIBUTES_KEY).copy();
-
-                    Set<String> emptyModifierListKeys = new HashSet<>();
-                    for (String attributeKey : attributeTag.getAllKeys()) {
-                        ListTag modifierList = attributeTag.getList(attributeKey, Tag.TAG_COMPOUND);
-
-                        if (modifierList.isEmpty()) {
-                            emptyModifierListKeys.add(attributeKey);
-                            continue;
-                        }
-
-                        for (Tag tagInList : modifierList) {
-                            if (!(tagInList instanceof CompoundTag modifierTag)) continue;
-
-                            modifierTag.remove("Name");
-                            modifierTag.remove("UUID");
-                        }
-
-                        attributeTag.put(attributeKey, modifierList);
-                    }
-                    // this is to avoid ConcurrentModificationExceptions
-                    emptyModifierListKeys.forEach(attributeTag::remove);
-
-                    tagForSerialization.put(key, attributeTag);
-
-                    continue;
-                }
-
-                tagForSerialization.put(key, clothingTag);
-            }
-
-            JsonElement toReturn = NbtOps.INSTANCE.convertTo(JsonOps.INSTANCE, tagForSerialization);
-
             try {
                 if (this.id == null || this.id.getPath().isEmpty())
                     throw new IllegalStateException("This builder has not had a name set!");
 
-                return toReturn.getAsJsonObject();
+                JsonObject toReturn = new JsonObject();
+
+                ClothingProperties.writeClothingStackToJson(toReturn, this.clothingStack);
+
+                return toReturn;
             } catch (RuntimeException e) {
                 LOGGER.error("Error serializing NBT tag to JSON in entry generator!", e);
                 return null;
