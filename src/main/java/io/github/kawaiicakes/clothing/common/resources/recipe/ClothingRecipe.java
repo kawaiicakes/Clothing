@@ -253,11 +253,9 @@ public class ClothingRecipe extends ShapedRecipe {
             return new String[] {
                     CLOTHING_SLOT_NBT_KEY,
                     CLOTHING_NAME_KEY,
-                    MODEL_LAYER_NBT_KEY,
-                    TEXTURE_LOCATION_NBT_KEY,
-                    PART_VISIBILITY_KEY,
-                    MODEL_PARENTS_KEY,
-                    CLOTHING_LORE_NBT_KEY
+                    CLOTHING_LORE_NBT_KEY,
+                    MESHES_NBT_KEY,
+                    MODELS_NBT_KEY,
             };
         }
     }

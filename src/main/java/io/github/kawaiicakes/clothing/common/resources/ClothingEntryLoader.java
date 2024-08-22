@@ -8,6 +8,7 @@ import com.google.gson.*;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.JsonOps;
 import io.github.kawaiicakes.clothing.ClothingRegistry;
+import io.github.kawaiicakes.clothing.common.data.ClothingLayer;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
@@ -28,13 +29,11 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.*;
 
-import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.*;
 import static net.minecraft.world.item.DyeableLeatherItem.TAG_COLOR;
 
@@ -81,12 +80,9 @@ public class ClothingEntryLoader extends SimpleJsonResourceReloadListener {
             ResourceLocation equipSoundLocation;
             List<Component> lore;
 
-            ModelStrata layer;
-            ResourceLocation textureLocation;
-            ResourceLocation[] overlays;
-            ClothingItem.ModelPartReference[] parts;
-
+            Map<MeshStratum, ClothingLayer> meshes;
             Map<ClothingItem.ModelPartReference, ResourceLocation> models;
+            Multimap<MeshStratum, ClothingLayer> overlays;
 
             try {
                 slot = EquipmentSlot.byName(topElement.getAsJsonPrimitive(CLOTHING_SLOT_NBT_KEY).getAsString());
@@ -101,7 +97,7 @@ public class ClothingEntryLoader extends SimpleJsonResourceReloadListener {
 
                 durability = topElement.has(MAX_DAMAGE_KEY)
                         ? topElement.getAsJsonPrimitive(MAX_DAMAGE_KEY).getAsInt()
-                        : 0;
+                        : clothingItem.getMaxDamage(clothingStack);
 
                 equipSoundLocation = topElement.has(EQUIP_SOUND_KEY)
                         ? new ResourceLocation(topElement.getAsJsonPrimitive(EQUIP_SOUND_KEY).getAsString())
@@ -111,53 +107,17 @@ public class ClothingEntryLoader extends SimpleJsonResourceReloadListener {
                         ? deserializeLore(topElement.getAsJsonArray(CLOTHING_LORE_NBT_KEY))
                         : List.of();
 
-                layer = topElement.has("render_layer")
-                        ? ModelStrata.byName(
-                        topElement.getAsJsonPrimitive("render_layer").getAsString()
-                )
-                        : clothingItem.getModelStrata(clothingStack);
+                meshes = topElement.has("meshes")
+                        ? meshesFromJson(topElement.getAsJsonObject("meshes"))
+                        : clothingItem.getMeshes(clothingStack);
 
-                textureLocation = topElement.has("texture")
-                        ? new ResourceLocation(topElement.getAsJsonPrimitive("texture").getAsString())
-                        : new ResourceLocation(MOD_ID, "default");
-                if (textureLocation.getPath().isEmpty()) new ResourceLocation(MOD_ID, "default");
+                models = topElement.has("models")
+                        ? modelsFromJson(topElement.getAsJsonObject("models"))
+                        : ImmutableMap.of();
 
-                overlays = topElement.has("overlays") ? Arrays.stream(
-                                collapseJsonArrayToStringArray(topElement.getAsJsonArray("overlays")))
-                        .filter(Objects::nonNull)
-                        .map(ResourceLocation::new)
-                        .toArray(ResourceLocation[]::new)
-                        : new ResourceLocation[0];
-
-                parts = topElement.has("part_visibility")
-                        ? Arrays.stream(
-                                collapseJsonArrayToStringArray(
-                                        topElement.getAsJsonArray("part_visibility")
-                                )
-                        )
-                        .map(ClothingItem.ModelPartReference::byName)
-                        .toArray(ClothingItem.ModelPartReference[]::new)
-                        : clothingItem.defaultPartVisibility();
-
-                Map<ClothingItem.ModelPartReference, ResourceLocation> errorModel = new HashMap<>();
-                errorModel.put(
-                        clothingItem.defaultModelPart(), new ResourceLocation("clothing:error")
-                );
-
-                // I want exceptions logged
-                models = errorModel;
-                if (topElement.has("models")) {
-                    JsonObject modelObject = topElement.getAsJsonObject("models");
-                    Map<ClothingItem.ModelPartReference, ResourceLocation> deserialized = new HashMap<>();
-                    for (String key : modelObject.keySet()) {
-                        ClothingItem.ModelPartReference byName = ClothingItem.ModelPartReference.byName(key);
-                        ResourceLocation modelLocation
-                                = new ResourceLocation(modelObject.getAsJsonPrimitive(key).getAsString());
-
-                        deserialized.put(byName, modelLocation);
-                    }
-                    models = deserialized;
-                }
+                overlays = topElement.has("overlays")
+                        ? overlaysFromJson(topElement.getAsJsonObject("overlays"))
+                        : ImmutableMultimap.of();
             } catch (Exception e) {
                 LOGGER.error("Error deserializing clothing entry!", e);
                 throw e;
@@ -171,13 +131,73 @@ public class ClothingEntryLoader extends SimpleJsonResourceReloadListener {
             clothingItem.setEquipSound(clothingStack, equipSoundLocation);
             clothingItem.setClothingLore(clothingStack, lore);
 
-            clothingItem.setModelStrata(clothingStack, layer);
-            clothingItem.setTextureLocation(clothingStack, textureLocation);
+            clothingItem.setMeshes(clothingStack, meshes);
+            clothingItem.setModels(clothingStack, models);
             clothingItem.setOverlays(clothingStack, overlays);
-            clothingItem.setPartsForVisibility(clothingStack, parts);
-
-            clothingItem.setModelPartLocations(clothingStack, models);
         };
+    }
+
+    public static Map<MeshStratum, ClothingLayer> meshesFromJson(JsonObject object) {
+        ImmutableMap.Builder<MeshStratum, ClothingLayer> toReturn = ImmutableMap.builder();
+
+        try {
+            JsonObject modelObject = object.getAsJsonObject("models");
+
+            for (String key : modelObject.keySet()) {
+                MeshStratum byName = MeshStratum.byName(key);
+                ClothingLayer model = ClothingLayer.fromJson(modelObject.getAsJsonObject(key));
+
+                toReturn.put(byName, model);
+            }
+
+            return toReturn.buildOrThrow();
+        } catch (Exception e) {
+            LOGGER.error("Error deserializing models from JSON!", e);
+            return ImmutableMap.copyOf(ClothingItem.defaultMeshes(EquipmentSlot.CHEST));
+        }
+    }
+
+    public static Map<ModelPartReference, ResourceLocation> modelsFromJson(JsonObject object) {
+        ImmutableMap.Builder<ClothingItem.ModelPartReference, ResourceLocation> toReturn = ImmutableMap.builder();
+
+        try {
+            JsonObject modelObject = object.getAsJsonObject("models");
+
+            for (String key : modelObject.keySet()) {
+                ClothingItem.ModelPartReference byName = ClothingItem.ModelPartReference.byName(key);
+                ResourceLocation model = new ResourceLocation(modelObject.getAsJsonPrimitive(key).getAsString());
+                toReturn.put(byName, model);
+            }
+
+            return toReturn.buildOrThrow();
+        } catch (Exception e) {
+            LOGGER.error("Error deserializing models from JSON!", e);
+            return ImmutableMap.copyOf(ClothingItem.defaultModels());
+        }
+    }
+
+    public static Multimap<MeshStratum, ClothingLayer> overlaysFromJson(JsonObject object) {
+        ImmutableMultimap.Builder<MeshStratum, ClothingLayer> toReturn = ImmutableMultimap.builder();
+
+        try {
+            JsonObject modelObject = object.getAsJsonObject("models");
+
+            for (String key : modelObject.keySet()) {
+                MeshStratum byName = MeshStratum.byName(key);
+                List<ClothingLayer> overlays = new ArrayList<>();
+
+                for (JsonElement element : modelObject.getAsJsonArray(key)) {
+                    overlays.add(ClothingLayer.fromJson(element.getAsJsonObject()));
+                }
+
+                toReturn.putAll(byName, overlays);
+            }
+
+            return toReturn.build();
+        } catch (Exception e) {
+            LOGGER.error("Error deserializing models from JSON!", e);
+            return ImmutableMultimap.copyOf(ClothingItem.defaultOverlays());
+        }
     }
 
     public static ImmutableMultimap<Attribute, AttributeModifier> deserializeAttributes(JsonObject jsonData) {
@@ -400,15 +420,5 @@ public class ClothingEntryLoader extends SimpleJsonResourceReloadListener {
         }
 
         return true;
-    }
-
-    @Nullable
-    public static String[] collapseJsonArrayToStringArray(JsonArray jsonArray) {
-        String[] toReturn = new String[jsonArray.size()];
-        for (int i = 0; i < jsonArray.size(); i++) {
-            if (!(jsonArray.get(i) instanceof JsonPrimitive primitive)) return null;
-            toReturn[i] = primitive.getAsString();
-        }
-        return toReturn;
     }
 }

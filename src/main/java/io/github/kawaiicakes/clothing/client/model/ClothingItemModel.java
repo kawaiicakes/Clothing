@@ -1,5 +1,6 @@
 package io.github.kawaiicakes.clothing.client.model;
 
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
@@ -7,7 +8,9 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.ClothingItemRenderer;
+import io.github.kawaiicakes.clothing.common.data.ClothingLayer;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem.MeshStratum;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.model.BlockModel;
 import net.minecraft.client.renderer.block.model.ItemOverrides;
@@ -105,19 +108,22 @@ public class ClothingItemModel implements IUnbakedGeometry<ClothingItemModel> {
 
                         toReturn.add(baseModel);
 
-                        ResourceLocation[] overlays = clothing.getOverlays(clothingStack);
+                        ImmutableListMultimap<MeshStratum, ClothingLayer> overlays
+                                = clothing.getOverlays(clothingStack);
 
-                        for (int j = overlays.length - 1; j >= 0; j--) {
-                            ResourceLocation overlay = overlays[j];
-                            ResourceLocation overlayLocation = ClothingItemRenderer.overlayModelLocation(overlay);
+                        for (Map.Entry<MeshStratum, Collection<ClothingLayer>> entry : overlays.asMap().entrySet()) {
+                            for (ClothingLayer overlay : entry.getValue()) {
+                                ResourceLocation overlayLocation
+                                        = ClothingItemRenderer.overlayModelLocation(overlay.textureLocation());
 
-                            BakedModel overlayModel = get(overlayLocation);
+                                BakedModel overlayModel = get(overlayLocation);
 
-                            if (overlayModel.equals(missingModel)) {
-                                LOGGER.error("Overlay item model '{}' does not exist!", overlayLocation);
+                                if (overlayModel.equals(missingModel)) {
+                                    LOGGER.error("Overlay item model '{}' does not exist!", overlayLocation);
+                                }
+
+                                toReturn.add(overlayModel);
                             }
-
-                            toReturn.add(overlayModel);
                         }
 
                         return toReturn;
@@ -151,8 +157,8 @@ public class ClothingItemModel implements IUnbakedGeometry<ClothingItemModel> {
 
             int modelHash;
 
-            modelHash = clothingItem.getTextureLocation(itemStack).hashCode()
-                    + Arrays.hashCode(clothingItem.getOverlays(itemStack));
+            modelHash = clothingItem.getClothingName(itemStack).hashCode()
+                    + clothingItem.getOverlays(itemStack).hashCode();
 
             return getList(modelHash, itemStack);
         }

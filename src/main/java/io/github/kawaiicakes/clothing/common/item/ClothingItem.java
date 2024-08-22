@@ -1,13 +1,14 @@
 package io.github.kawaiicakes.clothing.common.item;
 
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.*;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.client.ClothingItemRenderer;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
+import io.github.kawaiicakes.clothing.common.data.ClothingLayer;
+import io.github.kawaiicakes.clothing.common.data.ClothingVisibility;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.model.HumanoidModel;
@@ -67,12 +68,13 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
     public static final String ATTRIBUTES_KEY = "attributes";
     public static final String EQUIP_SOUND_KEY = "equip_sound";
     public static final String MAX_DAMAGE_KEY = "durability";
-    public static final String MODEL_LAYER_NBT_KEY = "modelLayer";
-    public static final String TEXTURE_LOCATION_NBT_KEY = "texture";
+    public static final String MESHES_NBT_KEY = "meshes";
     public static final String OVERLAY_NBT_KEY = "overlays";
-    public static final String PART_VISIBILITY_KEY = "partVisibility";
-    public static final String MODEL_PARENTS_KEY = "modelParents";
-    public static final ResourceLocation DEFAULT_TEXTURE_NBT_KEY = new ResourceLocation(MOD_ID, "default");
+    public static final String MODELS_NBT_KEY = "models";
+    public static final ResourceLocation DEFAULT_TEXTURE_LOCATION = new ResourceLocation(MOD_ID, "default");
+    public static final ResourceLocation ERROR_MODEL_LOCATION = new ResourceLocation(MOD_ID, "error");
+    public static final ImmutableMap<ModelPartReference, ResourceLocation> ERROR_MODEL
+            = ImmutableMap.of(ModelPartReference.BODY, ERROR_MODEL_LOCATION);
 
     public static final CauldronInteraction NEW_DYED_ITEM = (pBlockState, pLevel, pPos, pPlayer, pHand, pStack) -> {
         InteractionResult result = DYED_ITEM.interact(pBlockState, pLevel, pPos, pPlayer, pHand, pStack);
@@ -89,18 +91,10 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
     public static final CauldronInteraction OVERLAY_ITEM
             = (pBlockState, pLevel, pBlockPos, pPlayer, pHand, pStack) -> {
         if (!(pStack.getItem() instanceof ClothingItem clothing)) return InteractionResult.PASS;
-        if (clothing.getOverlays(pStack).length == 0) return InteractionResult.PASS;
+        if (clothing.getOverlays(pStack).isEmpty()) return InteractionResult.PASS;
         if (pLevel.isClientSide) return InteractionResult.sidedSuccess(true);
 
-        ResourceLocation[] originalOverlays = clothing.getOverlays(pStack);
-
-        int newLength = originalOverlays.length - 1;
-        ResourceLocation[] newOverlays = new ResourceLocation[newLength];
-
-        if (newLength > 0)
-            System.arraycopy(originalOverlays, 1, newOverlays, 0, newLength);
-
-        clothing.setOverlays(pStack, newOverlays);
+        clothing.setOverlays(pStack, defaultOverlays());
         pLevel.playSound(
                 null, pBlockPos, SoundEvents.GENERIC_SPLASH, SoundSource.BLOCKS, 1.0F, 1.0F
         );
@@ -109,7 +103,6 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
         return InteractionResult.sidedSuccess(false);
     };
 
-    // TODO: allow multiple layers when rendering meshes
     public ClothingItem(EquipmentSlot pSlot) {
         super(
                 ArmorMaterials.LEATHER,
@@ -147,20 +140,17 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
 
         this.setSlot(toReturn, this.getSlot());
         this.setColor(toReturn, 0xFFFFFF);
+        this.setClothingLore(toReturn, List.of());
         this.setAttributeModifiers(
                 toReturn,
                 this.getDefaultAttributeModifiers(this.getSlot())
         );
         this.setMaxDamage(toReturn, 0);
         this.setEquipSound(toReturn, this.material.getEquipSound().getLocation());
-        this.setClothingLore(toReturn, List.of());
 
-        this.setModelStrata(toReturn, ModelStrata.forSlot(this.getSlot()));
-        this.setTextureLocation(toReturn, DEFAULT_TEXTURE_NBT_KEY);
-        this.setOverlays(toReturn, new ResourceLocation[]{});
-        this.setPartsForVisibility(toReturn, this.defaultPartVisibility());
-
-        this.setModelPartLocations(toReturn, Map.of());
+        this.setMeshes(toReturn, defaultMeshes(this.getSlot()));
+        this.setModels(toReturn, defaultModels());
+        this.setOverlays(toReturn, defaultOverlays());
 
         return toReturn;
     }
@@ -208,40 +198,12 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
     }
 
     /**
-     * Overridden Forge method; see super for more details. This method returns a <code>String</code> representing the
-     * path to the texture that should be used for this piece of clothing. It's used internally by both Minecraft
-     * and this mod to return the texture for a model. Returns the appropriate texture for the mesh of the clothing
-     * item.
-     * @param stack  ItemStack for the equipped armor
-     * @param entity The entity wearing the clothing
-     * @param slot   The slot the clothing is in
-     * @param type   The {@link String} representation of an overlay name. If non-null, the return will point
-     *               to the location for that overlay.
-     * @return The <code>String</code> representing the path to the texture that should be used for this piece of
-     *         clothing.
+     * Don't use this lol. Overridden in case somehow this method is queried by Forge or Minecraft.
      */
     @Override
     @ParametersAreNullableByDefault
     public String getArmorTexture(@NotNull ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-        if (type != null) {
-            ResourceLocation overlayLocation = new ResourceLocation(type);
-
-            return String.format(
-                    Locale.ROOT,
-                    "%s:textures/models/clothing/overlays/%s.png",
-                    overlayLocation.getNamespace(),
-                    overlayLocation.getPath()
-            );
-        }
-
-        ResourceLocation textureLocation = this.getTextureLocation(stack);
-
-        return String.format(
-                Locale.ROOT,
-                "%s:textures/models/clothing/%s.png",
-                textureLocation.getNamespace(),
-                textureLocation.getPath()
-        );
+        return DEFAULT_TEXTURE_LOCATION.toString();
     }
 
     public ResourceLocation getClothingName(ItemStack itemStack) {
@@ -294,109 +256,132 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
 
     /**
      * @param itemStack the {@code itemStack} representing this.
-     * @return the {@link ModelStrata} indicating which layer the passed stack renders to.
-     * @see HumanoidClothingLayer#modelForLayer(ModelStrata)
+     * @return the {@link MeshStratum} indicating which layer the passed stack renders to.
+     * @see HumanoidClothingLayer#modelForLayer(MeshStratum)
      */
-    public ModelStrata getModelStrata(ItemStack itemStack) {
-        String strataString = this.getClothingPropertiesTag(itemStack).getString(MODEL_LAYER_NBT_KEY);
-        return ModelStrata.byName(strataString);
+    public Map<MeshStratum, ClothingLayer> getMeshes(ItemStack itemStack) {
+        Map<MeshStratum, ClothingLayer> toReturn = new HashMap<>();
+
+        CompoundTag strataTag = this.getClothingPropertiesTag(itemStack).getCompound(MESHES_NBT_KEY);
+
+        for (String meshStratum : strataTag.getAllKeys()) {
+            toReturn.put(MeshStratum.byName(meshStratum), ClothingLayer.fromNbt(strataTag.getCompound(meshStratum)));
+        }
+
+        return toReturn;
     }
 
     /**
      * @param itemStack the {@code itemStack} representing this.
-     * @param modelStrata the {@link ModelStrata} indicating which layer the passed stack renders to.
-     * @see HumanoidClothingLayer#modelForLayer(ModelStrata)
+     * @see HumanoidClothingLayer#modelForLayer(MeshStratum)
      */
-    public void setModelStrata(ItemStack itemStack, ModelStrata modelStrata) {
-        this.getClothingPropertiesTag(itemStack).putString(MODEL_LAYER_NBT_KEY, modelStrata.getSerializedName());
+    public void setMeshes(ItemStack itemStack, Map<MeshStratum, ClothingLayer> meshStrata) {
+        CompoundTag serializedStrata = new CompoundTag();
+
+        for (Map.Entry<MeshStratum, ClothingLayer> entry : meshStrata.entrySet()) {
+            serializedStrata.put(entry.getKey().getSerializedName(), entry.getValue().toNbt());
+        }
+
+        this.getClothingPropertiesTag(itemStack).put(MESHES_NBT_KEY, serializedStrata);
     }
 
-    /**
-     * @param itemStack the {@code itemStack} representing this.
-     * @return the {@link String} pointing to the location of the texture folder.
-     */
-    public ResourceLocation getTextureLocation(ItemStack itemStack) {
-        return new ResourceLocation(this.getClothingPropertiesTag(itemStack).getString(TEXTURE_LOCATION_NBT_KEY));
-    }
-
-    /**
-     * @param itemStack the {@code itemStack} representing this.
-     * @param textureLocation the {@link String} pointing to the location of the texture folder.
-     */
-    public void setTextureLocation(ItemStack itemStack, ResourceLocation textureLocation) {
-        this.getClothingPropertiesTag(itemStack).putString(TEXTURE_LOCATION_NBT_KEY, textureLocation.toString());
+    public void setMesh(ItemStack stack, MeshStratum stratum, ClothingLayer mesh) {
+        Map<MeshStratum, ClothingLayer> existing = this.getMeshes(stack);
+        existing.put(stratum, mesh);
+        this.setMeshes(stack, existing);
     }
 
     /**
      * @param itemStack the {@code itemStack} representing this.
      * @return the array of {@link String}s whose values point to the overlay textures.
      */
-    public ResourceLocation[] getOverlays(ItemStack itemStack) {
-        ListTag listTag = this.getClothingPropertiesTag(itemStack).getList(OVERLAY_NBT_KEY, Tag.TAG_STRING);
-        ResourceLocation[] toReturn = new ResourceLocation[listTag.size()];
-        for (int i = 0; i < listTag.size(); i++) {
-            if (!(listTag.get(i) instanceof StringTag stringTag)) throw new RuntimeException();
-            toReturn[i] = new ResourceLocation(stringTag.getAsString());
+    public ImmutableListMultimap<MeshStratum, ClothingLayer> getOverlays(ItemStack itemStack) {
+        ImmutableListMultimap.Builder<MeshStratum, ClothingLayer> toReturn = ImmutableListMultimap.builder();
+
+        try {
+            CompoundTag strataTag = this.getClothingPropertiesTag(itemStack).getCompound(OVERLAY_NBT_KEY);
+
+            for (String meshStratum : strataTag.getAllKeys()) {
+                ListTag overlaysForStratum = strataTag.getList(meshStratum, Tag.TAG_COMPOUND);
+                for (Tag overlayTag : overlaysForStratum) {
+                    toReturn.put(MeshStratum.byName(meshStratum), ClothingLayer.fromNbt((CompoundTag) overlayTag));
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("Unable to obtain overlays from ItemStack '{}'!", itemStack, e);
+            toReturn = ImmutableListMultimap.builder();
         }
-        return toReturn;
+
+        return toReturn.build();
     }
 
     /**
      * @param itemStack the {@code itemStack} representing this.
      * @param overlays the array of {@link String}s whose values point to the overlay textures.
      */
-    public void setOverlays(ItemStack itemStack, ResourceLocation[] overlays) {
-        ListTag overlayTag = new ListTag();
+    public void setOverlays(ItemStack itemStack, Multimap<MeshStratum, ClothingLayer> overlays) {
+        CompoundTag serializedStrata = new CompoundTag();
 
-        for (ResourceLocation overlay : overlays) {
-            overlayTag.add(StringTag.valueOf(overlay.toString()));
+        try {
+            for (Map.Entry<MeshStratum, Collection<ClothingLayer>> entry : overlays.asMap().entrySet()) {
+                ListTag overlaysForStratum = new ListTag();
+
+                for (ClothingLayer layer : entry.getValue()) {
+                    overlaysForStratum.add(layer.toNbt());
+                }
+
+                serializedStrata.put(entry.getKey().getSerializedName(), overlaysForStratum);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Unable to set overlays for ItemStack '{}'!", itemStack, e);
+            return;
         }
 
-        this.getClothingPropertiesTag(itemStack).put(OVERLAY_NBT_KEY, overlayTag);
+        this.getClothingPropertiesTag(itemStack).put(OVERLAY_NBT_KEY, serializedStrata);
     }
 
+    // FIXME: something funky is going on here or in LoomMenuMixin#clothing$setupClothingResultSlot. Overlays won't apply properly and also mutate the banner stack.
     /**
-     * @param itemStack the {@code itemStack} representing this.
-     * @return an array of {@link ModelPartReference} whose elements
-     * correspond to what body parts the clothing will visibly render on.
+     * If the passed overlay already exists in the passed stratum, it's moved to index 0
+     * @param stack
+     * @param stratum
+     * @param overlay
      */
-    public ModelPartReference[] getPartsForVisibility(ItemStack itemStack) {
-        ListTag partList = this.getClothingPropertiesTag(itemStack).getList(PART_VISIBILITY_KEY, Tag.TAG_STRING);
+    public void addOverlay(ItemStack stack, MeshStratum stratum, ClothingLayer overlay) {
+        // #put and #add operations do not work on Multimaps or the views contained therein
+        ImmutableListMultimap<MeshStratum, ClothingLayer> existing = this.getOverlays(stack);
 
-        ModelPartReference[] toReturn = new ModelPartReference[partList.size()];
-        for (int i = 0; i < partList.size(); i++) {
-            toReturn[i] = ModelPartReference.byName(partList.getString(i));
+        ImmutableMultimap.Builder<MeshStratum, ClothingLayer> edited = ImmutableListMultimap.builder();
+
+        for (Map.Entry<MeshStratum, Collection<ClothingLayer>> existingEntries : existing.asMap().entrySet()) {
+            if (existingEntries.getKey().equals(stratum)) {
+                edited.put(stratum, overlay);
+
+                for (ClothingLayer existingLayer : existingEntries.getValue()) {
+                    if (existingLayer.equals(overlay)) continue;
+                    edited.put(stratum, overlay);
+                }
+
+                continue;
+            }
+
+            edited.putAll(stratum, existingEntries.getValue());
         }
 
-        return toReturn;
-    }
-
-    /**
-     * @param itemStack the {@code itemStack} representing this.
-     * @param slots an array of {@link ModelPartReference} whose
-     *              elements correspond to what body parts the clothing will visibly render on.
-     */
-    public void setPartsForVisibility(ItemStack itemStack, ModelPartReference[] slots) {
-        ListTag partList = new ListTag();
-
-        for (ModelPartReference part : slots) {
-            partList.add(StringTag.valueOf(part.getSerializedName()));
-        }
-
-        this.getClothingPropertiesTag(itemStack).put(PART_VISIBILITY_KEY, partList);
+        this.setOverlays(stack, edited.build());
     }
 
     /**
      * This method is used exclusively for setting the default {@link ModelPart} visibility on the meshes as
-     * returned by {@link #getModelStrata(ItemStack)} and
-     * {@link HumanoidClothingLayer#modelForLayer(ModelStrata)}.
+     * returned by {@link #getMeshes(ItemStack)} and
+     * {@link HumanoidClothingLayer#modelForLayer(MeshStratum)}.
      * @return the array of {@link ModelPartReference} this item will
      * appear to be worn on.
      * @see HumanoidArmorLayer#setPartVisibility(HumanoidModel, EquipmentSlot)
      */
     @NotNull
-    public ModelPartReference[] defaultPartVisibility() {
-        return switch (this.getSlot()) {
+    public static ModelPartReference[] defaultPartVisibility(EquipmentSlot slot) {
+        return switch (slot) {
             case HEAD:
                 yield new ModelPartReference[] {
                         ModelPartReference.HEAD,
@@ -430,6 +415,12 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
         };
     }
 
+    public static ClothingLayer defaultMeshLayerForSlot(EquipmentSlot slot) {
+        return new ClothingLayer(
+                DEFAULT_TEXTURE_LOCATION, 0xFFFFFF, new ClothingVisibility(defaultPartVisibility(slot))
+        );
+    }
+
     @Override
     public int getColor(@NotNull ItemStack pStack) {
         try {
@@ -439,6 +430,8 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
         }
     }
 
+    // TODO: color methods should work only on outermost layer of clothing. custom loom shit for more targeted dyeing. N.B., baked models automatically inherit the colour set here.
+    // FIXME: tooltip does not reflect colour changes to clothing
     @Override
     public void setColor(@NotNull ItemStack pStack, int pColor) {
         pStack.getOrCreateTag().getCompound(CLOTHING_PROPERTY_NBT_KEY).putInt(TAG_COLOR, pColor);
@@ -455,7 +448,6 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
         this.setColor(pStack, 0xFFFFFF);
     }
 
-    // TODO: adv tooltip: colours for each overlay, and the colour(s) for the base piece of clothing (in super)
     @Override
     @ParametersAreNonnullByDefault
     public void appendHoverText(
@@ -471,17 +463,20 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
 
         if (!pIsAdvanced.isAdvanced()) return;
 
-        ResourceLocation[] overlayNames = this.getOverlays(pStack);
-        if (overlayNames.length != 0) {
+        Multimap<MeshStratum, ClothingLayer> overlayNames = this.getOverlays(pStack);
+        if (!overlayNames.isEmpty()) {
             pTooltipComponents.add(Component.empty());
             pTooltipComponents.add(
                     Component.translatable("item.modifiers.clothing.overlays")
                             .withStyle(ChatFormatting.GRAY)
             );
-            for (ResourceLocation overlayName : overlayNames) {
+            for (ClothingLayer overlay : overlayNames.values()) {
                 pTooltipComponents.add(
-                        Component.literal(overlayName.toString())
-                                .withStyle(ChatFormatting.BLUE)
+                        Component.literal(
+                                overlay.textureLocation()
+                                        + " - #"
+                                        + Integer.toHexString(overlay.color()).toUpperCase()
+                                ).withStyle(ChatFormatting.BLUE)
                 );
             }
         }
@@ -501,11 +496,16 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
                 Component.translatable("item.modifiers.clothing.color")
                         .withStyle(ChatFormatting.GRAY)
         );
-        String colorAsString = "#" + Integer.toHexString(this.getColor(pStack)).toUpperCase();
-        pTooltipComponents.add(
-                Component.literal(colorAsString)
-                        .withStyle(ChatFormatting.BLUE)
-        );
+
+        Map<MeshStratum, ClothingLayer> textures = this.getMeshes(pStack);
+        for (Map.Entry<MeshStratum, ClothingLayer> layerEntry : textures.entrySet()) {
+            String meshName = layerEntry.getKey().getSerializedName();
+            String fullString = meshName + " - #" + Integer.toHexString(layerEntry.getValue().color()).toUpperCase();
+            pTooltipComponents.add(
+                    Component.literal(fullString)
+                            .withStyle(ChatFormatting.BLUE)
+            );
+        }
     }
 
     @Override
@@ -624,37 +624,31 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
      * @return          the {@link Map} of key {@link ModelPartReference}s for each {@link ResourceLocation} referencing
      *                  the body part the baked model will render to.
      */
-    public @NotNull Map<ModelPartReference, ResourceLocation> getModelPartLocations(ItemStack itemStack) {
-        CompoundTag modelPartTag = this.getClothingPropertiesTag(itemStack).getCompound(MODEL_PARENTS_KEY);
+    public @NotNull Map<ModelPartReference, ResourceLocation> getModels(ItemStack itemStack) {
+        try {
+            CompoundTag modelPartTag = this.getClothingPropertiesTag(itemStack).getCompound(MODELS_NBT_KEY);
+            ImmutableMap.Builder<ModelPartReference, ResourceLocation> toReturn = ImmutableMap.builder();
 
-        Map<ModelPartReference, ResourceLocation> toReturn = new HashMap<>(modelPartTag.size());
+            for (String part : modelPartTag.getAllKeys()) {
+                if (!(modelPartTag.get(part) instanceof StringTag stringTag)) throw new IllegalArgumentException();
+                toReturn.put(ModelPartReference.byName(part), new ResourceLocation(stringTag.getAsString()));
+            }
 
-        for (String part : modelPartTag.getAllKeys()) {
-            if (!(modelPartTag.get(part) instanceof StringTag modelLocation)) throw new IllegalArgumentException();
-            toReturn.put(ModelPartReference.byName(part), new ResourceLocation(modelLocation.toString()));
+            return toReturn.buildOrThrow();
+        } catch (Exception e) {
+            LOGGER.error("Unable to deserialize Models from NBT in ItemStack '{}'!", itemStack, e);
+            return ERROR_MODEL;
         }
-
-        return toReturn;
     }
 
-    public void setModelPartLocations(ItemStack itemStack, Map<ModelPartReference, ResourceLocation> modelParts) {
+    public void setModels(ItemStack itemStack, Map<ModelPartReference, ResourceLocation> modelParts) {
         CompoundTag modelPartMap = new CompoundTag();
 
         for (Map.Entry<ModelPartReference, ResourceLocation> entry : modelParts.entrySet()) {
             modelPartMap.putString(entry.getKey().getSerializedName(), entry.getValue().toString());
         }
 
-        this.getClothingPropertiesTag(itemStack).put(MODEL_PARENTS_KEY, modelPartMap);
-    }
-
-    public ModelPartReference defaultModelPart() {
-        return switch (this.getSlot()) {
-            case MAINHAND -> ModelPartReference.RIGHT_ARM;
-            case OFFHAND -> ModelPartReference.LEFT_ARM;
-            case FEET, LEGS -> ModelPartReference.RIGHT_LEG;
-            case CHEST -> ModelPartReference.BODY;
-            case HEAD -> ModelPartReference.HEAD;
-        };
+        this.getClothingPropertiesTag(itemStack).put(MODELS_NBT_KEY, modelPartMap);
     }
 
     /**
@@ -666,20 +660,26 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
      *                           which a model is parented to.
      * @return the location of the {@link BakedModel} for render.
      */
-    @Nullable
-    public ResourceLocation getModelPartLocation(ItemStack itemStack, ModelPartReference modelPartReference) {
-        String location = this.getClothingPropertiesTag(itemStack)
-                .getCompound(MODEL_PARENTS_KEY)
-                .getString(modelPartReference.getSerializedName());
-        return location.isEmpty() ? null : new ResourceLocation(location);
+    public ResourceLocation getModel(ItemStack itemStack, ModelPartReference modelPartReference) {
+        try {
+            StringTag stringTag = (StringTag) this.getClothingPropertiesTag(itemStack)
+                    .getCompound(MODELS_NBT_KEY)
+                    .get(modelPartReference.getSerializedName());
+
+            assert stringTag != null;
+            return new ResourceLocation(stringTag.getAsString());
+        } catch (Exception e) {
+            LOGGER.error("Unable to get Model from ItemStack '{}'!", itemStack, e);
+            return ERROR_MODEL_LOCATION;
+        }
     }
 
-    public void setModelPartLocation(
-            ItemStack itemStack, ModelPartReference modelPartReference, ResourceLocation modelLocation
+    public void setModel(
+            ItemStack itemStack, ModelPartReference modelPartReference, ResourceLocation layerInfo
     ) {
-        Map<ModelPartReference, ResourceLocation> existing = this.getModelPartLocations(itemStack);
-        existing.put(modelPartReference, modelLocation);
-        this.setModelPartLocations(itemStack, existing);
+        Map<ModelPartReference, ResourceLocation> existing = this.getModels(itemStack);
+        existing.put(modelPartReference, layerInfo);
+        this.setModels(itemStack, existing);
     }
 
     public static List<Component> deserializeLore(JsonArray loreJson) {
@@ -761,6 +761,18 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
         clothingItem.setColor(stack, j2);
     }
 
+    public static Map<ClothingItem.MeshStratum, ClothingLayer> defaultMeshes(EquipmentSlot slot) {
+        return ImmutableMap.of(MeshStratum.forSlot(slot), defaultMeshLayerForSlot(slot));
+    }
+
+    public static Map<ClothingItem.ModelPartReference, ResourceLocation> defaultModels() {
+        return ERROR_MODEL;
+    }
+
+    public static Multimap<ClothingItem.MeshStratum, ClothingLayer> defaultOverlays() {
+        return ImmutableListMultimap.of();
+    }
+
     /**
      * {@link ModelPart} and references to {@link HumanoidClothingLayer}s which contain the models from which parts may
      * come are client-only classes; directly referencing them in {@link net.minecraft.world.item.Item} increases the
@@ -799,7 +811,7 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
         }
     }
 
-    public enum ModelStrata implements StringRepresentable {
+    public enum MeshStratum implements StringRepresentable {
         BASE("base"),
         INNER("inner"),
         OUTER("outer"),
@@ -809,14 +821,14 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
 
         private final String nbtTagID;
 
-        ModelStrata(String nbtTagID) {
+        MeshStratum(String nbtTagID) {
             this.nbtTagID = nbtTagID;
         }
 
-        public static ModelStrata byName(String pTargetName) {
-            for(ModelStrata modelStrata : values()) {
-                if (modelStrata.getSerializedName().equals(pTargetName)) {
-                    return modelStrata;
+        public static MeshStratum byName(String pTargetName) {
+            for(MeshStratum meshStratum : values()) {
+                if (meshStratum.getSerializedName().equals(pTargetName)) {
+                    return meshStratum;
                 }
             }
 
@@ -828,7 +840,7 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
             return this.nbtTagID;
         }
 
-        public static ModelStrata forSlot(EquipmentSlot equipmentSlot) {
+        public static MeshStratum forSlot(EquipmentSlot equipmentSlot) {
             return switch (equipmentSlot) {
                 case FEET -> INNER;
                 case LEGS -> BASE;

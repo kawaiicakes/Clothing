@@ -1,14 +1,17 @@
 package io.github.kawaiicakes.clothing.mixin;
 
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.Multimap;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.common.LoomMenuOverlayGetter;
+import io.github.kawaiicakes.clothing.common.data.ClothingLayer;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.*;
@@ -25,7 +28,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -118,32 +120,35 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
             }
 
             if (overlay != null) {
-                ResourceLocation[] existingOverlays = clothingItem.getOverlays(outputStack);
-                List<ResourceLocation> overlayList = Arrays.asList(existingOverlays);
+                ClothingLayer layerToAdd = new ClothingLayer(overlay.name(), 0xFFFFFF, null);
+
+                ImmutableListMultimap<ClothingItem.MeshStratum, ClothingLayer> existingOverlays
+                        = clothingItem.getOverlays(clothingStack);
+
+                ImmutableCollection<ClothingLayer> overlayList = existingOverlays.values();
 
                 if (overlayList.isEmpty()) {
-                    clothingItem.setOverlays(outputStack, new ResourceLocation[]{overlay.name()});
-                } else if (!overlayList.get(0).equals(overlay.name())) {
-                    ResourceLocation[] newOverlays;
+                    /* FIXME:
+                        The changes made here for this commit are TEMPORARY solely so it can build and be tested.
+                        To implement the behaviour fully would mean the introduction of a new DataSlot; the same
+                        one that would allow for discriminating which mesh to target when dyeing clothing
+                        or its overlays. That would then fall out of the scope of this commit and delay the push.
+                     */
+                    Multimap<ClothingItem.MeshStratum, ClothingLayer> overlaysForEmpty = ImmutableListMultimap.of(
+                                    ClothingItem.MeshStratum.forSlot(clothingItem.getSlot()),
+                            layerToAdd
+                    );
 
-                    if (overlayList.contains(overlay.name())) {
-                        int existingIndex = overlayList.indexOf(overlay.name());
-                        newOverlays = new ResourceLocation[existingOverlays.length];
-                        for (int i = 1; i < existingOverlays.length; i++) {
-                            if (i <= existingIndex) {
-                                newOverlays[i] = existingOverlays[i - 1];
-                            } else {
-                                newOverlays[i] = existingOverlays[i];
-                            }
-                        }
-                    } else {
-                        newOverlays = new ResourceLocation[existingOverlays.length + 1];
-                        System.arraycopy(existingOverlays, 0, newOverlays, 1, existingOverlays.length);
-                    }
-
-                    newOverlays[0] = overlay.name();
-
-                    clothingItem.setOverlays(outputStack, newOverlays);
+                    clothingItem.setOverlays(
+                            clothingStack,
+                            overlaysForEmpty
+                    );
+                } else if (!overlayList.asList().get(0).equals(layerToAdd)) {
+                        clothingItem.addOverlay(
+                                clothingStack,
+                                ClothingItem.MeshStratum.forSlot(clothingItem.getSlot()),
+                                layerToAdd
+                        );
                 }
             }
         }

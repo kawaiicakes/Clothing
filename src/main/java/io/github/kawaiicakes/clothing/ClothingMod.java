@@ -58,6 +58,7 @@ import java.util.Collection;
 import static io.github.kawaiicakes.clothing.ClothingRegistry.BLEACH_CAULDRON;
 import static io.github.kawaiicakes.clothing.ClothingRegistry.DRIPPING_BLEACH;
 
+// TODO: javadoc and misc cleanup
 // TODO: add JEI compat for new loom recipes
 // TODO: add new crafting type/"dye vial", allows crafting any dye colour from (automatically generated) inputs
 @Mod(ClothingMod.MOD_ID)
@@ -187,6 +188,7 @@ public class ClothingMod
 
     @SubscribeEvent
     public void onLoadComplete(FMLLoadCompleteEvent event) {
+        // FIXME: move to CommonSetup: see if that works or not (this event really shouldn't be used)
         ClothingRegistry.registerBrewingRecipes();
         ClothingRegistry.registerCauldronInteractions();
     }
@@ -198,6 +200,7 @@ public class ClothingMod
             if (event instanceof ClientPlayerNetworkEvent.Clone) return;
 
             ClothingItemModel.Baked.flushModelCaches();
+            HumanoidClothingLayer.flushModelCaches();
         }
     }
 

@@ -1,5 +1,7 @@
 package io.github.kawaiicakes.clothing.common.data;
 
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import com.google.gson.JsonElement;
@@ -193,37 +195,57 @@ public class ClothingEntryGenerator implements DataProvider {
             return this;
         }
 
-        public ClothingBuilder setModelLocations(
-                Map<ClothingItem.ModelPartReference, ResourceLocation> locations
-        ) {
-            this.clothingItem.setModelPartLocations(this.clothingStack, locations);
+        public ClothingBuilder setMeshes(Map<MeshStratum, ClothingLayer> meshes) {
+            this.clothingItem.setMeshes(this.clothingStack, ImmutableMap.copyOf(meshes));
             return this;
         }
 
-        public ClothingBuilder setModelLocation(
-                ClothingItem.ModelPartReference parent, ResourceLocation model
-        ) {
-            this.clothingItem.setModelPartLocation(this.clothingStack, parent, model);
+        public ClothingBuilder setModels(Map<ModelPartReference, ResourceLocation> locations) {
+            this.clothingItem.setModels(this.clothingStack, locations);
             return this;
         }
 
-        public ClothingBuilder setRenderLayer(ModelStrata renderLayer) {
-            this.clothingItem.setModelStrata(this.clothingStack, renderLayer);
+        public ClothingBuilder setOverlays(Multimap<MeshStratum, ClothingLayer> paths) {
+            this.clothingItem.setOverlays(this.clothingStack, ImmutableListMultimap.copyOf(paths));
             return this;
         }
 
-        public ClothingBuilder setTexture(ResourceLocation path) {
-            this.clothingItem.setTextureLocation(this.clothingStack, path);
+        public ClothingBuilder addMesh(MeshStratum stratum, ClothingLayer mesh) {
+            this.clothingItem.setMesh(this.clothingStack, stratum, mesh);
             return this;
         }
 
-        public ClothingBuilder setOverlays(ResourceLocation[] paths) {
-            this.clothingItem.setOverlays(this.clothingStack, paths);
+        public ClothingBuilder addMesh(MeshStratum stratum, ResourceLocation meshLocation) {
+            this.addMesh(
+                    stratum,
+                    new ClothingLayer(
+                            meshLocation,
+                            0xFFFFFF,
+                            new ClothingVisibility(ClothingItem.defaultPartVisibility(this.clothingItem.getSlot()))
+                    )
+            );
             return this;
         }
 
-        public ClothingBuilder setPartVisibility(ClothingItem.ModelPartReference[] parts) {
-            this.clothingItem.setPartsForVisibility(this.clothingStack, parts);
+        public ClothingBuilder addModel(ModelPartReference parent, ResourceLocation model) {
+            this.clothingItem.setModel(this.clothingStack, parent, model);
+            return this;
+        }
+
+        public ClothingBuilder addOverlay(MeshStratum stratum, ClothingLayer overlay) {
+            this.clothingItem.addOverlay(this.clothingStack, stratum, overlay);
+            return this;
+        }
+
+        public ClothingBuilder addOverlay(MeshStratum stratum, ResourceLocation meshLocation) {
+            this.addMesh(
+                    stratum,
+                    new ClothingLayer(
+                            meshLocation,
+                            0xFFFFFF,
+                            null
+                    )
+            );
             return this;
         }
 

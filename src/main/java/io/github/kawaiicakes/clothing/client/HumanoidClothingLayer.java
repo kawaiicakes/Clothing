@@ -1,10 +1,15 @@
 package io.github.kawaiicakes.clothing.client;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Multimap;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.logging.LogUtils;
 import com.mojang.math.Vector3f;
+import io.github.kawaiicakes.clothing.common.data.ClothingLayer;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem.MeshStratum;
+import io.github.kawaiicakes.clothing.common.item.ClothingItem.ModelPartReference;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.Model;
@@ -18,6 +23,7 @@ import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -32,7 +38,8 @@ import org.slf4j.Logger;
 import javax.annotation.ParametersAreNullableByDefault;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
+
+import static io.github.kawaiicakes.clothing.common.item.ClothingItem.ERROR_MODEL_LOCATION;
 
 /**
  * This extends {@link HumanoidArmorLayer} in case a third-party mod references instances of that class to render
@@ -56,13 +63,14 @@ public class HumanoidClothingLayer<
 {
     protected static final Logger LOGGER = LogUtils.getLogger();
 
+    protected static boolean FLUSH_QUEUED = false;
+
     protected final A baseModel;
     protected final A overModel;
     protected final A overLegsArmorModel;
     protected final A overMainArmorModel;
 
-    protected Map<ClothingItem.ModelPartReference, BakedModel> modelsForRender = null;
-    protected Map<ClothingItem.ModelPartReference, ResourceLocation> modelLocations = null;
+    protected Map<CompoundTag, Map<ClothingItem.ModelPartReference, BakedModel>> bakedModels = null;
 
     /**
      * Added during {@link EntityRenderersEvent.AddLayers} to appropriate renderer. Creates a
@@ -87,6 +95,14 @@ public class HumanoidClothingLayer<
         this.overModel = overModel;
         this.overLegsArmorModel = overLegsArmorModel;
         this.overMainArmorModel = overMainArmorModel;
+    }
+
+    /**
+     * Flushes all cached assets in every instance of this. Flush is effective immediately after
+     * {@link #renderBakedModels(ItemStack, PoseStack, MultiBufferSource, int)} is called.
+     */
+    public static void flushModelCaches() {
+        FLUSH_QUEUED = true;
     }
 
     /**
@@ -144,70 +160,72 @@ public class HumanoidClothingLayer<
             float pPartialTicks, float pAgeInTicks,
             float pNetHeadYaw, float pHeadPitch
     ) {
-        if (!(stack.getItem() instanceof ClothingItem clothingItem)) return;
+        try {
+            if (!(stack.getItem() instanceof ClothingItem clothingItem)) return;
 
-        boolean hasGlint = stack.hasFoil();
+            boolean hasGlint = stack.hasFoil();
+            Map<MeshStratum, ClothingLayer> meshes = clothingItem.getMeshes(stack);
+            Multimap<MeshStratum, ClothingLayer> overlays = clothingItem.getOverlays(stack);
 
-        ClothingItem.ModelStrata modelStrata = clothingItem.getModelStrata(stack);
-        A clothingModel = this.modelForLayer(modelStrata);
+            for (Map.Entry<MeshStratum, ClothingLayer> entry : meshes.entrySet()) {
+                A clothingModel = this.modelForLayer(entry.getKey());
 
-        this.getParentModel().copyPropertiesTo(clothingModel);
-        this.setPartVisibility(
-                clothingModel, clothingItem.getPartsForVisibility(stack)
-        );
+                this.getParentModel().copyPropertiesTo(clothingModel);
 
-        int i = clothingItem.getColor(stack);
-        float r = (float)(i >> 16 & 255) / 255.0F;
-        float g = (float)(i >> 8 & 255) / 255.0F;
-        float b = (float)(i & 255) / 255.0F;
+                assert entry.getValue().clothingVisibility() != null;
+                this.setPartVisibility(
+                        clothingModel, entry.getValue().clothingVisibility().asArray()
+                );
 
-        this.renderBakedModels(stack, pMatrixStack, pBuffer, pPackedLight);
+                int i = clothingItem.getColor(stack);
+                float r = (float) (i >> 16 & 255) / 255.0F;
+                float g = (float) (i >> 8 & 255) / 255.0F;
+                float b = (float) (i & 255) / 255.0F;
 
-        this.renderMesh(
-                pMatrixStack,
-                pBuffer, pPackedLight,
-                hasGlint,
-                clothingModel,
-                r, g, b, this.getAlpha(
-                        pEntity,
-                        stack, clothingItem.getSlot(),
-                        pPackedLight,
-                        pLimbSwing, pLimbSwingAmount,
-                        pPartialTicks, pAgeInTicks,
-                        pNetHeadYaw, pHeadPitch
-                ),
-                this.getArmorResource(
-                        pEntity, stack, clothingItem.getSlot(), null
-                )
-        );
+                this.renderBakedModels(stack, pMatrixStack, pBuffer, pPackedLight);
 
-        ResourceLocation[] overlays = clothingItem.getOverlays(stack);
-        if (overlays.length < 1) return;
+                this.renderMesh(
+                        pMatrixStack,
+                        pBuffer, pPackedLight,
+                        hasGlint,
+                        clothingModel,
+                        r, g, b, this.getAlpha(
+                                pEntity,
+                                stack, clothingItem.getSlot(),
+                                pPackedLight,
+                                pLimbSwing, pLimbSwingAmount,
+                                pPartialTicks, pAgeInTicks,
+                                pNetHeadYaw, pHeadPitch
+                        ),
+                        getMeshResource(entry.getValue().textureLocation())
+                );
 
-        for (int j = overlays.length - 1; j >= 0; j--) {
-            this.renderMesh(
-                    pMatrixStack,
-                    pBuffer, pPackedLight,
-                    hasGlint,
-                    clothingModel,
-                    1.0F, 1.0F, 1.0F, this.getAlpha(
-                            null,
-                            stack, clothingItem.getSlot(),
-                            pPackedLight,
-                            pLimbSwing, pLimbSwingAmount,
-                            pPartialTicks, pAgeInTicks,
-                            pNetHeadYaw, pHeadPitch
-                    ),
-                    this.getArmorResource(
-                            pEntity,
-                            stack,
-                            clothingItem.getSlot(),
-                            overlays[j].toString()
-                    )
-            );
+                if (overlays.isEmpty()) continue;
+
+                for (ClothingLayer overlay : overlays.get(entry.getKey())) {
+                    this.renderMesh(
+                            pMatrixStack,
+                            pBuffer, pPackedLight,
+                            hasGlint,
+                            clothingModel,
+                            1.0F, 1.0F, 1.0F, this.getAlpha(
+                                    null,
+                                    stack, clothingItem.getSlot(),
+                                    pPackedLight,
+                                    pLimbSwing, pLimbSwingAmount,
+                                    pPartialTicks, pAgeInTicks,
+                                    pNetHeadYaw, pHeadPitch
+                            ),
+                            getOverlayResource(overlay.textureLocation())
+                    );
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error while rendering clothing!", e);
         }
     }
 
+    // FIXME: here or somewhere else, something is causing clothing to only use the default model
     public void renderMesh(
             PoseStack pPoseStack,
             MultiBufferSource pBuffer, int pPackedLight, boolean pGlint,
@@ -236,36 +254,31 @@ public class HumanoidClothingLayer<
     }
 
     public void renderBakedModels(
-            @NotNull ItemStack pItemStack,
-            @NotNull PoseStack pMatrixStack,
-            @NotNull MultiBufferSource pBuffer, int pPackedLight
+            ItemStack pItemStack,
+            PoseStack pMatrixStack,
+            MultiBufferSource pBuffer, int pPackedLight
     ) {
         if (!(pItemStack.getItem() instanceof ClothingItem clothingItem)) {
             LOGGER.error("Passed ItemStack '{}' is not a clothing item!", pItemStack);
             return;
         }
 
-        Map<ClothingItem.ModelPartReference, ResourceLocation> newestLocations
-                = clothingItem.getModelPartLocations(pItemStack);
-        if (!newestLocations.equals(this.modelLocations)) {
-            this.modelLocations = newestLocations;
-            this.modelsForRender = new HashMap<>();
+        if (FLUSH_QUEUED) {
+            this.bakedModels = new HashMap<>();
+            FLUSH_QUEUED = false;
         }
 
-        for (Map.Entry<ClothingItem.ModelPartReference, ResourceLocation> entry : this.modelLocations.entrySet()) {
-            ClothingItem.ModelPartReference modelPartReference = entry.getKey();
+        Map<ClothingItem.ModelPartReference, BakedModel> modelsForRender = this.bakedModels.computeIfAbsent(
+                clothingItem.getClothingPropertiesTag(pItemStack),
+                (key) -> parseModelsFromLocations(clothingItem, pItemStack)
+        );
 
-            BakedModel forRender = this.modelsForRender.get(modelPartReference);
+        for (Map.Entry<ClothingItem.ModelPartReference, BakedModel> entry : modelsForRender.entrySet()) {
+            ClothingItem.ModelPartReference modelPartReference = entry.getKey();
+            BakedModel forRender = entry.getValue();
+
             if (forRender == null) {
-                this.modelsForRender.put(
-                        modelPartReference,
-                        Minecraft.getInstance().getModelManager().getModel(
-                                Objects.requireNonNull(clothingItem.getModelPartLocation(
-                                        pItemStack, modelPartReference
-                                ))
-                        )
-                );
-                forRender = this.modelsForRender.get(modelPartReference);
+                forRender = getErrorModel();
             }
 
             ModelPart parentModelPart
@@ -345,13 +358,13 @@ public class HumanoidClothingLayer<
 
     /**
      * Simply returns the appropriate generic model from the corresponding
-     * {@link ClothingItem.ModelStrata}.
-     * @param modelStrata the {@link ClothingItem.ModelStrata} whose
+     * {@link ClothingItem.MeshStratum}.
+     * @param meshStratum the {@link ClothingItem.MeshStratum} whose
      *                    value corresponds to one of the model fields.
      * @return the appropriate {@link A} to render to.
      */
-    public A modelForLayer(ClothingItem.ModelStrata modelStrata) {
-        return switch (modelStrata) {
+    public A modelForLayer(ClothingItem.MeshStratum meshStratum) {
+        return switch (meshStratum) {
             case BASE -> this.baseModel;
             case INNER -> this.innerModel;
             case OUTER -> this.outerModel;
@@ -393,5 +406,37 @@ public class HumanoidClothingLayer<
         @SuppressWarnings("unchecked")
         A parent = (A) this.getParentModel();
         return this.modelPartByReference(parent, reference);
+    }
+
+    public static ResourceLocation getMeshResource(ResourceLocation textureLocation) {
+        return new ResourceLocation(
+                textureLocation.getNamespace(),
+                "textures/models/clothing/" + textureLocation.getPath() + ".png"
+        );
+    }
+
+    public static ResourceLocation getOverlayResource(ResourceLocation textureLocation) {
+        return new ResourceLocation(
+                textureLocation.getNamespace(),
+                "textures/models/clothing/overlays/" + textureLocation.getPath() + ".png"
+        );
+    }
+
+    public static Map<ModelPartReference, BakedModel> parseModelsFromLocations(ClothingItem item, ItemStack stack) {
+        ImmutableMap.Builder<ModelPartReference, BakedModel> toReturn = ImmutableMap.builder();
+
+        for (Map.Entry<ClothingItem.ModelPartReference, ResourceLocation> entry : item.getModels(stack).entrySet()) {
+            BakedModel forPart = Minecraft.getInstance().getModelManager().getModel(entry.getValue());
+            toReturn.put(entry.getKey(), forPart);
+        }
+
+        return toReturn.buildOrThrow();
+    }
+
+    /**
+     * Don't call this until the ModelManager has finished baking
+     */
+    public static BakedModel getErrorModel() {
+        return Minecraft.getInstance().getModelManager().getModel(ERROR_MODEL_LOCATION);
     }
 }

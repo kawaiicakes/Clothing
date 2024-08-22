@@ -1,5 +1,7 @@
 package io.github.kawaiicakes.clothing.common.item;
 
+import com.google.common.collect.ImmutableMultimap;
+import io.github.kawaiicakes.clothing.common.data.ClothingLayer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.DyeableArmorItem;
@@ -12,6 +14,11 @@ import static io.github.kawaiicakes.clothing.ClothingRegistry.GENERIC_SHIRT;
 import static io.github.kawaiicakes.clothing.ClothingRegistry.SPOOL;
 
 public class ClothingTabs {
+    public static final ImmutableMultimap<ClothingItem.MeshStratum, ClothingLayer> OUCH_TANK_TOP = ImmutableMultimap.of(
+            ClothingItem.MeshStratum.OUTER,
+            new ClothingLayer(new ResourceLocation(MOD_ID, "ouch"), 0xFFFFFF, null)
+    );
+
     public static final CreativeModeTab CLOTHING_TAB = new CreativeModeTab("clothing") {
         @Override
         public @NotNull ItemStack makeIcon() {
@@ -20,7 +27,7 @@ public class ClothingTabs {
 
             clothingItem.setClothingName(toReturn, new ResourceLocation(MOD_ID, "tank_top"));
             clothingItem.setColor(toReturn, 0xFE0253);
-            clothingItem.setOverlays(toReturn, new ResourceLocation[]{new ResourceLocation(MOD_ID, "ouch")});
+            clothingItem.setOverlays(toReturn, OUCH_TANK_TOP);
 
             return toReturn;
         }
