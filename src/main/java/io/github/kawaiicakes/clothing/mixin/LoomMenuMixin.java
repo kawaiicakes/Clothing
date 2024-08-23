@@ -1,6 +1,6 @@
 package io.github.kawaiicakes.clothing.mixin;
 
-import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Multimap;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
@@ -125,7 +125,9 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
                 ImmutableListMultimap<ClothingItem.MeshStratum, ClothingLayer> existingOverlays
                         = clothingItem.getOverlays(clothingStack);
 
-                ImmutableCollection<ClothingLayer> overlayList = existingOverlays.values();
+                ImmutableList<ClothingLayer> overlayList = existingOverlays.get(
+                        ClothingItem.MeshStratum.forSlot(clothingItem.getSlot())
+                );
 
                 if (overlayList.isEmpty()) {
                     /* FIXME:
@@ -140,12 +142,12 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
                     );
 
                     clothingItem.setOverlays(
-                            clothingStack,
+                            outputStack,
                             overlaysForEmpty
                     );
-                } else if (!overlayList.asList().get(0).equals(layerToAdd)) {
+                } else if (!overlayList.get(0).equals(layerToAdd)) {
                         clothingItem.addOverlay(
-                                clothingStack,
+                                outputStack,
                                 ClothingItem.MeshStratum.forSlot(clothingItem.getSlot()),
                                 layerToAdd
                         );

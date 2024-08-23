@@ -30,6 +30,8 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.*;
 import java.util.function.Function;
 
+import static io.github.kawaiicakes.clothing.common.item.ClothingItem.ERROR_MODEL_LOCATION;
+
 public class ClothingItemModel implements IUnbakedGeometry<ClothingItemModel> {
     protected static final Logger LOGGER = LogUtils.getLogger();
 
@@ -86,49 +88,59 @@ public class ClothingItemModel implements IUnbakedGeometry<ClothingItemModel> {
         }
 
         protected static List<BakedModel> getList(int modelHash, ItemStack clothingStack) {
-            return MODEL_LIST_CACHE.computeIfAbsent(
-                    modelHash,
-                    (i) -> {
-                        if (!(clothingStack.getItem() instanceof ClothingItem clothing))
-                            throw new IllegalArgumentException(
-                                    "Passed ItemStack '" + clothingStack + "' is not a ClothingItem!"
-                            );
+            try {
+                return MODEL_LIST_CACHE.computeIfAbsent(
+                        modelHash,
+                        (i) -> {
+                            if (!(clothingStack.getItem() instanceof ClothingItem clothing))
+                                throw new IllegalArgumentException(
+                                        "Passed ItemStack '" + clothingStack + "' is not a ClothingItem!"
+                                );
 
-                        BakedModel missingModel = get(ModelBakery.MISSING_MODEL_LOCATION);
+                            BakedModel missingModel = get(ModelBakery.MISSING_MODEL_LOCATION);
 
-                        List<BakedModel> toReturn = new ArrayList<>();
+                            List<BakedModel> toReturn = new ArrayList<>();
 
-                        ResourceLocation baseLocation
-                                = ClothingItemRenderer.entryModelLocation(clothing.getClothingName(clothingStack));
-                        BakedModel baseModel = get(baseLocation);
+                            ResourceLocation baseLocation
+                                    = ClothingItemRenderer.entryModelLocation(clothing.getClothingName(clothingStack));
+                            BakedModel baseModel = get(baseLocation);
 
-                        if (baseModel.equals(missingModel)) {
-                            LOGGER.error("Base clothing model '{}' does not exist!", baseLocation);
-                        }
-
-                        toReturn.add(baseModel);
-
-                        ImmutableListMultimap<MeshStratum, ClothingLayer> overlays
-                                = clothing.getOverlays(clothingStack);
-
-                        for (Map.Entry<MeshStratum, Collection<ClothingLayer>> entry : overlays.asMap().entrySet()) {
-                            for (ClothingLayer overlay : entry.getValue()) {
-                                ResourceLocation overlayLocation
-                                        = ClothingItemRenderer.overlayModelLocation(overlay.textureLocation());
-
-                                BakedModel overlayModel = get(overlayLocation);
-
-                                if (overlayModel.equals(missingModel)) {
-                                    LOGGER.error("Overlay item model '{}' does not exist!", overlayLocation);
-                                }
-
-                                toReturn.add(overlayModel);
+                            if (baseModel.equals(missingModel)) {
+                                LOGGER.error("Base clothing model '{}' does not exist!", baseLocation);
                             }
-                        }
 
-                        return toReturn;
-                    }
-            );
+                            toReturn.add(baseModel);
+
+                            ImmutableListMultimap<MeshStratum, ClothingLayer> overlays
+                                    = clothing.getOverlays(clothingStack);
+
+                            for (MeshStratum stratum : MeshStratum.values()) {
+                                if (!overlays.containsKey(stratum)) continue;
+                                List<ClothingLayer> layers = overlays.get(stratum);
+
+                                for (int j = layers.size() - 1; j >= 0; j--) {
+                                    ClothingLayer overlay = layers.get(j);
+
+                                    ResourceLocation overlayLocation
+                                            = ClothingItemRenderer.overlayModelLocation(overlay.textureLocation());
+
+                                    BakedModel overlayModel = get(overlayLocation);
+
+                                    if (overlayModel.equals(missingModel)) {
+                                        LOGGER.error("Overlay item model '{}' does not exist!", overlayLocation);
+                                    }
+
+                                    toReturn.add(overlayModel);
+                                }
+                            }
+
+                            return toReturn;
+                        }
+                );
+            } catch (Exception e) {
+                LOGGER.error("Unable to return list of passes for render!", e);
+                return List.of(Minecraft.getInstance().getModelManager().getModel(ERROR_MODEL_LOCATION));
+            }
         }
 
         public Baked(T originalModel) {

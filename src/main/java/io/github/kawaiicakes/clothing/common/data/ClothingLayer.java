@@ -81,4 +81,12 @@ public record ClothingLayer(ResourceLocation textureLocation, int color, @Nullab
 
         return new ClothingLayer(textureLocation, color, visibility);
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof ClothingLayer other)) return false;
+        return this.textureLocation.equals(other.textureLocation)
+                && this.color == other.color
+                && this.clothingVisibility == other.clothingVisibility;
+    }
 }

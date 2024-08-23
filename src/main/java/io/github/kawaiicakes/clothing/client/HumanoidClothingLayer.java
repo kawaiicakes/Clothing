@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNullableByDefault;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.ERROR_MODEL_LOCATION;
@@ -72,6 +73,7 @@ public class HumanoidClothingLayer<
 
     protected Map<CompoundTag, Map<ClothingItem.ModelPartReference, BakedModel>> bakedModels = null;
 
+    // TODO: add fallbacks everywhere necessary so clothing with fucked up NBT doesn't just break the game. A Source engine ERROR model would be nice for baked models that can't be found too
     /**
      * Added during {@link EntityRenderersEvent.AddLayers} to appropriate renderer. Creates a
      * {@link RenderLayer} that behaves vaguely like its parent,
@@ -202,7 +204,11 @@ public class HumanoidClothingLayer<
 
                 if (overlays.isEmpty()) continue;
 
-                for (ClothingLayer overlay : overlays.get(entry.getKey())) {
+                List<ClothingLayer> overlaysForStratum = (List<ClothingLayer>) overlays.get(entry.getKey());
+
+                for (int j = overlaysForStratum.size() - 1; j >= 0 ; j--) {
+                    ClothingLayer overlay = overlaysForStratum.get(j);
+
                     this.renderMesh(
                             pMatrixStack,
                             pBuffer, pPackedLight,
@@ -225,7 +231,6 @@ public class HumanoidClothingLayer<
         }
     }
 
-    // FIXME: here or somewhere else, something is causing clothing to only use the default model
     public void renderMesh(
             PoseStack pPoseStack,
             MultiBufferSource pBuffer, int pPackedLight, boolean pGlint,

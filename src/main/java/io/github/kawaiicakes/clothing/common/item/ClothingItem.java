@@ -51,7 +51,6 @@ import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 import static net.minecraft.core.cauldron.CauldronInteraction.DYED_ITEM;
 
 // TODO: the default colour given by a clothing entry is reflected in #hasCustomColor
-// TODO: add fallbacks everywhere necessary so clothing with fucked up NBT doesn't just break the game. A Source engine ERROR model would be nice for baked models that can't be found too
 /**
  * Each implementation of this will likely represent an item that renders as one model type (e.g. JSON, OBJ). The
  * {@code ClothingItem} simply subclasses {@link ArmorItem} and is made to flexibly create and render pieces of
@@ -340,7 +339,6 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
         this.getClothingPropertiesTag(itemStack).put(OVERLAY_NBT_KEY, serializedStrata);
     }
 
-    // FIXME: something funky is going on here or in LoomMenuMixin#clothing$setupClothingResultSlot. Overlays won't apply properly and also mutate the banner stack.
     /**
      * If the passed overlay already exists in the passed stratum, it's moved to index 0
      * @param stack
@@ -353,13 +351,18 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
 
         ImmutableMultimap.Builder<MeshStratum, ClothingLayer> edited = ImmutableListMultimap.builder();
 
+        if (existing.isEmpty()) {
+            this.setOverlays(stack, ImmutableListMultimap.of(stratum, overlay));
+            return;
+        }
+
         for (Map.Entry<MeshStratum, Collection<ClothingLayer>> existingEntries : existing.asMap().entrySet()) {
             if (existingEntries.getKey().equals(stratum)) {
                 edited.put(stratum, overlay);
 
                 for (ClothingLayer existingLayer : existingEntries.getValue()) {
                     if (existingLayer.equals(overlay)) continue;
-                    edited.put(stratum, overlay);
+                    edited.put(stratum, existingLayer);
                 }
 
                 continue;
@@ -423,18 +426,54 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
 
     @Override
     public int getColor(@NotNull ItemStack pStack) {
-        try {
-            return pStack.getOrCreateTag().getCompound(CLOTHING_PROPERTY_NBT_KEY).getInt(TAG_COLOR);
-        } catch (RuntimeException ignored) {
-            return 0xFFFFFF;
-        }
+        return this.getColor(pStack, this.getOutermostMesh(pStack));
     }
 
-    // TODO: color methods should work only on outermost layer of clothing. custom loom shit for more targeted dyeing. N.B., baked models automatically inherit the colour set here.
-    // FIXME: tooltip does not reflect colour changes to clothing
+    public int getColor(ItemStack pStack, @Nullable MeshStratum stratum) {
+        if (stratum == null || stratum.equals(this.getOutermostMesh(pStack)))
+            return this.getClothingPropertiesTag(pStack).getInt(TAG_COLOR);
+
+        Map<MeshStratum, ClothingLayer> meshes = this.getMeshes(pStack);
+
+        if (meshes == null || meshes.isEmpty())
+            return this.getClothingPropertiesTag(pStack).getInt(TAG_COLOR);
+
+        ClothingLayer targeted = meshes.get(stratum);
+
+        if (targeted == null) return this.getClothingPropertiesTag(pStack).getInt(TAG_COLOR);
+
+        return targeted.color();
+    }
+
+    @Nullable
+    public MeshStratum getOutermostMesh(ItemStack stack) {
+        Map<MeshStratum, ClothingLayer> meshes = this.getMeshes(stack);
+        if (meshes.isEmpty()) return null;
+        if (meshes.size() == 1) return meshes.keySet().stream().findFirst().get();
+
+        return meshes.keySet().stream().max(Comparator.comparing(MeshStratum::ordinal)).get();
+    }
+
     @Override
     public void setColor(@NotNull ItemStack pStack, int pColor) {
-        pStack.getOrCreateTag().getCompound(CLOTHING_PROPERTY_NBT_KEY).putInt(TAG_COLOR, pColor);
+        this.setColor(pStack, this.getOutermostMesh(pStack), pColor);
+    }
+
+    public void setColor(@NotNull ItemStack pStack, MeshStratum stratum, int pColor) {
+        Map<MeshStratum, ClothingLayer> meshes = this.getMeshes(pStack);
+
+        this.getClothingPropertiesTag(pStack).putInt(TAG_COLOR, pColor);
+
+        if (meshes == null || meshes.isEmpty() || stratum == null) return;
+
+        ClothingLayer targetMesh = meshes.get(stratum);
+        ClothingLayer dyedMesh = new ClothingLayer(
+                targetMesh.textureLocation(), pColor, targetMesh.clothingVisibility()
+        );
+
+        ImmutableMap.Builder<MeshStratum, ClothingLayer> builder = ImmutableMap.builder();
+        builder.putAll(meshes);
+        builder.put(stratum, dyedMesh);
     }
 
     @Override
@@ -463,21 +502,31 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
 
         if (!pIsAdvanced.isAdvanced()) return;
 
-        Multimap<MeshStratum, ClothingLayer> overlayNames = this.getOverlays(pStack);
+        ImmutableListMultimap<MeshStratum, ClothingLayer> overlayNames = this.getOverlays(pStack);
         if (!overlayNames.isEmpty()) {
             pTooltipComponents.add(Component.empty());
             pTooltipComponents.add(
                     Component.translatable("item.modifiers.clothing.overlays")
                             .withStyle(ChatFormatting.GRAY)
             );
-            for (ClothingLayer overlay : overlayNames.values()) {
-                pTooltipComponents.add(
-                        Component.literal(
-                                overlay.textureLocation()
-                                        + " - #"
-                                        + Integer.toHexString(overlay.color()).toUpperCase()
-                                ).withStyle(ChatFormatting.BLUE)
-                );
+
+            boolean firstIndex = true;
+            for (MeshStratum mesh : MeshStratum.values()) {
+                if (!overlayNames.containsKey(mesh)) continue;
+                List<ClothingLayer> overlays = overlayNames.get(mesh);
+
+                if (!firstIndex) pTooltipComponents.add(Component.empty());
+                else firstIndex = false;
+
+                for (ClothingLayer overlay : overlays) {
+                    pTooltipComponents.add(
+                            Component.literal(
+                                    overlay.textureLocation()
+                                            + " - #"
+                                            + Integer.toHexString(overlay.color()).toUpperCase()
+                            ).withStyle(ChatFormatting.BLUE)
+                    );
+                }
             }
         }
 
@@ -498,9 +547,9 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
         );
 
         Map<MeshStratum, ClothingLayer> textures = this.getMeshes(pStack);
-        for (Map.Entry<MeshStratum, ClothingLayer> layerEntry : textures.entrySet()) {
-            String meshName = layerEntry.getKey().getSerializedName();
-            String fullString = meshName + " - #" + Integer.toHexString(layerEntry.getValue().color()).toUpperCase();
+        for (MeshStratum stratum : textures.keySet()) {
+            String meshName = stratum.getSerializedName();
+            String fullString = meshName + " - #" + Integer.toHexString(this.getColor(pStack, stratum)).toUpperCase();
             pTooltipComponents.add(
                     Component.literal(fullString)
                             .withStyle(ChatFormatting.BLUE)

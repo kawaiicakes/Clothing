@@ -9,6 +9,7 @@ import com.mojang.logging.LogUtils;
 import com.mojang.serialization.JsonOps;
 import io.github.kawaiicakes.clothing.ClothingRegistry;
 import io.github.kawaiicakes.clothing.common.data.ClothingLayer;
+import io.github.kawaiicakes.clothing.common.data.ClothingVisibility;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
@@ -109,7 +110,7 @@ public class ClothingEntryLoader extends SimpleJsonResourceReloadListener {
 
                 meshes = topElement.has("meshes")
                         ? meshesFromJson(topElement.getAsJsonObject("meshes"))
-                        : clothingItem.getMeshes(clothingStack);
+                        : defaultMeshForEntry(entryId, slot, clothingItem, clothingStack);
 
                 models = topElement.has("models")
                         ? modelsFromJson(topElement.getAsJsonObject("models"))
@@ -135,6 +136,24 @@ public class ClothingEntryLoader extends SimpleJsonResourceReloadListener {
             clothingItem.setModels(clothingStack, models);
             clothingItem.setOverlays(clothingStack, overlays);
         };
+    }
+
+    public static Map<MeshStratum, ClothingLayer> defaultMeshForEntry(
+            ResourceLocation entryId, EquipmentSlot slot, ClothingItem clothingItem, ItemStack clothingStack
+    ) {
+        try {
+            return ImmutableMap.of(
+                    MeshStratum.forSlot(slot),
+                    new ClothingLayer(
+                            entryId,
+                            0xFFFFFF,
+                            new ClothingVisibility(defaultPartVisibility(slot))
+                    )
+            );
+        } catch (Exception e) {
+            LOGGER.error("Error generating mesh for entry '{}'!", entryId, e);
+            return clothingItem.getMeshes(clothingStack);
+        }
     }
 
     public static Map<MeshStratum, ClothingLayer> meshesFromJson(JsonObject object) {
