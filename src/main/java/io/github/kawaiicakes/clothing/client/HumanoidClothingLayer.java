@@ -73,7 +73,6 @@ public class HumanoidClothingLayer<
 
     protected Map<CompoundTag, Map<ClothingItem.ModelPartReference, BakedModel>> bakedModels = null;
 
-    // TODO: add fallbacks everywhere necessary so clothing with fucked up NBT doesn't just break the game. A Source engine ERROR model would be nice for baked models that can't be found too
     /**
      * Added during {@link EntityRenderersEvent.AddLayers} to appropriate renderer. Creates a
      * {@link RenderLayer} that behaves vaguely like its parent,
@@ -282,7 +281,7 @@ public class HumanoidClothingLayer<
             ClothingItem.ModelPartReference modelPartReference = entry.getKey();
             BakedModel forRender = entry.getValue();
 
-            if (forRender == null) {
+            if (forRender == null || Minecraft.getInstance().getModelManager().getMissingModel().equals(forRender)) {
                 forRender = getErrorModel();
             }
 
