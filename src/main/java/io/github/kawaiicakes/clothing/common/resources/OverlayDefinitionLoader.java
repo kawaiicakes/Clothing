@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 import static io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader.GSON;
 
-// TODO: overlays should now declare what MeshStrata they may be applied to. Defaults to the default stratum for the slot
+// TODO: Clothing should now declare to which strata overlays can be applied. Defaults to the default stratum for the slot.
 public class OverlayDefinitionLoader extends SimpleJsonResourceReloadListener {
     protected static final Logger LOGGER = LogUtils.getLogger();
 
