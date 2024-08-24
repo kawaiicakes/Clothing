@@ -314,9 +314,12 @@ public class HumanoidClothingLayer<
         }
     }
 
-    // FIXME: clothing does not become translucent
-    // FIXME: values not equal to 1.0F cause colour of overlay to "infect" base layer for GenericClothingItems
-    // TODO: fully implement this. this is incomplete and does nothing
+    /* TODO:
+        fully implement this. this is incomplete and does nothing. At present, even values that are not equal to 1
+        does not result in clothing becoming translucent, and in fact cause colour of overlay to "infect" the base
+        layer. Perhaps this will be done in a future release seeing as this doesn't even have settable values
+        in the loaders.
+     */
     /**
      * Returns the alpha value for render.
      * @param livingEntity the {@link LivingEntity} the clothing is on.
