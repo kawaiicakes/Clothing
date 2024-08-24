@@ -1,0 +1,8 @@
+{
+  "loader": "forge:obj",
+  "flip_v": true,
+  "model": "clothing:models/clothing/error.obj",
+  "textures": {
+    "texture0": "clothing:models/clothing/error"
+  }
+}
