@@ -42,7 +42,6 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent;
 import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.jetbrains.annotations.NotNull;
@@ -79,7 +78,6 @@ public class ClothingMod
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::onInterModEnqueue);
         modEventBus.addListener(this::onGatherData);
-        modEventBus.addListener(this::onLoadComplete);
 
         forgeEventBus.addListener(this::onAddReloadListener);
         forgeEventBus.addListener(this::onDatapackSync);
@@ -96,6 +94,9 @@ public class ClothingMod
         ClothingEntryLoader.getInstance();
 
         ClothingPackets.register();
+
+        ClothingRegistry.registerBrewingRecipes();
+        ClothingRegistry.registerCauldronInteractions();
     }
 
     @SubscribeEvent
@@ -183,13 +184,6 @@ public class ClothingMod
                 event.includeServer() || event.includeClient(),
                 clothingOverlayGenerator
         );
-    }
-
-    @SubscribeEvent
-    public void onLoadComplete(FMLLoadCompleteEvent event) {
-        // FIXME: move to CommonSetup: see if that works or not (this event really shouldn't be used)
-        ClothingRegistry.registerBrewingRecipes();
-        ClothingRegistry.registerCauldronInteractions();
     }
 
     @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
