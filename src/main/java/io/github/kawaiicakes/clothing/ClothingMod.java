@@ -60,7 +60,6 @@ import static io.github.kawaiicakes.clothing.ClothingRegistry.DRIPPING_BLEACH;
 
 // TODO: javadoc and misc cleanup
 // TODO: add JEI compat for new loom recipes
-// TODO: add new crafting type/"dye vial", allows crafting any dye colour from (automatically generated) inputs
 @Mod(ClothingMod.MOD_ID)
 public class ClothingMod
 {
