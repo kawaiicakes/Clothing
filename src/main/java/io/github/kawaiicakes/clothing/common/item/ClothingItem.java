@@ -593,21 +593,51 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
         }
     }
 
-    // FIXME: this and a few other methods currently do not account for colours on other strata
     @Override
     public boolean hasCustomColor(@NotNull ItemStack pStack) {
         try {
-            return this.getColor(pStack) != this.getDefaultColor(pStack);
+            return this.hasCustomColor(pStack, this.getOutermostMesh(pStack));
         } catch (Exception e) {
-            LOGGER.error("Unable to determine if a custom clothing color is present on ItemStack '{}'!", pStack, e);
+            LOGGER.error(
+                    "Unable to determine if a custom clothing color is present on ItemStack '{}' on outermost stratum!",
+                    pStack,
+                    e
+            );
             return false;
         }
     }
 
+    public boolean hasCustomColor(ItemStack stack, MeshStratum stratum) {
+        try {
+            return this.getColor(stack, stratum) != this.getDefaultColor(stack);
+        } catch (Exception e) {
+            LOGGER.error(
+                    "Unable to determine if a custom clothing color is present on ItemStack '{}' for strata '{}'!",
+                    stack,
+                    stratum,
+                    e
+            );
+            return false;
+        }
+    }
+
+    /**
+     * Clearing colour will clear all meshes starting from the outermost one
+     */
     @Override
     public void clearColor(@NotNull ItemStack pStack) {
         try {
-            this.setColor(pStack, this.getDefaultColor(pStack));
+            Map<MeshStratum, ClothingLayer> meshes = this.getMeshes(pStack);
+
+            for (int i = MeshStratum.values().length - 1; i >= 0; i--) {
+                MeshStratum iterated = MeshStratum.values()[i];
+
+                if (!meshes.containsKey(iterated)) continue;
+
+                this.setColor(pStack, iterated, this.getDefaultColor(pStack));
+
+                break;
+            }
         } catch (Exception e) {
             LOGGER.error("Unable to clear clothing colors present on ItemStack '{}'!", pStack, e);
         }
