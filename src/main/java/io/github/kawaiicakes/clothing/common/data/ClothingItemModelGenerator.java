@@ -45,9 +45,6 @@ public class ClothingItemModelGenerator extends ItemModelProvider {
 
         this.overlays = clothingOverlayGenerator.getOverlays();
 
-        // TODO: pseudo datagen using command from in-game; takes client assets and generates models, lang, entries, overlays...
-        // see other mods for ways to write files in a way that won't break
-
         this.registerItemModels();
         this.clothingEntryGenerator.buildEntries(this::registerBaseClothingModels);
         this.registerOverlayModels();
