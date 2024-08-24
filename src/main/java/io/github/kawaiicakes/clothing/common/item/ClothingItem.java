@@ -50,7 +50,6 @@ import java.util.function.Consumer;
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
 import static net.minecraft.core.cauldron.CauldronInteraction.DYED_ITEM;
 
-// TODO: the default colour given by a clothing entry is reflected in #hasCustomColor
 /**
  * Each implementation of this will likely represent an item that renders as one model type (e.g. JSON, OBJ). The
  * {@code ClothingItem} simply subclasses {@link ArmorItem} and is made to flexibly create and render pieces of
@@ -63,6 +62,7 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
     public static final String CLOTHING_PROPERTY_NBT_KEY = "ClothingProperties";
     public static final String CLOTHING_NAME_KEY = "name";
     public static final String CLOTHING_SLOT_NBT_KEY = "slot";
+    public static final String DEFAULT_COLOR_KEY = "default_color";
     public static final String CLOTHING_LORE_NBT_KEY = "lore";
     public static final String ATTRIBUTES_KEY = "attributes";
     public static final String EQUIP_SOUND_KEY = "equip_sound";
@@ -139,6 +139,7 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
 
         this.setSlot(toReturn, this.getSlot());
         this.setColor(toReturn, 0xFFFFFF);
+        this.setDefaultColor(toReturn, 0xFFFFFF);
         this.setClothingLore(toReturn, List.of());
         this.setAttributeModifiers(
                 toReturn,
@@ -476,15 +477,23 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
         builder.put(stratum, dyedMesh);
     }
 
+    // FIXME: this and a few other methods currently do not account for colours on other strata
     @Override
     public boolean hasCustomColor(@NotNull ItemStack pStack) {
-        CompoundTag root = this.getClothingPropertiesTag(pStack);
-        return root.contains(TAG_COLOR, 99) && root.getInt(TAG_COLOR) != 0xFFFFFF;
+        return this.getColor(pStack) != this.getDefaultColor(pStack);
     }
 
     @Override
     public void clearColor(@NotNull ItemStack pStack) {
-        this.setColor(pStack, 0xFFFFFF);
+        this.setColor(pStack, this.getDefaultColor(pStack));
+    }
+
+    public void setDefaultColor(@NotNull ItemStack pStack, int pColor) {
+        this.getClothingPropertiesTag(pStack).putInt(DEFAULT_COLOR_KEY, pColor);
+    }
+
+    public int getDefaultColor(ItemStack stack) {
+        return this.getClothingPropertiesTag(stack).getInt(DEFAULT_COLOR_KEY);
     }
 
     @Override

@@ -127,6 +127,7 @@ public class ClothingEntryLoader extends SimpleJsonResourceReloadListener {
             clothingItem.setClothingName(clothingStack, entryId);
             clothingItem.setSlot(clothingStack, slot);
             clothingItem.setColor(clothingStack, color);
+            clothingItem.setDefaultColor(clothingStack, color);
             clothingItem.setAttributeModifiers(clothingStack, modifiers);
             clothingItem.setMaxDamage(clothingStack, durability);
             clothingItem.setEquipSound(clothingStack, equipSoundLocation);
