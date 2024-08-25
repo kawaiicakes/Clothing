@@ -178,10 +178,10 @@ public class HumanoidClothingLayer<
                         clothingModel, entry.getValue().clothingVisibility().asArray()
                 );
 
-                int i = clothingItem.getColor(stack);
-                float r = (float) (i >> 16 & 255) / 255.0F;
-                float g = (float) (i >> 8 & 255) / 255.0F;
-                float b = (float) (i & 255) / 255.0F;
+                int clothingColor = clothingItem.getColor(stack);
+                float rClothing = (float) (clothingColor >> 16 & 255) / 255.0F;
+                float gClothing = (float) (clothingColor >> 8 & 255) / 255.0F;
+                float bClothing = (float) (clothingColor & 255) / 255.0F;
 
                 this.renderBakedModels(stack, pMatrixStack, pBuffer, pPackedLight);
 
@@ -190,7 +190,7 @@ public class HumanoidClothingLayer<
                         pBuffer, pPackedLight,
                         hasGlint,
                         clothingModel,
-                        r, g, b, this.getAlpha(
+                        rClothing, gClothing, bClothing, this.getAlpha(
                                 pEntity,
                                 stack, clothingItem.getSlot(),
                                 pPackedLight,
@@ -208,12 +208,24 @@ public class HumanoidClothingLayer<
                 for (int j = overlaysForStratum.size() - 1; j >= 0 ; j--) {
                     ClothingLayer overlay = overlaysForStratum.get(j);
 
+                    int overlayColor = overlay.color();
+
+                    float rOverlay = overlayColor != ClothingItem.FALLBACK_COLOR
+                            ? (float) (overlayColor >> 16 & 255) / 255.0F
+                            : 1.0F;
+                    float gOverlay = overlayColor != ClothingItem.FALLBACK_COLOR
+                            ? (float) (overlayColor >> 8 & 255) / 255.0F
+                            : 1.0F;
+                    float bOverlay = overlayColor != ClothingItem.FALLBACK_COLOR
+                            ? (float) (overlayColor & 255) / 255.0F
+                            : 1.0F;
+
                     this.renderMesh(
                             pMatrixStack,
                             pBuffer, pPackedLight,
                             hasGlint,
                             clothingModel,
-                            1.0F, 1.0F, 1.0F, this.getAlpha(
+                            rOverlay, gOverlay, bOverlay, this.getAlpha(
                                     null,
                                     stack, clothingItem.getSlot(),
                                     pPackedLight,
@@ -318,7 +330,7 @@ public class HumanoidClothingLayer<
         fully implement this. this is incomplete and does nothing. At present, even values that are not equal to 1
         does not result in clothing becoming translucent, and in fact cause colour of overlay to "infect" the base
         layer. Perhaps this will be done in a future release seeing as this doesn't even have settable values
-        in the loaders.
+        in the loaders. Also, ClothingItem may be a better location for this method
      */
     /**
      * Returns the alpha value for render.

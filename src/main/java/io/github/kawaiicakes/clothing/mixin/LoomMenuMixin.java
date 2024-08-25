@@ -37,7 +37,6 @@ import java.util.Collections;
 import java.util.List;
 
 // TODO: overlay pattern: banner pattern but allows access to otherwise unobtainable overlays (also allows op'd/creative players to force overlays onto clothing that normally shouldn't work)
-// TODO: Spool can be coloured to confer that colour to the overlay
 @Mixin(LoomMenu.class)
 public abstract class LoomMenuMixin extends AbstractContainerMenu implements LoomMenuOverlayGetter {
     @Unique
@@ -139,10 +138,10 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
         if (
                 clothingStack.getItem() instanceof ClothingItem genericClothingItem
                         && overlay != null
-                        && dyeStack.getItem() instanceof SpoolItem
+                        && dyeStack.getItem() instanceof SpoolItem spoolItem
         ) {
             ClothingLayer layerToAdd = new ClothingLayer(
-                    overlay.name(), ClothingItem.FALLBACK_COLOR, null
+                    overlay.name(), spoolItem.getColor(dyeStack), null
             );
 
             ImmutableListMultimap<ClothingItem.MeshStratum, ClothingLayer> existingOverlays

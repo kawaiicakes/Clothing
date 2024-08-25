@@ -433,7 +433,8 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
     }
 
     /**
-     * If the passed overlay already exists in the passed stratum, it's moved to index 0
+     * If the passed overlay already exists in the passed stratum, it's moved to index 0. Exact equality between
+     * passed overlay and the existing one is not checked; rather, only the names.
      */
     public void addOverlay(ItemStack stack, MeshStratum stratum, ClothingLayer overlay) {
         try {
@@ -452,7 +453,7 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
                     edited.put(stratum, overlay);
 
                     for (ClothingLayer existingLayer : existingEntries.getValue()) {
-                        if (existingLayer.equals(overlay)) continue;
+                        if (existingLayer.textureLocation().equals(overlay.textureLocation())) continue;
                         edited.put(stratum, existingLayer);
                     }
 
