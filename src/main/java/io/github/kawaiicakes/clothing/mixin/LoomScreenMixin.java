@@ -15,6 +15,7 @@ import com.mojang.math.Vector3f;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
 import io.github.kawaiicakes.clothing.common.LoomMenuOverlayGetter;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.SpoolItem;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -444,9 +445,11 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
             LoomScreen instance, boolean value, Operation<Void> original
     ) {
         ItemStack clothingStack = this.menu.getBannerSlot().getItem();
+        ItemStack spoolStack = this.menu.getDyeSlot().getItem();
 
         this.clothing$displayOverlays = !clothingStack.isEmpty()
-                && clothingStack.getItem() instanceof ClothingItem;
+                && clothingStack.getItem() instanceof ClothingItem
+                && spoolStack.getItem() instanceof SpoolItem;
 
         original.call(instance, value && !(clothingStack.getItem() instanceof ClothingItem));
     }

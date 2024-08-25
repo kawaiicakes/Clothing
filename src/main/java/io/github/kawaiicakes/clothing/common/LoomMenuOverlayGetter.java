@@ -10,7 +10,9 @@ public interface LoomMenuOverlayGetter {
         return List.of();
     }
 
-    default List<OverlayDefinitionLoader.OverlayDefinition> getClothing$selectableOverlays(ItemStack stack) {
+    default List<OverlayDefinitionLoader.OverlayDefinition> getClothing$selectableOverlays(
+            ItemStack clothing, ItemStack spool, ItemStack pattern
+    ) {
         return List.of();
     }
 }

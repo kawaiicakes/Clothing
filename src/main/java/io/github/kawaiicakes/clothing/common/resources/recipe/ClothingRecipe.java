@@ -36,8 +36,8 @@ import static io.github.kawaiicakes.clothing.ClothingRegistry.CLOTHING_SERIALIZE
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.*;
 import static net.minecraft.world.item.DyeableLeatherItem.TAG_COLOR;
 
-/*
-    TODO: add support for using clothing as ingredients. Unlike when making a result, users will be allowed to use
+/* TODO:
+    add support for using clothing as ingredients. Unlike when making a result, users will be allowed to use
     any property they see fit. Any declarations made will overwrite the data from the entry they declared. Users will
     also be able to use the "default" entries. The default entries are just concrete entries for the default itemstacks
  */

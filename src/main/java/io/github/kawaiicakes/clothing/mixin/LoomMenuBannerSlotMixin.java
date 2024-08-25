@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.Constant;
 
 @Mixin(targets = "net/minecraft/world/inventory/LoomMenu$3")
-public class LoomMenu$3Mixin {
+public class LoomMenuBannerSlotMixin {
     /**
      * Far less destructive way to allow the banner slot to accept clothing items than in previous versions.
      * @param object the object being passed to the {@code instanceof} call
