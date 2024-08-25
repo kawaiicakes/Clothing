@@ -16,7 +16,9 @@ import static io.github.kawaiicakes.clothing.ClothingRegistry.SPOOL;
 public class ClothingTabs {
     public static final ImmutableMultimap<ClothingItem.MeshStratum, ClothingLayer> OUCH_TANK_TOP = ImmutableMultimap.of(
             ClothingItem.MeshStratum.OUTER,
-            new ClothingLayer(new ResourceLocation(MOD_ID, "ouch"), 0xFFFFFF, null)
+            new ClothingLayer(
+                    new ResourceLocation(MOD_ID, "ouch"), ClothingItem.FALLBACK_COLOR, null
+            )
     );
 
     public static final CreativeModeTab CLOTHING_TAB = new CreativeModeTab("clothing") {

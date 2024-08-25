@@ -74,7 +74,7 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
     public static final ResourceLocation ERROR_MODEL_LOCATION = new ResourceLocation(MOD_ID, "error");
     public static final ImmutableMap<ModelPartReference, ResourceLocation> ERROR_MODEL
             = ImmutableMap.of(ModelPartReference.BODY, ERROR_MODEL_LOCATION);
-    public static final int FALLBACK_COLOR = 0xFFFFFF;
+    public static final int FALLBACK_COLOR = 16383998;
 
     public static final CauldronInteraction NEW_DYED_ITEM = (pBlockState, pLevel, pPos, pPlayer, pHand, pStack) -> {
         InteractionResult result = DYED_ITEM.interact(pBlockState, pLevel, pPos, pPlayer, pHand, pStack);
@@ -531,16 +531,16 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
     public int getColor(ItemStack pStack, @Nullable MeshStratum stratum) {
         try {
             if (stratum == null || stratum.equals(this.getOutermostMesh(pStack)))
-                return this.getClothingPropertiesTag(pStack).getInt(TAG_COLOR);
+                return (int) this.getClothingPropertiesTag(pStack).getLong(TAG_COLOR);
 
             Map<MeshStratum, ClothingLayer> meshes = this.getMeshes(pStack);
 
             if (meshes == null || meshes.isEmpty())
-                return this.getClothingPropertiesTag(pStack).getInt(TAG_COLOR);
+                return (int) this.getClothingPropertiesTag(pStack).getLong(TAG_COLOR);
 
             ClothingLayer targeted = meshes.get(stratum);
 
-            if (targeted == null) return this.getClothingPropertiesTag(pStack).getInt(TAG_COLOR);
+            if (targeted == null) return (int) this.getClothingPropertiesTag(pStack).getLong(TAG_COLOR);
 
             return targeted.color();
         } catch (Exception e) {
@@ -576,7 +576,7 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
         try {
             Map<MeshStratum, ClothingLayer> meshes = this.getMeshes(pStack);
 
-            this.getClothingPropertiesTag(pStack).putInt(TAG_COLOR, pColor);
+            this.getClothingPropertiesTag(pStack).putLong(TAG_COLOR, pColor);
 
             if (meshes == null || meshes.isEmpty() || stratum == null) return;
 
@@ -645,7 +645,7 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
 
     public void setDefaultColor(@NotNull ItemStack pStack, int pColor) {
         try {
-            this.getClothingPropertiesTag(pStack).putInt(DEFAULT_COLOR_KEY, pColor);
+            this.getClothingPropertiesTag(pStack).putLong(DEFAULT_COLOR_KEY, pColor);
         } catch (Exception e) {
             LOGGER.error("Unable to set default clothing color for ItemStack '{}'!", pStack, e);
         }
@@ -655,10 +655,10 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
         try {
             CompoundTag properties = this.getClothingPropertiesTag(stack);
 
-            if (!properties.contains(DEFAULT_COLOR_KEY, Tag.TAG_INT))
-                properties.putInt(DEFAULT_COLOR_KEY, FALLBACK_COLOR);
+            if (!properties.contains(DEFAULT_COLOR_KEY, Tag.TAG_LONG))
+                properties.putLong(DEFAULT_COLOR_KEY, FALLBACK_COLOR);
 
-            return properties.getInt(DEFAULT_COLOR_KEY);
+            return (int) properties.getLong(DEFAULT_COLOR_KEY);
         } catch (Exception e) {
             LOGGER.error("Unable to get default clothing color for ItemStack '{}'!", stack, e);
             return FALLBACK_COLOR;

@@ -220,7 +220,7 @@ public class ClothingEntryGenerator implements DataProvider {
                     stratum,
                     new ClothingLayer(
                             meshLocation,
-                            0xFFFFFF,
+                            FALLBACK_COLOR,
                             new ClothingVisibility(ClothingItem.defaultPartVisibility(this.clothingItem.getSlot()))
                     )
             );
@@ -242,7 +242,7 @@ public class ClothingEntryGenerator implements DataProvider {
                     stratum,
                     new ClothingLayer(
                             meshLocation,
-                            0xFFFFFF,
+                            FALLBACK_COLOR,
                             null
                     )
             );

@@ -54,7 +54,7 @@ public record ClothingLayer(ResourceLocation textureLocation, int color, @Nullab
         } catch (Exception e) {
             LOGGER.error("Unable to deserialize ClothingLayer!", e);
             textureLocation = ClothingItem.DEFAULT_TEXTURE_LOCATION;
-            color = 0xFFFFFF;
+            color = ClothingItem.FALLBACK_COLOR;
             visibility = null;
         }
 
@@ -75,7 +75,7 @@ public record ClothingLayer(ResourceLocation textureLocation, int color, @Nullab
         } catch (Exception e) {
             LOGGER.error("Unable to deserialize ClothingLayer!", e);
             textureLocation = ClothingItem.DEFAULT_TEXTURE_LOCATION;
-            color = 0xFFFFFF;
+            color = ClothingItem.FALLBACK_COLOR;
             visibility = null;
         }
 

@@ -7,11 +7,11 @@ import io.github.kawaiicakes.clothing.client.model.ClothingItemModel;
 import io.github.kawaiicakes.clothing.client.model.ClothingMeshDefinitions;
 import io.github.kawaiicakes.clothing.common.data.*;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
-import io.github.kawaiicakes.clothing.common.item.SpoolItem;
 import io.github.kawaiicakes.clothing.common.network.ClothingPackets;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.color.item.ItemColor;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -26,6 +26,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.DyeableLeatherItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
@@ -224,18 +225,12 @@ public class ClothingMod
 
         @SubscribeEvent
         public static void onRegisterItemColorHandlers(RegisterColorHandlersEvent.Item event) {
-            event.register(
-                        (pStack, pTintIndex) -> {
-                            if (pTintIndex == 1) return 0xFFFFFF;
-                            return pTintIndex > 0 ? pTintIndex : ((ClothingItem) pStack.getItem()).getColor(pStack);
-                        },
-                    ClothingRegistry.getAll()
-            );
+            ItemColor handler = (pStack, pTintIndex) -> pTintIndex > 0
+                    ? ClothingItem.FALLBACK_COLOR
+                    : ((DyeableLeatherItem) pStack.getItem()).getColor(pStack);
 
-            event.register(
-                    (pStack, pTintIndex) -> pTintIndex > 0 ? 0xFFFFFF : ((SpoolItem) pStack.getItem()).getColor(pStack),
-                    ClothingRegistry.SPOOL.get()
-            );
+            event.register(handler, ClothingRegistry.getAllClothing());
+            event.register(handler, ClothingRegistry.SPOOL.get());
         }
 
         @SubscribeEvent
@@ -333,7 +328,7 @@ public class ClothingMod
                 }
             };
 
-            for (Item clothing : ClothingRegistry.getAll()) {
+            for (Item clothing : ClothingRegistry.getAllClothing()) {
                 CuriosRendererRegistry.register(clothing, () -> renderer);
             }
         }

@@ -401,7 +401,7 @@ public class ClothingRecipeGenerator extends RecipeProvider {
             case "green" -> 6717235;
             case "red" -> 10040115;
             case "black" -> 1644825;
-            default -> 0xFFFFFF;
+            default -> FALLBACK_COLOR;
         };
     }
 }

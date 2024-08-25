@@ -195,7 +195,7 @@ public class ClothingRegistry {
             );
 
     @Nullable
-    public static ClothingItem[] getAll() {
+    public static ClothingItem[] getAllClothing() {
         try {
             ClothingItem[] toReturn = new ClothingItem[CLOTHING_REGISTRY.getEntries().size()];
 
@@ -268,13 +268,15 @@ public class ClothingRegistry {
             pInteractionsMap.put(Items.POWDER_SNOW_BUCKET, FILL_POWDER_SNOW);
         }
 
-        for (Item item : getAll()) {
+        for (Item item : getAllClothing()) {
             WATER.put(item, NEW_DYED_ITEM);
 
             if (!(item instanceof ClothingItem)) continue;
 
             ClothingRegistry.BLEACH.put(item, ClothingItem.OVERLAY_ITEM);
         }
+
+        WATER.put(SPOOL.get(), NEW_DYED_ITEM);
 
         CauldronInteraction emptyPotion = EMPTY.get(Items.POTION);
         EMPTY.put(

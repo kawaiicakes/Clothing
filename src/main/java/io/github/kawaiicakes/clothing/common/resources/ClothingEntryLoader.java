@@ -90,7 +90,7 @@ public class ClothingEntryLoader extends SimpleJsonResourceReloadListener {
 
                 color = topElement.has(TAG_COLOR)
                         ? topElement.getAsJsonPrimitive(TAG_COLOR).getAsInt()
-                        : 0xFFFFFF;
+                        : FALLBACK_COLOR;
 
                 modifiers = topElement.has(ATTRIBUTES_KEY)
                         ? deserializeAttributes(topElement.getAsJsonObject(ATTRIBUTES_KEY))
@@ -147,7 +147,7 @@ public class ClothingEntryLoader extends SimpleJsonResourceReloadListener {
                     MeshStratum.forSlot(slot),
                     new ClothingLayer(
                             entryId,
-                            0xFFFFFF,
+                            FALLBACK_COLOR,
                             new ClothingVisibility(defaultPartVisibility(slot))
                     )
             );
@@ -296,7 +296,7 @@ public class ClothingEntryLoader extends SimpleJsonResourceReloadListener {
 
         ImmutableMap.Builder<ResourceLocation, ItemStack> stackMapBuilder = ImmutableMap.builder();
 
-        for (ClothingItem clothingItem : ClothingRegistry.getAll()) {
+        for (ClothingItem clothingItem : ClothingRegistry.getAllClothing()) {
             for (Map.Entry<ResourceLocation, NbtStackInitializer> entry : this.stackEntries.entrySet()) {
                 try {
                     assert clothingItem != null;

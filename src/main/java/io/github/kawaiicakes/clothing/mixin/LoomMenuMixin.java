@@ -141,7 +141,9 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
                         && overlay != null
                         && dyeStack.getItem() instanceof SpoolItem
         ) {
-            ClothingLayer layerToAdd = new ClothingLayer(overlay.name(), 0xFFFFFF, null);
+            ClothingLayer layerToAdd = new ClothingLayer(
+                    overlay.name(), ClothingItem.FALLBACK_COLOR, null
+            );
 
             ImmutableListMultimap<ClothingItem.MeshStratum, ClothingLayer> existingOverlays
                     = genericClothingItem.getOverlays(clothingStack);
