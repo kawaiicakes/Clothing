@@ -13,11 +13,12 @@ import com.mojang.logging.LogUtils;
 import com.mojang.math.Quaternion;
 import com.mojang.math.Vector3f;
 import io.github.kawaiicakes.clothing.client.HumanoidClothingLayer;
-import io.github.kawaiicakes.clothing.common.LoomMenuOverlayGetter;
+import io.github.kawaiicakes.clothing.common.LoomMenuMixinGetter;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.item.SpoolItem;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.LoomScreen;
 import net.minecraft.client.model.HumanoidModel;
@@ -37,6 +38,7 @@ import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BannerPattern;
+import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
@@ -84,7 +86,7 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
         poseStack.pushPose();
         poseStack.translate((x + 0.5F) + 0.15F, y + 0.60F, 0.0D);
         poseStack.scale(0.40F, 0.40F, 1.0F);
-        blit(poseStack, 0, 0, 16, 16, 32, 32, 64, 64);
+        blit(poseStack, 0, 30, 16, 16, 32, 32, 64, 64);
         poseStack.popPose();
 
         RenderSystem.setShaderTexture(0, BG_LOCATION);
@@ -156,6 +158,42 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
                                 HumanoidModel<AbstractClientPlayer>,
                                 HumanoidModel<AbstractClientPlayer>>
                 ) renderLayer;
+
+        this.addRenderableWidget(
+                new ImageButton(
+                        this.leftPos + 59, this.topPos + 7,
+                        73, 16,
+                        28, 166,
+                        16,
+                        BG_LOCATION,
+                        256, 256,
+                        (button) -> {
+                            int i = ((LoomMenuMixinGetter) this.menu).getClothing$stratumOrdinal();
+                            int j = i + 1;
+                            if (j > 5) j = 0;
+                            ((LoomMenuMixinGetter) this.menu).setClothing$stratumOrdinal(j);
+                            button.setMessage(
+                                    Component.translatable(
+                                            "gui.clothing.loom.layer",
+                                            ClothingItem.MeshStratum.values()[((LoomMenuMixinGetter) this.menu).getClothing$stratumOrdinal()].getSerializedName()
+                                    )
+                            );
+                        },
+                        (pButton, pPoseStack, pMouseX, pMouseY) -> {},
+                        Component.translatable(
+                                "gui.clothing.loom.layer",
+                                ClothingItem.MeshStratum.values()[((LoomMenuMixinGetter) this.menu).getClothing$stratumOrdinal()].getSerializedName()
+                        )
+                ) {
+                    @Override
+                    public void renderButton(
+                            @NotNull PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick
+                    ) {
+                        super.renderButton(pPoseStack, pMouseX, pMouseY, pPartialTick);
+                        if (!this.isActive()) this.setMessage(Component.empty());
+                    }
+                }
+        );
     }
 
     @Inject(
@@ -226,7 +264,7 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
     )
     private int renderBgListSize(int original) {
         if (this.clothing$displayOverlays)
-            return ((LoomMenuOverlayGetter) this.menu).getClothing$selectableOverlays().size();
+            return ((LoomMenuMixinGetter) this.menu).getClothing$selectableOverlays().size();
 
         return original;
     }
@@ -314,7 +352,7 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
 
         if (this.clothing$displayOverlays) {
             List<OverlayDefinitionLoader.OverlayDefinition> overlayList
-                    = ((LoomMenuOverlayGetter) this.menu).getClothing$selectableOverlays();
+                    = ((LoomMenuMixinGetter) this.menu).getClothing$selectableOverlays();
             this.clothing$renderGuiOverlay(pPoseStack, overlayList.get(this.clothing$selectedRowElement), pX, pY);
             return;
         }
@@ -462,7 +500,7 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
     @WrapMethod(method = "totalRowCount")
     private int containerChangedRowCountCheck(Operation<Integer> original) {
         int modifiedReturn
-                = Mth.positiveCeilDiv(((LoomMenuOverlayGetter) this.menu).getClothing$selectableOverlays().size(), 4);
+                = Mth.positiveCeilDiv(((LoomMenuMixinGetter) this.menu).getClothing$selectableOverlays().size(), 4);
 
         if (!this.bannerStack.isEmpty() && this.bannerStack.getItem() instanceof ClothingItem)
             return modifiedReturn;

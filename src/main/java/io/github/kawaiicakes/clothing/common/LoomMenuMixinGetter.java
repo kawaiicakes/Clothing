@@ -5,7 +5,7 @@ import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
 
-public interface LoomMenuOverlayGetter {
+public interface LoomMenuMixinGetter {
     default List<OverlayDefinitionLoader.OverlayDefinition> getClothing$selectableOverlays() {
         return List.of();
     }
@@ -15,4 +15,10 @@ public interface LoomMenuOverlayGetter {
     ) {
         return List.of();
     }
+
+    default int getClothing$stratumOrdinal() {
+        return -1;
+    }
+
+    default void setClothing$stratumOrdinal(int ordinal) {}
 }
