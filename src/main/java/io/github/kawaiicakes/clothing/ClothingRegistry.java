@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.common.fluid.BleachFluid;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.item.ClothingTabs;
+import io.github.kawaiicakes.clothing.common.item.OverlayPatternItem;
 import io.github.kawaiicakes.clothing.common.item.SpoolItem;
 import io.github.kawaiicakes.clothing.common.resources.recipe.ClothingRecipe;
 import net.minecraft.core.BlockPos;
@@ -168,6 +169,13 @@ public class ClothingRegistry {
                     return Items.CAULDRON.getDefaultInstance();
                 }
             }
+    );
+
+    public static final RegistryObject<OverlayPatternItem> OVERLAY_PATTERN = ITEM_REGISTRY.register(
+            "overlay_pattern", () -> new OverlayPatternItem(
+                    new Item.Properties().tab(ClothingTabs.CLOTHING_TAB_OVERLAYS)
+                            .stacksTo(1)
+            )
     );
 
     public static final RegistryObject<SpoolItem> SPOOL = ITEM_REGISTRY.register(

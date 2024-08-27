@@ -14,6 +14,7 @@ import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.common.LoomMenuOverlayGetter;
 import io.github.kawaiicakes.clothing.common.data.ClothingLayer;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.OverlayPatternItem;
 import io.github.kawaiicakes.clothing.common.item.SpoolItem;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import net.minecraft.core.Holder;
@@ -36,7 +37,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-// TODO: overlay pattern: banner pattern but allows access to otherwise unobtainable overlays (also allows op'd/creative players to force overlays onto clothing that normally shouldn't work)
 @Mixin(LoomMenu.class)
 public abstract class LoomMenuMixin extends AbstractContainerMenu implements LoomMenuOverlayGetter {
     @Unique
@@ -106,13 +106,15 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
     }
 
     /**
-     * Intended to prevent selection of banner patterns if a spool item is present in the dye slot.
+     * Intended to prevent selection of banner patterns if a spool item is present in the dye slot, or a special
+     * overlay pattern is in the pattern slot.
      */
     @WrapMethod(method = "getSelectablePatterns(Lnet/minecraft/world/item/ItemStack;)Ljava/util/List;")
     private List<Holder<BannerPattern>> getSelectablePatternsWrapper(
             ItemStack patternStack, Operation<List<Holder<BannerPattern>>> original
     ) {
         if (this.dyeSlot.getItem().getItem() instanceof SpoolItem) return List.of();
+        if (this.patternSlot.getItem().getItem() instanceof OverlayPatternItem) return List.of();
         return original.call(patternStack);
     }
 

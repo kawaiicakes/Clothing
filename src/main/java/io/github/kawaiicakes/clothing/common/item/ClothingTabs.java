@@ -10,8 +10,7 @@ import net.minecraft.world.item.Items;
 import org.jetbrains.annotations.NotNull;
 
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
-import static io.github.kawaiicakes.clothing.ClothingRegistry.GENERIC_SHIRT;
-import static io.github.kawaiicakes.clothing.ClothingRegistry.SPOOL;
+import static io.github.kawaiicakes.clothing.ClothingRegistry.*;
 
 public class ClothingTabs {
     public static final ImmutableMultimap<ClothingItem.MeshStratum, ClothingLayer> OUCH_TANK_TOP = ImmutableMultimap.of(
@@ -52,6 +51,14 @@ public class ClothingTabs {
             // "ashley!" PINK LIVES ON
             SPOOL.get().setColor(toReturn, 0xFFCEEA);
             return toReturn;
+        }
+    };
+
+    public static final CreativeModeTab CLOTHING_TAB_OVERLAYS = new CreativeModeTab("clothing_overlays") {
+        @Override
+        @NotNull
+        public ItemStack makeIcon() {
+            return OVERLAY_PATTERN.get().getDefaultInstance();
         }
     };
 }

@@ -8,7 +8,6 @@
   "refmap": "clothing.refmap.json",
   "mixins": [
     "LivingEntityMixin",
-    "LoomMenuMixin",
     "LoomMenuBannerSlotMixin",
     "LoomMenuDyeSlotMixin",
     "LoomMenuMixin",
