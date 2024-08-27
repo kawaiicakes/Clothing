@@ -10,6 +10,7 @@ import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.network.ClothingPackets;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
+import io.github.kawaiicakes.clothing.common.resources.recipe.ClothingIngredient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.color.item.ItemColor;
 import net.minecraft.client.model.EntityModel;
@@ -32,6 +33,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.*;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.crafting.CraftingHelper;
 import net.minecraftforge.common.data.ExistingFileHelper;
 import net.minecraftforge.data.event.GatherDataEvent;
 import net.minecraftforge.event.AddReloadListenerEvent;
@@ -45,6 +47,8 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegisterEvent;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import top.theillusivec4.curios.api.SlotContext;
@@ -79,9 +83,21 @@ public class ClothingMod
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::onInterModEnqueue);
         modEventBus.addListener(this::onGatherData);
+        modEventBus.addListener(this::onRegisterEvent);
 
         forgeEventBus.addListener(this::onAddReloadListener);
         forgeEventBus.addListener(this::onDatapackSync);
+    }
+
+    @SubscribeEvent
+    public void onRegisterEvent(RegisterEvent event) {
+        event.register(
+                ForgeRegistries.Keys.RECIPE_SERIALIZERS,
+                helper -> CraftingHelper.register(
+                        new ResourceLocation(MOD_ID, "clothing"),
+                        ClothingIngredient.Serializer.INSTANCE
+                )
+        );
     }
 
     @SubscribeEvent

@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import com.mojang.logging.LogUtils;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.resources.ClothingEntryLoader;
@@ -26,21 +27,13 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Supplier;
 
 import static io.github.kawaiicakes.clothing.ClothingRegistry.CLOTHING_SERIALIZER;
 import static io.github.kawaiicakes.clothing.common.item.ClothingItem.*;
 import static net.minecraft.world.item.DyeableLeatherItem.TAG_COLOR;
 
-/* TODO:
-    add support for using clothing as ingredients. Unlike when making a result, users will be allowed to use
-    any property they see fit. Any declarations made will overwrite the data from the entry they declared. Users will
-    also be able to use the "default" entries. The default entries are just concrete entries for the default itemstacks
- */
 public class ClothingRecipe extends ShapedRecipe {
     protected static final Logger LOGGER = LogUtils.getLogger();
 
@@ -75,7 +68,7 @@ public class ClothingRecipe extends ShapedRecipe {
         @ParametersAreNonnullByDefault
         public @NotNull ClothingRecipe fromJson(ResourceLocation pRecipeId, JsonObject pSerializedRecipe) {
             String group = GsonHelper.getAsString(pSerializedRecipe, "group", "");
-            Map<String, Ingredient> ingredientMap = ShapedRecipe.keyFromJson(
+            Map<String, Ingredient> ingredientMap = keyFromJson(
                     GsonHelper.getAsJsonObject(pSerializedRecipe, "key")
             );
             String[] pattern = ShapedRecipe.shrink(
@@ -198,7 +191,7 @@ public class ClothingRecipe extends ShapedRecipe {
                         ? overlaysFromJson(json.getAsJsonArray(OVERLAY_NBT_KEY))
                         : new ListTag();
 
-                if (maxDamage <= 0)
+                if (maxDamage < 0)
                     throw new IllegalArgumentException("Recipe declares impossible durability of " + maxDamage +"!");
 
                 if (!ForgeRegistries.SOUND_EVENTS.containsKey(new ResourceLocation(equipSound)))
@@ -214,6 +207,32 @@ public class ClothingRecipe extends ShapedRecipe {
             toReturn.putInt(MAX_DAMAGE_KEY, maxDamage);
             toReturn.put(OVERLAY_NBT_KEY, overlays);
 
+            return toReturn;
+        }
+
+        public static Map<String, Ingredient> keyFromJson(JsonObject object) {
+            Map<String, Ingredient> toReturn = new HashMap<>();
+
+            for(Map.Entry<String, JsonElement> entry : object.entrySet()) {
+                if (entry.getKey().length() != 1) {
+                    throw new JsonSyntaxException(
+                            "Invalid key entry: '"
+                                    + entry.getKey() + "' is an invalid symbol (must be 1 character only)."
+                    );
+                }
+
+                if (" ".equals(entry.getKey())) {
+                    throw new JsonSyntaxException("Invalid key entry: ' ' is a reserved symbol.");
+                }
+
+                if (entry.getValue().isJsonObject() && entry.getValue().getAsJsonObject().has("clothing")) {
+                    toReturn.put(entry.getKey(), ClothingIngredient.fromJson(entry.getValue()));
+                } else {
+                    toReturn.put(entry.getKey(), Ingredient.fromJson(entry.getValue()));
+                }
+            }
+
+            toReturn.put(" ", Ingredient.EMPTY);
             return toReturn;
         }
 
