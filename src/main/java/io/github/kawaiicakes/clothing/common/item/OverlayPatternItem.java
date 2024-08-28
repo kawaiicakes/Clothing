@@ -1,8 +1,10 @@
 package io.github.kawaiicakes.clothing.common.item;
 
 import com.mojang.logging.LogUtils;
+import io.github.kawaiicakes.clothing.client.ClothingItemRenderer;
 import io.github.kawaiicakes.clothing.common.resources.OverlayDefinitionLoader;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
@@ -13,14 +15,16 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
+import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
+import java.util.function.Consumer;
 
-// TODO: add loom functionality, overlay rendering on icon
+// TODO: add loom functionality, add builder in recipe generator, add "survival" version and "creative" version
 public class OverlayPatternItem extends BannerPatternItem {
     public static final Logger LOGGER = LogUtils.getLogger();
 
@@ -75,5 +79,17 @@ public class OverlayPatternItem extends BannerPatternItem {
         } catch (Exception e) {
             LOGGER.error("Unable to generate clothing entries!", e);
         }
+    }
+
+    @Override
+    public void initializeClient(Consumer<IClientItemExtensions> consumer) {
+        consumer.accept(
+                new IClientItemExtensions() {
+                    @Override
+                    public BlockEntityWithoutLevelRenderer getCustomRenderer() {
+                        return ClothingItemRenderer.getInstance();
+                    }
+                }
+        );
     }
 }

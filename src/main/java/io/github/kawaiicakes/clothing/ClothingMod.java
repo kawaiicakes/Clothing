@@ -251,6 +251,8 @@ public class ClothingMod
          */
         @SubscribeEvent
         public static void onModelRegistration(ModelEvent.RegisterAdditional event) {
+            event.register(new ResourceLocation(MOD_ID, "item/overlay_pattern_base"));
+
             Collection<Collection<ResourceLocation>> lists = new ArrayList<>();
             ResourceManager manager = Minecraft.getInstance().getResourceManager();
 

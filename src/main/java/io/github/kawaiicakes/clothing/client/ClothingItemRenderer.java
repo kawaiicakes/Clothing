@@ -3,6 +3,7 @@ package io.github.kawaiicakes.clothing.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
+import io.github.kawaiicakes.clothing.common.item.OverlayPatternItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -47,9 +48,11 @@ public class ClothingItemRenderer extends BlockEntityWithoutLevelRenderer {
             int pPackedLight,
             int pPackedOverlay
     ) {
-        if (!(pStack.getItem() instanceof ClothingItem clothingItem)) return;
+        if (!(pStack.getItem() instanceof OverlayPatternItem) && !(pStack.getItem() instanceof ClothingItem)) return;
 
-        ResourceLocation baseModelLocation = entryModelLocation(clothingItem.getSlot());
+        ResourceLocation baseModelLocation = pStack.getItem() instanceof ClothingItem clothingItem
+                ? entryModelLocation(clothingItem.getSlot())
+                : new ModelResourceLocation(MOD_ID, "overlay_pattern", "inventory");
         BakedModel baseModel = Minecraft.getInstance().getModelManager().getModel(baseModelLocation);
 
         ItemRenderer itemRenderer = Minecraft.getInstance().getItemRenderer();

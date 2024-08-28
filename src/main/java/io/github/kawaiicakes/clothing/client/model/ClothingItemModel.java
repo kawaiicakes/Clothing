@@ -11,6 +11,7 @@ import io.github.kawaiicakes.clothing.client.ClothingItemRenderer;
 import io.github.kawaiicakes.clothing.common.data.ClothingLayer;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem.MeshStratum;
+import io.github.kawaiicakes.clothing.common.item.OverlayPatternItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.model.BlockModel;
 import net.minecraft.client.renderer.block.model.ItemOverrides;
@@ -92,14 +93,24 @@ public class ClothingItemModel implements IUnbakedGeometry<ClothingItemModel> {
                 return MODEL_LIST_CACHE.computeIfAbsent(
                         modelHash,
                         (i) -> {
+                            List<BakedModel> toReturn = new ArrayList<>();
+
+                            if (clothingStack.getItem() instanceof OverlayPatternItem pattern) {
+                                toReturn.add(get(new ResourceLocation("clothing:item/overlay_pattern_base")));
+                                toReturn.add(
+                                        get(ClothingItemRenderer.overlayModelLocation(
+                                                pattern.getOverlay(clothingStack)
+                                        ))
+                                );
+                                return toReturn;
+                            }
+
                             if (!(clothingStack.getItem() instanceof ClothingItem clothing))
                                 throw new IllegalArgumentException(
                                         "Passed ItemStack '" + clothingStack + "' is not a ClothingItem!"
                                 );
 
                             BakedModel missingModel = get(ModelBakery.MISSING_MODEL_LOCATION);
-
-                            List<BakedModel> toReturn = new ArrayList<>();
 
                             ResourceLocation baseLocation
                                     = ClothingItemRenderer.entryModelLocation(clothing.getClothingName(clothingStack));
@@ -165,6 +176,13 @@ public class ClothingItemModel implements IUnbakedGeometry<ClothingItemModel> {
 
         @Override
         public @NotNull List<BakedModel> getRenderPasses(@NotNull ItemStack itemStack, boolean fabulous) {
+            if (itemStack.getItem() instanceof OverlayPatternItem patternItem) {
+                return getList(
+                        patternItem.hashCode() + patternItem.getOverlay(itemStack).hashCode(),
+                        itemStack
+                );
+            }
+
             if (!(itemStack.getItem() instanceof ClothingItem clothingItem)) return List.of();
 
             int modelHash;

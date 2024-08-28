@@ -1,5 +1,4 @@
 {
-  "loader": "clothing:item_model_loader",
   "parent": "item/generated",
   "textures": {
     "layer0": "clothing:item/overlay_pattern"
