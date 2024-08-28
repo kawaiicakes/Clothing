@@ -7,6 +7,7 @@
   "item.modifiers.clothing.color": "Color:",
   "item.modifiers.clothing.overlays": "Applied Overlays:",
   "item.modifiers.clothing.spool_color": "Color:",
+  "item.modifiers.clothing.is_creative_pattern": "CREATIVE OVERRIDE ENABLED",
 
   "item.clothing.bleach_bucket": "Bleach Bucket",
   "item.clothing.spool": "Spool",

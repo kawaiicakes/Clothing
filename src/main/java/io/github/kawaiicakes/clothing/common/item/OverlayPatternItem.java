@@ -24,11 +24,12 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
 import java.util.function.Consumer;
 
-// TODO: add loom functionality, add builder in recipe generator, add "survival" version and "creative" version
+// TODO: add loom functionality, add builder in recipe generator
 public class OverlayPatternItem extends BannerPatternItem {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public static final String OVERLAY_KEY = "overlay";
+    public static final String CREATIVE_KEY = "isCreative";
 
     public OverlayPatternItem(Properties pProperties) {
         super(BannerPatternTags.PATTERN_ITEM_SKULL, pProperties);
@@ -40,8 +41,19 @@ public class OverlayPatternItem extends BannerPatternItem {
         ItemStack toReturn = super.getDefaultInstance();
 
         this.setOverlay(toReturn, new ResourceLocation("clothing:none"));
+        this.setIsCreative(toReturn, false);
 
         return toReturn;
+    }
+
+    public void setIsCreative(ItemStack stack, boolean isCreative) {
+        stack.getOrCreateTag().putBoolean(CREATIVE_KEY, isCreative);
+    }
+
+    public boolean getIsCreative(ItemStack stack) {
+        if (!stack.getOrCreateTag().contains(CREATIVE_KEY, Tag.TAG_BYTE))
+            stack.getOrCreateTag().putBoolean(CREATIVE_KEY, false);
+        return stack.getOrCreateTag().getBoolean(CREATIVE_KEY);
     }
 
     public void setOverlay(ItemStack stack, ResourceLocation location) {
@@ -59,6 +71,11 @@ public class OverlayPatternItem extends BannerPatternItem {
     @ParametersAreNonnullByDefault
     public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltip, TooltipFlag pFlag) {
         pTooltip.add(Component.literal(this.getOverlay(pStack).toString()).withStyle(ChatFormatting.GRAY));
+        if (this.getIsCreative(pStack))
+            pTooltip.add(
+                    Component.translatable("item.modifiers.clothing.is_creative_pattern")
+                            .withStyle(ChatFormatting.DARK_GRAY)
+            );
     }
 
     @Override
@@ -73,6 +90,7 @@ public class OverlayPatternItem extends BannerPatternItem {
                 ItemStack toAdd = this.getDefaultInstance();
 
                 this.setOverlay(toAdd, definition.name());
+                this.setIsCreative(toAdd, true);
 
                 pItems.add(toAdd);
             }
