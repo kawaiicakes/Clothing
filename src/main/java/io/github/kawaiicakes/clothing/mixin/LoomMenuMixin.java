@@ -94,8 +94,17 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
 
             if (spool.isEmpty() || !(spool.getItem() instanceof SpoolItem)) return List.of();
 
-            return OverlayDefinitionLoader.getInstance()
-                    .getOverlays()
+            OverlayDefinitionLoader loader = OverlayDefinitionLoader.getInstance();
+
+            if (
+                    !this.patternSlot.getItem().isEmpty()
+                            && this.patternSlot.getItem().getItem() instanceof OverlayPatternItem item
+            ) return loader.getOverlays().stream()
+                            .filter(overlay -> overlay.name().equals(item.getOverlay(this.patternSlot.getItem())))
+                            .findFirst()
+                            .stream().toList();
+
+            return loader.getOverlays()
                     .stream()
                     .filter(definition -> definition.isValidEntry(clothing))
                     .toList();

@@ -24,7 +24,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
 import java.util.function.Consumer;
 
-// TODO: add loom functionality, add builder in recipe generator
+// TODO: add non-creative behaviour in loom menu, add builder in recipe generator
 public class OverlayPatternItem extends BannerPatternItem {
     public static final Logger LOGGER = LogUtils.getLogger();
 
