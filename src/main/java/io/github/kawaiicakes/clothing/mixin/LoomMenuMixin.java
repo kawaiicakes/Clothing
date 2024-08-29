@@ -279,14 +279,13 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
     }
 
     /**
-     * FIXME: this should be using an MEV; wait for MixinExtras dev to fix the bug and then change this
      * Adds a check prior to setting up the result slot to see if the dye slot has a dye item in it; not a spool
      */
     @Definition(id = "holder", local = @Local(type = Holder.class, ordinal = 0))
     @Expression("holder != null")
-    @WrapOperation(method = "slotsChanged", at = @At("MIXINEXTRAS:EXPRESSION"))
-    private boolean slotsChangedModifySetupResultSlotLogic(Object left, Object right, Operation<Boolean> original) {
-        return original.call(left, right) && !(this.dyeSlot.getItem().getItem() instanceof SpoolItem);
+    @ModifyExpressionValue(method = "slotsChanged", at = @At("MIXINEXTRAS:EXPRESSION"))
+    private boolean slotsChangedModifySetupResultSlotLogic(boolean original) {
+        return original && !(this.dyeSlot.getItem().getItem() instanceof SpoolItem);
     }
 
     /**

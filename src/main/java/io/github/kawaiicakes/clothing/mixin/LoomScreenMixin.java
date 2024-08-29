@@ -467,12 +467,7 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
         if (!this.bannerStack.isEmpty() && this.bannerStack.getItem() instanceof ClothingItem)
             return modifiedReturn;
 
-        int toReturn = original.call();
-
-        if (toReturn > 0 && modifiedReturn > 0)
-            clothing$LOGGER.error("Overlay and pattern rows are both non-zero!");
-
-        return toReturn;
+        return original.call();
     }
 
     private LoomScreenMixin(LoomMenu pMenu, Inventory pPlayerInventory, Component pTitle) {
