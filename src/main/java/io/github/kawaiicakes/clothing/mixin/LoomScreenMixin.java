@@ -46,6 +46,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import javax.annotation.Nullable;
@@ -183,10 +184,20 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
         this.addRenderableWidget(layerButton);
     }
 
-    // TODO: fix LoomScreen #L142 problem, HOW THE FUCK DO I MIXIN TO THERE PROPERLY
+    /**
+     * Shifts multiple gui elements down with (hopefully) minimal destruction
+     */
+    @ModifyVariable(
+            ordinal = 12,
+            method = "renderBg",
+            at = @At(value = "STORE")
+    )
+    private int renderBgModifyLocalVariable(int value) {
+        return value + 10;
+    }
 
     /**
-     * Shifts elements down
+     * Shifts scroll bar down
      */
     @WrapOperation(
             method = "renderBg",
@@ -203,19 +214,12 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
             int pUWidth, int pVHeight,
             Operation<Void> original
     ) {
-        if ((pUWidth == 14 && pVHeight == 14) || (pUWidth == 12 && pVHeight == 15)) {
+        if (pUWidth == 12 && pVHeight == 15) {
             original.call(instance, poseStack, pX, pY + 10, pUOffset, pVOffset, pUWidth, pVHeight);
             return;
         }
 
         original.call(instance, poseStack, pX, pY, pUOffset, pVOffset, pUWidth, pVHeight);
-    }
-
-    @WrapMethod(
-            method = "renderPattern"
-    )
-    private void renderPatternShiftDown(Holder<BannerPattern> pPattern, int pX, int pY, Operation<Void> original) {
-        original.call(pPattern, pX, pY + 10);
     }
 
     @Inject(
@@ -375,7 +379,9 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
         if (this.clothing$displayOverlays) {
             List<OverlayDefinitionLoader.OverlayDefinition> overlayList
                     = ((LoomMenuMixinGetter) this.menu).getClothing$selectableOverlays();
-            this.clothing$renderGuiOverlay(pPoseStack, overlayList.get(this.clothing$selectedRowElement), pX, pY);
+            this.clothing$renderGuiOverlay(
+                    pPoseStack, overlayList.get(this.clothing$selectedRowElement), pX, pY - 10
+            );
             return;
         }
 

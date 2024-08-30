@@ -144,6 +144,7 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
         this.clothing$selectedStratumOrdinal.set(ordinal);
     }
 
+    // TODO: make new data slot function
     @Unique
     private void clothing$setupClothingResultSlot(OverlayDefinitionLoader.OverlayDefinition overlay) {
         ItemStack clothingStack = this.bannerSlot.getItem();
