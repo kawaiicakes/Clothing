@@ -38,7 +38,6 @@ import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BannerPattern;
-import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
@@ -86,7 +85,7 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
         poseStack.pushPose();
         poseStack.translate((x + 0.5F) + 0.15F, y + 0.60F, 0.0D);
         poseStack.scale(0.40F, 0.40F, 1.0F);
-        blit(poseStack, 0, 30, 16, 16, 32, 32, 64, 64);
+        blit(poseStack, 0, 25, 16, 16, 32, 32, 64, 64);
         poseStack.popPose();
 
         RenderSystem.setShaderTexture(0, BG_LOCATION);
@@ -159,41 +158,64 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
                                 HumanoidModel<AbstractClientPlayer>>
                 ) renderLayer;
 
-        this.addRenderableWidget(
-                new ImageButton(
-                        this.leftPos + 59, this.topPos + 7,
-                        73, 16,
-                        28, 166,
-                        16,
-                        BG_LOCATION,
-                        256, 256,
-                        (button) -> {
-                            int i = ((LoomMenuMixinGetter) this.menu).getClothing$stratumOrdinal();
-                            int j = i + 1;
-                            if (j > 5) j = 0;
-                            ((LoomMenuMixinGetter) this.menu).setClothing$stratumOrdinal(j);
-                            button.setMessage(
-                                    Component.translatable(
-                                            "gui.clothing.loom.layer",
-                                            ClothingItem.MeshStratum.values()[((LoomMenuMixinGetter) this.menu).getClothing$stratumOrdinal()].getSerializedName()
-                                    )
-                            );
-                        },
-                        (pButton, pPoseStack, pMouseX, pMouseY) -> {},
-                        Component.translatable(
-                                "gui.clothing.loom.layer",
-                                ClothingItem.MeshStratum.values()[((LoomMenuMixinGetter) this.menu).getClothing$stratumOrdinal()].getSerializedName()
-                        )
-                ) {
-                    @Override
-                    public void renderButton(
-                            @NotNull PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick
-                    ) {
-                        super.renderButton(pPoseStack, pMouseX, pMouseY, pPartialTick);
-                        if (!this.isActive()) this.setMessage(Component.empty());
-                    }
-                }
-        );
+        ImageButton layerButton = new ImageButton(
+                this.leftPos + 59, this.topPos + 5,
+                73, 16,
+                28, 166,
+                16,
+                BG_LOCATION,
+                256, 256,
+                (button) -> {
+                    int i = ((LoomMenuMixinGetter) this.menu).getClothing$stratumOrdinal();
+                    int j = i + 1;
+                    if (j > 5) j = 0;
+                    ((LoomMenuMixinGetter) this.menu).setClothing$stratumOrdinal(j);
+                },
+                (pButton, pPoseStack, pMouseX, pMouseY) -> {},
+                Component.empty()
+        ) {
+
+        };
+
+        layerButton.active = ((LoomMenuMixinGetter) this.menu).getClothing$stratumOrdinal() >= 0;
+        layerButton.visible = true;
+
+        this.addRenderableWidget(layerButton);
+    }
+
+    // TODO: fix LoomScreen #L142 problem, HOW THE FUCK DO I MIXIN TO THERE PROPERLY
+
+    /**
+     * Shifts elements down
+     */
+    @WrapOperation(
+            method = "renderBg",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/screens/inventory/LoomScreen;blit(Lcom/mojang/blaze3d/vertex/PoseStack;IIIIII)V"
+            )
+    )
+    private void renderBgWrapPatternButtonBlit(
+            LoomScreen instance,
+            PoseStack poseStack,
+            int pX, int pY,
+            int pUOffset, int pVOffset,
+            int pUWidth, int pVHeight,
+            Operation<Void> original
+    ) {
+        if ((pUWidth == 14 && pVHeight == 14) || (pUWidth == 12 && pVHeight == 15)) {
+            original.call(instance, poseStack, pX, pY + 10, pUOffset, pVOffset, pUWidth, pVHeight);
+            return;
+        }
+
+        original.call(instance, poseStack, pX, pY, pUOffset, pVOffset, pUWidth, pVHeight);
+    }
+
+    @WrapMethod(
+            method = "renderPattern"
+    )
+    private void renderPatternShiftDown(Holder<BannerPattern> pPattern, int pX, int pY, Operation<Void> original) {
+        original.call(pPattern, pX, pY + 10);
     }
 
     @Inject(
@@ -373,6 +395,39 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
     )
     private boolean mouseClickedDisplayPatterns(boolean original) {
         return original || this.clothing$displayOverlays;
+    }
+
+    @ModifyExpressionValue(
+            method = "mouseClicked",
+            at = @At(
+                    value = "CONSTANT",
+                    args = "intValue=13"
+            )
+    )
+    private int mouseClickedShiftButtonsDown0(int original) {
+        return original + 10;
+    }
+
+    @ModifyExpressionValue(
+            method = "mouseClicked",
+            at = @At(
+                    value = "CONSTANT",
+                    args = "intValue=9"
+            )
+    )
+    private int mouseClickedShiftButtonsDown1(int original) {
+        return original + 10;
+    }
+
+    @ModifyExpressionValue(
+            method = "mouseDragged",
+            at = @At(
+                    value = "CONSTANT",
+                    args = "intValue=13"
+            )
+    )
+    private int mouseDraggedShiftBarDown(int original) {
+        return original + 10;
     }
 
     /**

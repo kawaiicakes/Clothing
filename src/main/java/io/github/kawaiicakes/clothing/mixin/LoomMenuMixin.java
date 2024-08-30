@@ -92,6 +92,7 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
     )
     private void initAddStrataDataSlot(CallbackInfo ci) {
         this.addDataSlot(this.clothing$selectedStratumOrdinal);
+        this.clothing$selectedStratumOrdinal.set(-1);
     }
 
     @Override
