@@ -11,7 +11,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.logging.LogUtils;
-import io.github.kawaiicakes.clothing.common.LoomMenuOverlayGetter;
+import io.github.kawaiicakes.clothing.common.LoomMenuMixinGetter;
 import io.github.kawaiicakes.clothing.common.data.ClothingLayer;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
 import io.github.kawaiicakes.clothing.common.item.OverlayPatternItem;
@@ -33,12 +33,10 @@ import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 @Mixin(LoomMenu.class)
-public abstract class LoomMenuMixin extends AbstractContainerMenu implements LoomMenuOverlayGetter {
+public abstract class LoomMenuMixin extends AbstractContainerMenu implements LoomMenuMixinGetter {
     @Unique
     private static final Logger clothing$LOGGER = LogUtils.getLogger();
 
@@ -63,9 +61,12 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
     private Slot resultSlot;
 
     @Final
-    @Mutable
     @Shadow
     DataSlot selectedBannerPatternIndex;
+
+    @Unique
+    @Final
+    DataSlot clothing$selectedStratumOrdinal = DataSlot.standalone();
 
     @Shadow private List<Holder<BannerPattern>> selectablePatterns;
 
@@ -75,6 +76,23 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
     @Unique
     private boolean clothing$isValidOverlayIndex(int i) {
         return i >= 0 && i < this.clothing$selectableOverlays.size();
+    }
+
+    @Unique
+    public boolean clothing$isValidStrataOrdinal(ClothingItem item, ItemStack stack, int i) {
+        if (i <= 0 || i > 5) return false;
+        ClothingItem.MeshStratum outermost = item.getOutermostMesh(stack);
+        int greatestOrdinal = outermost != null ? outermost.ordinal() : 0;
+        return i <= greatestOrdinal;
+    }
+
+    @Inject(
+            method = "<init>(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/inventory/ContainerLevelAccess;)V",
+            at = @At("TAIL")
+    )
+    private void initAddStrataDataSlot(CallbackInfo ci) {
+        this.addDataSlot(this.clothing$selectedStratumOrdinal);
+        this.clothing$selectedStratumOrdinal.set(-1);
     }
 
     @Override
@@ -127,6 +145,17 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
         return original.call(patternStack);
     }
 
+    @Override
+    public int getClothing$stratumOrdinal() {
+        return this.clothing$selectedStratumOrdinal.get();
+    }
+
+    @Override
+    public void setClothing$stratumOrdinal(int ordinal) {
+        this.clothing$selectedStratumOrdinal.set(ordinal);
+    }
+
+    // TODO: make new data slot function
     @Unique
     private void clothing$setupClothingResultSlot(OverlayDefinitionLoader.OverlayDefinition overlay) {
         ItemStack clothingStack = this.bannerSlot.getItem();
@@ -141,52 +170,47 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
             outputStack = clothingStack.copy();
             outputStack.setCount(1);
 
-        if (dyeStack.getItem() instanceof DyeItem dyeItem) {
-            List<DyeItem> dyeColor = Collections.singletonList(dyeItem);
-            ClothingItem.dyeClothing(outputStack, dyeColor);
-        }
+            ClothingItem.MeshStratum targetStratum
+                    = ClothingItem.MeshStratum.values()[this.clothing$selectedStratumOrdinal.get()];
 
-        if (
-                clothingStack.getItem() instanceof ClothingItem genericClothingItem
-                        && overlay != null
-                        && dyeStack.getItem() instanceof SpoolItem spoolItem
-        ) {
-            ClothingLayer layerToAdd = new ClothingLayer(
-                    overlay.name(), spoolItem.getColor(dyeStack), null
-            );
+            if (dyeStack.getItem() instanceof DyeItem dyeItem) {
+                List<DyeItem> dyeColor = Collections.singletonList(dyeItem);
+                ClothingItem.dyeClothing(outputStack, targetStratum, dyeColor);
+            }
 
-            ImmutableListMultimap<ClothingItem.MeshStratum, ClothingLayer> existingOverlays
-                    = genericClothingItem.getOverlays(clothingStack);
+            if (
+                    clothingStack.getItem() instanceof ClothingItem genericClothingItem
+                            && overlay != null
+                            && dyeStack.getItem() instanceof SpoolItem spoolItem
+            ) {
+                ClothingLayer layerToAdd = new ClothingLayer(
+                        overlay.name(), spoolItem.getColor(dyeStack), null
+                );
 
-            ImmutableList<ClothingLayer> overlayList = existingOverlays.get(
-                    ClothingItem.MeshStratum.forSlot(genericClothingItem.getSlot())
-            );
+                ImmutableListMultimap<ClothingItem.MeshStratum, ClothingLayer> existingOverlays
+                        = genericClothingItem.getOverlays(clothingStack);
 
-                if (overlayList.isEmpty()) {
-                    /* FIXME:
-                        The changes made here for this commit are TEMPORARY solely so it can build and be tested.
-                        To implement the behaviour fully would mean the introduction of a new DataSlot; the same
-                        one that would allow for discriminating which mesh to target when dyeing clothing
-                        or its overlays. That would then fall out of the scope of this commit and delay the push.
-                     */
-                    Multimap<ClothingItem.MeshStratum, ClothingLayer> overlaysForEmpty = ImmutableListMultimap.of(
-                                    ClothingItem.MeshStratum.forSlot(genericClothingItem.getSlot()),
-                            layerToAdd
-                    );
+                ImmutableList<ClothingLayer> overlayList = existingOverlays.get(targetStratum);
 
-                    genericClothingItem.setOverlays(
-                            outputStack,
-                            overlaysForEmpty
-                    );
-                } else if (!overlayList.get(0).equals(layerToAdd)) {
-                        genericClothingItem.addOverlay(
-                                outputStack,
-                                ClothingItem.MeshStratum.forSlot(genericClothingItem.getSlot()),
+                    if (overlayList.isEmpty()) {
+                        Multimap<ClothingItem.MeshStratum, ClothingLayer> overlaysForEmpty = ImmutableListMultimap.of(
+                                        targetStratum,
                                 layerToAdd
                         );
+
+                        genericClothingItem.setOverlays(
+                                outputStack,
+                                overlaysForEmpty
+                        );
+                    } else if (!overlayList.get(0).equals(layerToAdd)) {
+                            genericClothingItem.addOverlay(
+                                    outputStack,
+                                    targetStratum,
+                                    layerToAdd
+                            );
+                    }
                 }
             }
-        }
 
         if (!ItemStack.matches(outputStack, this.resultSlot.getItem())) {
             this.resultSlot.set(outputStack);
@@ -234,14 +258,24 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
             )
     )
     private void slotsChangedDoClothingLogic(Container container, CallbackInfo ci) {
-        if (this.bannerSlot.getItem().isEmpty() || !(this.bannerSlot.getItem().getItem() instanceof ClothingItem))
+        if (this.bannerSlot.getItem().isEmpty() || !(this.bannerSlot.getItem().getItem() instanceof ClothingItem item)) {
+            this.clothing$selectedStratumOrdinal.set(-1);
             return;
+        }
 
         this.selectablePatterns = List.of();
 
         ItemStack clothingStack = this.bannerSlot.getItem();
         ItemStack dyeStack = this.dyeSlot.getItem();
         ItemStack patternStack = this.patternSlot.getItem();
+
+        Set<ClothingItem.MeshStratum> meshes = item.getMeshes(clothingStack).keySet();
+
+        ClothingItem.MeshStratum outermostStratum = item.getOutermostMesh(clothingStack);
+
+        if (meshes.size() == 1) {
+            this.clothing$selectedStratumOrdinal.set(outermostStratum != null ? outermostStratum.ordinal() : -1);
+        }
 
         List<OverlayDefinitionLoader.OverlayDefinition> oldList = this.clothing$selectableOverlays;
         this.clothing$selectableOverlays = this.getClothing$selectableOverlays(

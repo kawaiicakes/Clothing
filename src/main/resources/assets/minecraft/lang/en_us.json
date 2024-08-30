@@ -1,13 +1,11 @@
 {
   "itemGroup.clothing": "Clothing!",
   "itemGroup.clothing_misc": "Clothing Stuff!",
-  "itemGroup.clothing_overlays": "Clothing Overlay Patterns",
 
   "item.modifiers.clothing.name": "Clothing Name:",
   "item.modifiers.clothing.color": "Color:",
   "item.modifiers.clothing.overlays": "Applied Overlays:",
   "item.modifiers.clothing.spool_color": "Color:",
-  "item.modifiers.clothing.is_creative_pattern": "CREATIVE OVERRIDE ENABLED",
 
   "item.clothing.bleach_bucket": "Bleach Bucket",
   "item.clothing.spool": "Spool",
@@ -17,4 +15,7 @@
   "item.minecraft.tipped_arrow.effect.bleach": "Bleach-Tipped Arrow",
   "item.clothing.overlay_pattern": "Overlay Pattern",
   "item.clothing.overlay_pattern.desc": "None"
+  "item.minecraft.tipped_arrow.effect.bleach": "Bleach-Tipped Arrow",
+
+  "gui.clothing.loom.layer": "Layer: %1$s"
 }

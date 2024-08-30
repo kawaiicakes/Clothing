@@ -975,9 +975,10 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
     }
 
     /**
-     * Mirror of {@link DyeableLeatherItem#dyeArmor(ItemStack, List)} but actually mutates the passed {@code stack}
+     * Mirror of {@link DyeableLeatherItem#dyeArmor(ItemStack, List)} but actually mutates the passed {@code stack}.
+     * Also accepts the stratum to target
      */
-    public static void dyeClothing(ItemStack stack, List<DyeItem> dyeItems) {
+    public static void dyeClothing(ItemStack stack, MeshStratum mesh, List<DyeItem> dyeItems) {
         int[] colors = new int[3];
         int i = 0;
         int j = 0;
@@ -985,8 +986,8 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
         Item item = stack.getItem();
         if (!(item instanceof ClothingItem clothingItem)) return;
 
-        if (clothingItem.hasCustomColor(stack)) {
-            int k = clothingItem.getColor(stack);
+        if (clothingItem.hasCustomColor(stack, mesh)) {
+            int k = clothingItem.getColor(stack, mesh);
             float f = (float)(k >> 16 & 255) / 255.0F;
             float f1 = (float)(k >> 8 & 255) / 255.0F;
             float f2 = (float)(k & 255) / 255.0F;
@@ -1020,7 +1021,7 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
         int j2 = (j1 << 8) + k1;
         j2 = (j2 << 8) + l1;
 
-        clothingItem.setColor(stack, j2);
+        clothingItem.setColor(stack, mesh, j2);
     }
 
     public static Map<ClothingItem.MeshStratum, ClothingLayer> defaultMeshes(EquipmentSlot slot) {
