@@ -161,11 +161,9 @@ public class ClothingEntryLoader extends SimpleJsonResourceReloadListener {
         ImmutableMap.Builder<MeshStratum, ClothingLayer> toReturn = ImmutableMap.builder();
 
         try {
-            JsonObject modelObject = object.getAsJsonObject("models");
-
-            for (String key : modelObject.keySet()) {
+            for (String key : object.keySet()) {
                 MeshStratum byName = MeshStratum.byName(key);
-                ClothingLayer model = ClothingLayer.fromJson(modelObject.getAsJsonObject(key));
+                ClothingLayer model = ClothingLayer.fromJson(object.getAsJsonObject(key));
 
                 toReturn.put(byName, model);
             }

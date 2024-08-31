@@ -1,0 +1,11 @@
+{
+  "meshes": {
+    "base": {
+      "texture": "clothing:default"
+    },
+    "outer": {
+      "texture": "clothing:tank_top"
+    }
+  },
+  "slot": "chest"
+}

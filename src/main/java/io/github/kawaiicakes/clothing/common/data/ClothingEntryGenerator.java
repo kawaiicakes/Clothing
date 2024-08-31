@@ -4,8 +4,10 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.JsonOps;
 import io.github.kawaiicakes.clothing.common.item.ClothingItem;
@@ -32,10 +34,7 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 
 import static io.github.kawaiicakes.clothing.ClothingMod.MOD_ID;
@@ -62,6 +61,11 @@ public class ClothingEntryGenerator implements DataProvider {
                 .addModifier(Attributes.ARMOR, 40.00, AttributeModifier.Operation.ADDITION)
                 .setDurability(300)
                 .addLoreLine("{\"type\":\"text\", \"text\": \"Woah! You go, big guy!\"}")
+                .save(clothingBuilderConsumer);
+
+        ClothingBuilder.shirt(new ResourceLocation(MOD_ID, "hoodie"))
+                .addMesh(MeshStratum.BASE, new ResourceLocation(MOD_ID, "default"))
+                .addMesh(MeshStratum.OUTER, new ResourceLocation(MOD_ID, "tank_top"))
                 .save(clothingBuilderConsumer);
     }
 
@@ -327,7 +331,45 @@ public class ClothingEntryGenerator implements DataProvider {
                 if (this.id == null || this.id.getPath().isEmpty())
                     throw new IllegalStateException("This builder has not had a name set!");
 
-                return toReturn.getAsJsonObject();
+                JsonObject toReturnFr = toReturn.getAsJsonObject();
+
+                if (!toReturnFr.keySet().contains(MESHES_NBT_KEY)) return toReturnFr;
+
+                JsonObject strataObject = toReturnFr.getAsJsonObject(MESHES_NBT_KEY);
+
+                for (String stratum : strataObject.keySet()) {
+                    JsonObject stratumObject = strataObject.getAsJsonObject(stratum);
+
+                    if (
+                            stratumObject.has(TAG_COLOR)
+                                    && stratumObject.getAsJsonPrimitive(TAG_COLOR).getAsInt() == FALLBACK_COLOR
+                    ) stratumObject.remove(TAG_COLOR);
+
+                    if (!stratumObject.has("visibility")) continue;
+
+                    JsonArray visibilityJsonArray = stratumObject.getAsJsonArray("visibility");
+                    int arrSize = visibilityJsonArray.size();
+
+                    ModelPartReference[] visibility = new ModelPartReference[arrSize];
+                    ModelPartReference[] defaultVisibility = defaultPartVisibility(this.clothingItem.getSlot());
+
+                    for (int i = 0; i < arrSize; i++) {
+                        JsonPrimitive elementAt = visibilityJsonArray.get(i).getAsJsonPrimitive();
+                        visibility[i] = ModelPartReference.byName(elementAt.getAsString());
+                    }
+
+                    Set<ModelPartReference> visibilitySet
+                            = new HashSet<>(Arrays.stream(visibility).toList());
+
+                    Set<ModelPartReference> defaultVisibilitySet
+                            = new HashSet<>(Arrays.stream(defaultVisibility).toList());
+
+                    if (!visibilitySet.equals(defaultVisibilitySet)) continue;
+
+                    stratumObject.remove("visibility");
+                }
+
+                return toReturnFr;
             } catch (RuntimeException e) {
                 LOGGER.error("Error serializing NBT tag to JSON in entry generator!", e);
                 return null;

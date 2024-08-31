@@ -1,4 +1,4 @@
-// 1.19.2	2024-08-14T06:12:20.262235	Recipes
+// 1.19.2	2024-08-30T21:22:01.0341818	Recipes
 3adf4f2ef7708ea27cb47d2a5163dd0dd44fd880 data/clothing/advancements/recipes/clothing/tank_top.json
 a5b2cabbab421537e5785f9b380067f021678f16 data/clothing/recipes/tank_top_black.json
 0a5d3f592b41ecba71ec93aa8cfb2534d357170c data/clothing/recipes/tank_top_blue.json
@@ -14,5 +14,5 @@ a0bf3f970246d53bf2e12dd903d41d4a8390f927 data/clothing/recipes/tank_top_orange.j
 da04103c8bb65f6ab560ed0cd6f80b3b046b9de8 data/clothing/recipes/tank_top_pink.json
 af7378b84e7e458dd789cdc3dcd801291452be6e data/clothing/recipes/tank_top_purple.json
 da4aeacf580abeb9bb60cbade01d96d5ac0c5dbf data/clothing/recipes/tank_top_red.json
-94931fa63136cef32b285a381123eb4d694b4e4d data/clothing/recipes/tank_top_white.json
+0f816717f2b30be4ca7938fd9bb3a3bfa9b29255 data/clothing/recipes/tank_top_white.json
 09af06947f1dbfcffbfc7b7310390678699d70cc data/clothing/recipes/tank_top_yellow.json

@@ -14,8 +14,7 @@
   "item.minecraft.lingering_potion.effect.bleach": "Aerosolizing Bleach Bottle",
   "item.minecraft.tipped_arrow.effect.bleach": "Bleach-Tipped Arrow",
   "item.clothing.overlay_pattern": "Overlay Pattern",
-  "item.clothing.overlay_pattern.desc": "None"
-  "item.minecraft.tipped_arrow.effect.bleach": "Bleach-Tipped Arrow",
+  "item.clothing.overlay_pattern.desc": "None",
 
   "gui.clothing.loom.layer": "Layer: %1$s"
 }
