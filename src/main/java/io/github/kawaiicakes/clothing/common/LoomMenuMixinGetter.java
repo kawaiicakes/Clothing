@@ -6,6 +6,8 @@ import net.minecraft.world.item.ItemStack;
 import java.util.List;
 
 public interface LoomMenuMixinGetter {
+    int ARBITRARY_STRATUM_BUTTON_ID = -1337;
+
     default List<OverlayDefinitionLoader.OverlayDefinition> getClothing$selectableOverlays() {
         return List.of();
     }
@@ -21,4 +23,6 @@ public interface LoomMenuMixinGetter {
     }
 
     default void setClothing$stratumOrdinal(int ordinal) {}
+
+    default void clothing$cycleStratumOrdinal() {}
 }

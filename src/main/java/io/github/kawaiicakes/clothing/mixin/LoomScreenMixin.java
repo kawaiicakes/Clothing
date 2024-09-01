@@ -38,6 +38,7 @@ import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BannerPattern;
+import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
@@ -52,6 +53,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import javax.annotation.Nullable;
 import java.util.List;
 
+import static io.github.kawaiicakes.clothing.common.LoomMenuMixinGetter.ARBITRARY_STRATUM_BUTTON_ID;
 import static net.minecraft.world.item.Items.WHITE_BANNER;
 
 // TODO: rotatable clothing preview
@@ -74,6 +76,7 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
     private HumanoidClothingLayer<AbstractClientPlayer, HumanoidModel<AbstractClientPlayer>, HumanoidModel<AbstractClientPlayer>>
             clothing$humanoidClothingLayer;
     @Unique private ItemStack clothing$previewClothing;
+    @Unique private ImageButton clothing$layerButton;
 
     @Unique
     private void clothing$renderGuiOverlay(
@@ -159,7 +162,7 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
                                 HumanoidModel<AbstractClientPlayer>>
                 ) renderLayer;
 
-        ImageButton layerButton = new ImageButton(
+        this.clothing$layerButton = new ImageButton(
                 this.leftPos + 59, this.topPos + 5,
                 73, 16,
                 28, 166,
@@ -167,21 +170,33 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
                 BG_LOCATION,
                 256, 256,
                 (button) -> {
-                    int i = ((LoomMenuMixinGetter) this.menu).getClothing$stratumOrdinal();
-                    int j = i + 1;
-                    if (j > 5) j = 0;
-                    ((LoomMenuMixinGetter) this.menu).setClothing$stratumOrdinal(j);
+                    ((LoomMenuMixinGetter) this.menu).clothing$cycleStratumOrdinal();
+                    assert this.minecraft.gameMode != null;
+                    this.minecraft.gameMode.handleInventoryButtonClick(
+                            this.menu.containerId, ARBITRARY_STRATUM_BUTTON_ID
+                    );
                 },
                 (pButton, pPoseStack, pMouseX, pMouseY) -> {},
-                Component.empty()
+                this.clothing$layerButton != null
+                        ? this.clothing$layerButton.getMessage()
+                        : Component.empty()
         ) {
+            @Override
+            public void renderButton(@NotNull PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+                super.renderButton(pPoseStack, pMouseX, pMouseY, pPartialTick);
 
+                drawCenteredString(
+                        pPoseStack,
+                        LoomScreenMixin.this.font, this.getMessage(),
+                        this.x + this.width / 2, this.y + (this.height - 8) / 2,
+                        this.getFGColor() | Mth.ceil(this.alpha * 255.0F) << 24);
+            }
         };
 
-        layerButton.active = ((LoomMenuMixinGetter) this.menu).getClothing$stratumOrdinal() >= 0;
-        layerButton.visible = true;
+        this.clothing$layerButton.active = ((LoomMenuMixinGetter) this.menu).getClothing$stratumOrdinal() >= 0;
+        this.clothing$layerButton.visible = true;
 
-        this.addRenderableWidget(layerButton);
+        this.addRenderableWidget(this.clothing$layerButton);
     }
 
     /**
@@ -547,8 +562,30 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
         ItemStack spoolStack = this.menu.getDyeSlot().getItem();
 
         this.clothing$displayOverlays = !clothingStack.isEmpty()
-                && clothingStack.getItem() instanceof ClothingItem
+                && clothingStack.getItem() instanceof ClothingItem item
+                && !item.getMeshes(clothingStack).isEmpty()
                 && spoolStack.getItem() instanceof SpoolItem;
+
+        if (!ItemStack.matches(this.bannerStack, clothingStack))
+            ((LoomMenuMixinGetter) this.menu).setClothing$stratumOrdinal(-1);
+
+        if (
+                clothingStack.getItem() instanceof ClothingItem clothingItem
+                        && clothingItem.getMeshes(clothingStack).size() > 1
+                        && !ItemStack.matches(this.bannerStack, clothingStack)
+        ) {
+            ClothingItem.MeshStratum outermost = clothingItem.getOutermostMesh(clothingStack);
+            assert outermost != null;
+            ((LoomMenuMixinGetter) this.menu).setClothing$stratumOrdinal(outermost.ordinal());
+        }
+
+        int selectedStratum = ((LoomMenuMixinGetter) this.menu).getClothing$stratumOrdinal();
+        this.clothing$layerButton.active = selectedStratum >= 0;
+        this.clothing$layerButton.setMessage(
+                this.clothing$layerButton.active
+                        ? Component.literal(ClothingItem.MeshStratum.values()[selectedStratum].getSerializedName())
+                        : Component.empty()
+        );
 
         original.call(instance, value && !(clothingStack.getItem() instanceof ClothingItem));
     }

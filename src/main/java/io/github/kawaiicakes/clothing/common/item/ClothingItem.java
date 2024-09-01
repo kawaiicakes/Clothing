@@ -573,7 +573,7 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
         }
     }
 
-    public void setColor(@NotNull ItemStack pStack, MeshStratum stratum, int pColor) {
+    public void setColor(@NotNull ItemStack pStack, @Nullable MeshStratum stratum, int pColor) {
         try {
             Map<MeshStratum, ClothingLayer> meshes = this.getMeshes(pStack);
 
@@ -978,7 +978,7 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
      * Mirror of {@link DyeableLeatherItem#dyeArmor(ItemStack, List)} but actually mutates the passed {@code stack}.
      * Also accepts the stratum to target
      */
-    public static void dyeClothing(ItemStack stack, MeshStratum mesh, List<DyeItem> dyeItems) {
+    public static void dyeClothing(ItemStack stack, @Nullable MeshStratum mesh, List<DyeItem> dyeItems) {
         int[] colors = new int[3];
         int i = 0;
         int j = 0;

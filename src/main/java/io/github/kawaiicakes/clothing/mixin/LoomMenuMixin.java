@@ -32,6 +32,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.*;
 
@@ -78,14 +79,6 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
         return i >= 0 && i < this.clothing$selectableOverlays.size();
     }
 
-    @Unique
-    public boolean clothing$isValidStrataOrdinal(ClothingItem item, ItemStack stack, int i) {
-        if (i <= 0 || i > 5) return false;
-        ClothingItem.MeshStratum outermost = item.getOutermostMesh(stack);
-        int greatestOrdinal = outermost != null ? outermost.ordinal() : 0;
-        return i <= greatestOrdinal;
-    }
-
     @Inject(
             method = "<init>(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/inventory/ContainerLevelAccess;)V",
             at = @At("TAIL")
@@ -93,6 +86,14 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
     private void initAddStrataDataSlot(CallbackInfo ci) {
         this.addDataSlot(this.clothing$selectedStratumOrdinal);
         this.clothing$selectedStratumOrdinal.set(-1);
+    }
+
+    @Override
+    public void clothing$cycleStratumOrdinal() {
+        if (!(this.bannerSlot.getItem().getItem() instanceof ClothingItem)) {
+            this.clothing$selectedStratumOrdinal.set(-1);
+        }
+        // TODO: make this cycle and also update return slot, container, etc.
     }
 
     @Override
@@ -155,7 +156,6 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
         this.clothing$selectedStratumOrdinal.set(ordinal);
     }
 
-    // TODO: make new data slot function
     @Unique
     private void clothing$setupClothingResultSlot(OverlayDefinitionLoader.OverlayDefinition overlay) {
         ItemStack clothingStack = this.bannerSlot.getItem();
@@ -170,8 +170,9 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
             outputStack = clothingStack.copy();
             outputStack.setCount(1);
 
-            ClothingItem.MeshStratum targetStratum
-                    = ClothingItem.MeshStratum.values()[this.clothing$selectedStratumOrdinal.get()];
+            ClothingItem.MeshStratum targetStratum = this.clothing$selectedStratumOrdinal.get() >= 0
+                    ? ClothingItem.MeshStratum.values()[this.clothing$selectedStratumOrdinal.get()]
+                    : null;
 
             if (dyeStack.getItem() instanceof DyeItem dyeItem) {
                 List<DyeItem> dyeColor = Collections.singletonList(dyeItem);
@@ -190,9 +191,11 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
                 ImmutableListMultimap<ClothingItem.MeshStratum, ClothingLayer> existingOverlays
                         = genericClothingItem.getOverlays(clothingStack);
 
-                ImmutableList<ClothingLayer> overlayList = existingOverlays.get(targetStratum);
+                ImmutableList<ClothingLayer> overlayList = targetStratum != null
+                        ? existingOverlays.get(targetStratum)
+                        : ImmutableList.of();
 
-                    if (overlayList.isEmpty()) {
+                    if (overlayList.isEmpty() && targetStratum != null) {
                         Multimap<ClothingItem.MeshStratum, ClothingLayer> overlaysForEmpty = ImmutableListMultimap.of(
                                         targetStratum,
                                 layerToAdd
@@ -202,7 +205,7 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
                                 outputStack,
                                 overlaysForEmpty
                         );
-                    } else if (!overlayList.get(0).equals(layerToAdd)) {
+                    } else if (!overlayList.isEmpty() && !overlayList.get(0).equals(layerToAdd)) {
                             genericClothingItem.addOverlay(
                                     outputStack,
                                     targetStratum,
@@ -375,6 +378,16 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
             return this.clothing$selectableOverlays.size();
 
         return original;
+    }
+
+    @Inject(method = "clickMenuButton", at = @At("HEAD"), cancellable = true)
+    private void clickMenuAddStratumCycleCheck(Player pPlayer, int pId, CallbackInfoReturnable<Boolean> cir) {
+        if (pId != ARBITRARY_STRATUM_BUTTON_ID) return;
+
+        this.clothing$cycleStratumOrdinal();
+
+        cir.setReturnValue(true);
+        cir.cancel();
     }
 
     /**
