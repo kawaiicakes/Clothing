@@ -68,7 +68,9 @@ public record ClothingLayer(ResourceLocation textureLocation, int color, @Nullab
 
         try {
             textureLocation = new ResourceLocation(json.getAsJsonPrimitive("texture").getAsString());
-            color = json.getAsJsonPrimitive("color").getAsInt();
+            color = json.has("color") && json.get("color").isJsonPrimitive()
+                    ? json.getAsJsonPrimitive("color").getAsInt()
+                    : ClothingItem.FALLBACK_COLOR;
             visibility = json.has("visibility") && json.get("visibility").isJsonArray()
                     ? ClothingVisibility.fromJson(json.getAsJsonArray("visibility"))
                     : null;
