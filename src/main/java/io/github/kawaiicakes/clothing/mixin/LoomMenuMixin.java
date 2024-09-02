@@ -90,10 +90,33 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
 
     @Override
     public void clothing$cycleStratumOrdinal() {
-        if (!(this.bannerSlot.getItem().getItem() instanceof ClothingItem)) {
+        // why won't pattern variables work here? IDE bug? or something deeper?
+        if (this.bannerSlot.getItem().getItem() instanceof ClothingItem item) {
+            int selected = this.clothing$selectedStratumOrdinal.get();
+
+            if (selected > 5 || selected < 0) return;
+
+            Map<ClothingItem.MeshStratum, ClothingLayer> meshes = item.getMeshes(this.bannerSlot.getItem());
+
+            if (meshes.isEmpty()) {
+                this.clothing$selectedStratumOrdinal.set(-1);
+            } else if (meshes.size() > 1) {
+                ClothingItem.MeshStratum selectedStrata = ClothingItem.MeshStratum.values()[selected];
+
+                ClothingItem.MeshStratum newStratum = Arrays.stream(ClothingItem.MeshStratum.values())
+                        .filter(stratum -> meshes.containsKey(stratum) && stratum.ordinal() > selectedStrata.ordinal())
+                        .findFirst()
+                        .orElse(item.getInnermostMesh(this.bannerSlot.getItem()));
+
+                // Meshes are guaranteed to be greater than 1 here; an innermost mesh call will not return null
+                assert newStratum != null;
+                this.clothing$selectedStratumOrdinal.set(newStratum.ordinal());
+            }
+        } else {
             this.clothing$selectedStratumOrdinal.set(-1);
         }
-        // TODO: make this cycle and also update return slot, container, etc.
+
+        this.clothing$setupClothingResultSlot();
     }
 
     @Override
@@ -154,6 +177,20 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
     @Override
     public void setClothing$stratumOrdinal(int ordinal) {
         this.clothing$selectedStratumOrdinal.set(ordinal);
+    }
+
+    @Unique
+    private void clothing$setupClothingResultSlot() {
+        ItemStack resultStack = this.resultSlot.getItem();
+
+        if (resultStack.isEmpty() || !(resultStack.getItem() instanceof ClothingItem)) return;
+
+        int selectedButton = this.selectedBannerPatternIndex.get();
+
+        if (selectedButton < 0) return;
+
+        OverlayDefinitionLoader.OverlayDefinition definition = this.clothing$selectableOverlays.get(selectedButton);
+        this.clothing$setupClothingResultSlot(definition);
     }
 
     @Unique

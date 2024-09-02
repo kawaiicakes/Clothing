@@ -27,10 +27,12 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.Holder;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.LoomMenu;
@@ -171,9 +173,22 @@ public abstract class LoomScreenMixin extends AbstractContainerScreen<LoomMenu> 
                 256, 256,
                 (button) -> {
                     ((LoomMenuMixinGetter) this.menu).clothing$cycleStratumOrdinal();
+
+                    Minecraft.getInstance().getSoundManager().play(
+                            SimpleSoundInstance.forUI(SoundEvents.UI_LOOM_SELECT_PATTERN, 1.0F)
+                    );
+
                     assert this.minecraft.gameMode != null;
                     this.minecraft.gameMode.handleInventoryButtonClick(
                             this.menu.containerId, ARBITRARY_STRATUM_BUTTON_ID
+                    );
+
+                    int selected = ((LoomMenuMixinGetter) this.menu).getClothing$stratumOrdinal();
+
+                    this.clothing$layerButton.setMessage(
+                            this.clothing$layerButton.active
+                                    ? Component.literal(ClothingItem.MeshStratum.values()[selected].getSerializedName())
+                                    : Component.empty()
                     );
                 },
                 (pButton, pPoseStack, pMouseX, pMouseY) -> {},

@@ -564,6 +564,20 @@ public class ClothingItem extends ArmorItem implements DyeableLeatherItem {
         }
     }
 
+    @Nullable
+    public MeshStratum getInnermostMesh(ItemStack stack) {
+        try {
+            Map<MeshStratum, ClothingLayer> meshes = this.getMeshes(stack);
+            if (meshes.isEmpty()) return null;
+            if (meshes.size() == 1) return meshes.keySet().stream().findFirst().get();
+
+            return meshes.keySet().stream().min(Comparator.comparing(MeshStratum::ordinal)).get();
+        } catch (Exception e) {
+            LOGGER.error("Unable to get outermost clothing mesh from ItemStack '{}'!", stack, e);
+            return MeshStratum.forSlot(this.getSlot());
+        }
+    }
+
     @Override
     public void setColor(@NotNull ItemStack pStack, int pColor) {
         try {
