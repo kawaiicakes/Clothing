@@ -193,6 +193,7 @@ public abstract class LoomMenuMixin extends AbstractContainerMenu implements Loo
         this.clothing$setupClothingResultSlot(definition);
     }
 
+    // TODO: [HIGH PRIORITY] Targeted layer doesn't seem to be selected in the result slot.
     @Unique
     private void clothing$setupClothingResultSlot(OverlayDefinitionLoader.OverlayDefinition overlay) {
         ItemStack clothingStack = this.bannerSlot.getItem();

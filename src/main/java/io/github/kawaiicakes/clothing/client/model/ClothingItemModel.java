@@ -88,6 +88,7 @@ public class ClothingItemModel implements IUnbakedGeometry<ClothingItemModel> {
             );
         }
 
+        // TODO: [LOW PRIORITY] Fix item model colours. One dyed layer should not dye the rest.
         protected static List<BakedModel> getList(int modelHash, ItemStack clothingStack) {
             try {
                 return MODEL_LIST_CACHE.computeIfAbsent(

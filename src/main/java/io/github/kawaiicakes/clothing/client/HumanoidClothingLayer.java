@@ -178,12 +178,10 @@ public class HumanoidClothingLayer<
                         clothingModel, entry.getValue().clothingVisibility().asArray()
                 );
 
-                int clothingColor = clothingItem.getColor(stack);
-                float rClothing = (float) (clothingColor >> 16 & 255) / 255.0F;
-                float gClothing = (float) (clothingColor >> 8 & 255) / 255.0F;
-                float bClothing = (float) (clothingColor & 255) / 255.0F;
-
-                this.renderBakedModels(stack, pMatrixStack, pBuffer, pPackedLight);
+                int stratumColor = clothingItem.getColor(stack, entry.getKey());
+                float rClothing = (float) (stratumColor >> 16 & 255) / 255.0F;
+                float gClothing = (float) (stratumColor >> 8 & 255) / 255.0F;
+                float bClothing = (float) (stratumColor & 255) / 255.0F;
 
                 this.renderMesh(
                         pMatrixStack,
@@ -237,6 +235,8 @@ public class HumanoidClothingLayer<
                     );
                 }
             }
+
+            this.renderBakedModels(stack, pMatrixStack, pBuffer, pPackedLight);
         } catch (Exception e) {
             LOGGER.error("Error while rendering clothing!", e);
         }
